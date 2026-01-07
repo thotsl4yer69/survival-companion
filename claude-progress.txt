@@ -582,3 +582,151 @@ forbidden output blocking, and survival skill databases (shelter, fire, water, k
 - GET /api/knots - List all knots with filters
 - GET /api/knots/:id - Specific knot instructions
 - POST /api/knots/search - Search knots by query
+
+---
+
+# Session 6 Progress Report
+# ================================================
+# Coding Agent - Session Complete
+# Date: 2026-01-08
+
+## Summary
+Implemented user profile enhancements including baseline vitals storage and comparison,
+home dashboard improvements with Survival quick action, comprehensive night mode and
+font scaling for accessibility, status bar with sensor indicators, battery monitoring
+with threshold alerts, and graceful shutdown system with data preservation.
+
+## Features Completed This Session
+
+### Feature #48: Baseline vitals storage (PASSING)
+- Added baseline_vitals to userProfile structure:
+  - heart_rate (BPM), spo2 (%), temperature (°C)
+  - blood_pressure_systolic, blood_pressure_diastolic
+  - recorded_at timestamp
+- Added API endpoints:
+  - GET /api/profile/baseline-vitals - Get stored baselines
+  - PUT /api/profile/baseline-vitals - Update baselines
+  - POST /api/profile/baseline-vitals - Capture current readings
+  - DELETE /api/profile/baseline-vitals - Clear baselines
+  - POST /api/vitals/compare - Compare current readings to baselines
+- Added Settings UI section with input fields and controls
+- Comparison shows deviation percentage with warning thresholds
+
+### Feature #49: Home dashboard display (PASSING)
+- Added Survival category button to home page quick actions
+- Created new Survival Skills page (/survival) with 6 skill categories:
+  - Shelter construction
+  - Fire starting
+  - Water purification
+  - Knot tying
+  - Signaling for rescue
+  - Cold weather survival
+- Added skill detail panels that load content from existing APIs
+- Updated action grid layout from 4 to 3 columns for 5 buttons
+- Added survival button styling with green accent color
+
+### Feature #50: Night mode activation (PASSING)
+- Enhanced night mode CSS with comprehensive color overrides
+- Night mode covers all accent colors, buttons, cards, and text
+- Input fields, selects, and form elements properly styled
+- Low-power mode banner styled for night mode
+- Persisted via localStorage
+
+### Feature #51: Font scaling (PASSING)
+- Added setFontSize() and checkFontSize() functions in app.js
+- Three font sizes: small, medium (default), large
+- CSS custom property overrides for font-small and font-large classes
+- All base sizes, headings, and UI elements scale proportionally
+- Settings dropdown wired to setFontSize() for immediate effect
+- Persisted via localStorage
+
+### Feature #52: Status bar display (PASSING)
+- Added sensor status indicator to base.html status bar
+- Sensor status shows with checkmark icon when sensors OK
+- Status bar already shows time, GPS, battery from prior sessions
+- Indicator classes for sensor-ok, sensor-warning, sensor-error states
+- CSS styling for all indicator states with appropriate colors
+
+### Feature #53: Battery level monitoring (PASSING - already implemented)
+- Verified existing battery monitoring in base.html and app.js
+- Battery percentage displayed in status bar
+- Low/critical battery classes with color indicators
+- Battery polling via checkPowerStatus() at 5-second intervals
+
+### Feature #54: Graceful shutdown (PASSING)
+- Added shutdown system with two-phase confirmation:
+  - POST /api/shutdown/request - Request shutdown, returns token
+  - POST /api/shutdown/confirm - Confirm with token, saves all data
+  - POST /api/shutdown/cancel - Cancel pending shutdown
+  - GET /api/shutdown/status - Get shutdown state
+- Data preservation saves:
+  - waypoints.json
+  - breadcrumbs.json
+  - user_profile.json
+- Shutdown log tracks all steps for debugging
+- Console output confirms each phase completion
+
+## Current Status
+- **Features Passing: 53/260 (20.4%)**
+- 7 features implemented this session (#48, #49, #50, #51, #52, #53, #54)
+- Server running on port 5000
+
+## API Endpoints Added This Session
+
+### Baseline Vitals APIs
+- `GET /api/profile/baseline-vitals` - Get stored baseline vitals
+- `PUT /api/profile/baseline-vitals` - Update baseline vitals
+- `POST /api/profile/baseline-vitals` - Capture current sensor readings
+- `DELETE /api/profile/baseline-vitals` - Clear all baselines
+- `POST /api/vitals/compare` - Compare current readings to baselines
+
+### Shutdown APIs
+- `POST /api/shutdown/request` - Initiate shutdown (returns token)
+- `POST /api/shutdown/confirm` - Confirm with token (saves data)
+- `POST /api/shutdown/cancel` - Cancel pending shutdown
+- `GET /api/shutdown/status` - Get shutdown status
+
+### New Routes
+- `GET /survival` - Survival skills page
+
+## Files Modified
+- `server.js` - Added baseline vitals, shutdown system, survival route
+- `templates/settings.html` - Added Baseline Vitals UI section
+- `templates/index.html` - Added Survival quick action button
+- `templates/survival.html` - NEW - Survival skills page with 6 categories
+- `templates/base.html` - Added sensor status indicator
+- `static/css/style.css` - Night mode enhancements, font scaling, sensor status
+- `static/js/app.js` - Added setFontSize(), checkFontSize() with exports
+
+## Next Steps for Next Session
+1. Continue with next feature from `feature_get_next`
+2. Feature #55 and beyond
+3. Continue towards 260 feature completion target
+
+## Environment State
+- Node.js server running on port 5000
+- All data persisted to JSON files in data/
+- Features database: 53/260 passing (20.4%)
+
+## Commands for Quick Start
+```bash
+# Start the server
+node server.js
+
+# Test baseline vitals
+curl -X PUT http://localhost:5000/api/profile/baseline-vitals \
+  -H "Content-Type: application/json" \
+  -d '{"heart_rate": 72, "spo2": 98, "temperature": 36.6}'
+
+curl http://localhost:5000/api/profile/baseline-vitals
+
+# Compare current vitals to baseline
+curl -X POST http://localhost:5000/api/vitals/compare
+
+# Test graceful shutdown
+curl -X POST http://localhost:5000/api/shutdown/request
+# Returns token, use it to confirm:
+curl -X POST http://localhost:5000/api/shutdown/confirm \
+  -H "Content-Type: application/json" \
+  -d '{"token": "<token-from-request>"}'
+```
