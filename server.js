@@ -991,25 +991,65 @@ const firstAidProtocolDatabase = [
         category: 'wound',
         name: 'Burns Treatment',
         severity: 'moderate',
-        keywords: ['burn', 'burns', 'fire', 'scald', 'hot', 'blister', 'thermal'],
-        summary: 'First aid for first, second, and third degree burns',
+        keywords: ['burn', 'burns', 'fire', 'scald', 'hot', 'blister', 'thermal', 'first degree', 'second degree', 'third degree', 'sunburn'],
+        summary: 'First aid for first, second, and third degree burns with severity-specific guidance',
         steps: [
-            { step: 1, summary: 'Stop the burning', detail: 'Remove person from heat source. If clothing is on fire: Stop, Drop, Roll. Remove smoldering clothing unless stuck to skin.' },
-            { step: 2, summary: 'Cool the burn', detail: 'Run cool (not cold) water over burn for 10-20 minutes. This is the most important step.' },
-            { step: 3, summary: 'Remove constrictive items', detail: 'Remove jewelry, belts, tight clothing from burned area before swelling starts.' },
-            { step: 4, summary: 'Assess burn severity', detail: '1st degree: red, painful. 2nd degree: blisters. 3rd degree: white/charred, may not hurt (nerves damaged).' },
-            { step: 5, summary: 'Cover the burn', detail: 'Cover loosely with clean, dry bandage or cloth. Do not wrap tightly.' },
-            { step: 6, summary: 'Prevent shock', detail: 'Keep person warm (cover unburned areas), elevate burned limbs if possible.' }
+            { step: 1, summary: 'Stop the burning', detail: 'Remove person from heat source. If clothing is on fire: Stop, Drop, Roll. Remove smoldering clothing UNLESS stuck to skin - do NOT pull stuck clothing.' },
+            { step: 2, summary: 'Assess burn severity', detail: '1st degree: Red, painful, dry (like sunburn). 2nd degree: Blisters, very painful, moist. 3rd degree: White, brown, or charred; may be painless (nerves destroyed); leathery texture.' },
+            { step: 3, summary: 'Cool the burn', detail: 'Run COOL (not cold) water over burn for 10-20 minutes. Do NOT use ice - it can cause frostbite on damaged tissue. This is the most important treatment step.' },
+            { step: 4, summary: 'Remove constrictive items', detail: 'Quickly remove jewelry, watches, belts, and tight clothing from burned area BEFORE swelling starts.' },
+            { step: 5, summary: 'Cover the burn', detail: 'Cover loosely with clean, dry, non-fluffy bandage or cling film. Do NOT wrap tightly - burns swell.' },
+            { step: 6, summary: 'Treat for shock if severe', detail: 'For large burns: keep person warm (cover unburned areas), lay flat with legs elevated, give small sips of water if conscious.' }
         ],
+        burn_severity_guide: {
+            first_degree: {
+                appearance: 'Red, dry skin like sunburn. No blisters. Painful to touch.',
+                treatment: [
+                    'Cool with running water for 10-20 minutes',
+                    'Apply aloe vera or moisturizing lotion after cooling',
+                    'Take over-the-counter pain reliever if needed',
+                    'Keep burn clean and moisturized',
+                    'Usually heals in 3-5 days without scarring'
+                ],
+                seek_help: 'Usually can be treated at home. Seek help if: covers large area, on face, or person is very young/elderly.'
+            },
+            second_degree: {
+                appearance: 'Red, blistered, very painful, moist/weepy skin. Swelling present.',
+                treatment: [
+                    'Cool with running water for 15-20 minutes',
+                    'Do NOT pop or break blisters - they protect healing skin',
+                    'Cover loosely with non-stick bandage',
+                    'Change dressing daily',
+                    'Pain relievers may be needed',
+                    'Heals in 2-3 weeks, may scar'
+                ],
+                seek_help: 'Seek help if: larger than 3 inches, on face/hands/feet/groin/joints, blisters pop, or signs of infection.'
+            },
+            third_degree: {
+                appearance: 'White, brown, or black/charred. Leathery texture. May be painless because nerves are destroyed.',
+                treatment: [
+                    'CALL FOR EMERGENCY HELP IMMEDIATELY - Activate SOS',
+                    'Do NOT remove any clothing stuck to the burn',
+                    'Do NOT apply water to large 3rd degree burns - can cause shock',
+                    'Cover loosely with clean, dry bandage or sheet',
+                    'Elevate burned area above heart if possible',
+                    'Monitor for shock - keep person warm',
+                    'Do NOT give anything by mouth'
+                ],
+                seek_help: 'ALL third degree burns require emergency medical care. Skin grafting usually needed. Life-threatening if large area affected.'
+            }
+        },
         warnings: [
-            'Do NOT apply ice - can cause frostbite on damaged tissue',
-            'Do NOT apply butter, oil, or toothpaste',
-            'Do NOT break blisters - increases infection risk',
-            'Do NOT remove clothing stuck to burn',
-            'Chemical burns: brush off dry chemicals, then flush with water for 20+ minutes'
+            'Do NOT apply ice or ice water - causes frostbite on damaged tissue',
+            'Do NOT apply butter, oil, toothpaste, or other folk remedies',
+            'Do NOT break or pop blisters - increases infection risk',
+            'Do NOT remove clothing stuck to burn - causes more damage',
+            'Do NOT use fluffy cotton or towels - fibers stick to burn',
+            'Chemical burns: brush off dry chemicals FIRST, then flush with water 20+ minutes',
+            'Electrical burns may have internal damage not visible - always seek help'
         ],
-        contraindications: ['No ice', 'No butter/oils', 'No breaking blisters', 'No tight bandages'],
-        when_to_seek_help: 'Seek help for: burns larger than palm of hand, burns on face/hands/feet/genitals/joints, all 3rd degree burns, electrical or chemical burns, burns with difficulty breathing, burns in children or elderly.'
+        contraindications: ['No ice', 'No butter/oils/toothpaste', 'No breaking blisters', 'No tight bandages', 'No fluffy materials on burn'],
+        when_to_seek_help: 'Seek immediate help for: ALL 3rd degree burns, burns larger than palm of hand, burns on face/hands/feet/genitals/joints, burns that go all the way around a limb, electrical or chemical burns, burns with smoke inhalation/breathing difficulty, burns in children under 5 or elderly over 60.'
     },
     // FRACTURE
     {
