@@ -291,6 +291,273 @@ app.get('/api/sensors', (req, res) => {
 });
 
 // ==============================================================================
+// Sensor Health Check System
+// ==============================================================================
+
+// Sensor health state - tracks individual sensor status
+const sensorHealthState = {
+    gps: {
+        status: 'unknown',
+        lastCheck: null,
+        lastSuccess: null,
+        errorCount: 0,
+        errorMessage: null
+    },
+    bme280: {
+        status: 'unknown',
+        lastCheck: null,
+        lastSuccess: null,
+        errorCount: 0,
+        errorMessage: null
+    },
+    max30102: {
+        status: 'unknown',
+        lastCheck: null,
+        lastSuccess: null,
+        errorCount: 0,
+        errorMessage: null
+    },
+    mlx90614: {
+        status: 'unknown',
+        lastCheck: null,
+        lastSuccess: null,
+        errorCount: 0,
+        errorMessage: null
+    },
+    camera: {
+        status: 'unknown',
+        lastCheck: null,
+        lastSuccess: null,
+        errorCount: 0,
+        errorMessage: null
+    }
+};
+
+// Check individual sensor health
+function checkSensorHealth(sensorName) {
+    const now = Date.now();
+    const health = sensorHealthState[sensorName];
+
+    if (!health) {
+        return { status: 'unknown', error: 'Sensor not found' };
+    }
+
+    // Get sensor initialization status from system state
+    const isInitialized = systemState.sensors[sensorName] ||
+                         (sensorName === 'bme280' && systemState.sensors.bme280);
+
+    health.lastCheck = now;
+
+    if (isInitialized) {
+        health.status = 'ok';
+        health.lastSuccess = now;
+        health.errorCount = 0;
+        health.errorMessage = null;
+    } else {
+        health.status = 'error';
+        health.errorCount++;
+        health.errorMessage = `${sensorName.toUpperCase()} not initialized or not responding`;
+    }
+
+    return health;
+}
+
+// Get overall system health summary
+function getSystemHealthSummary() {
+    const sensors = Object.keys(sensorHealthState);
+    let okCount = 0;
+    let warningCount = 0;
+    let errorCount = 0;
+
+    sensors.forEach(sensor => {
+        checkSensorHealth(sensor);
+        switch (sensorHealthState[sensor].status) {
+            case 'ok': okCount++; break;
+            case 'warning': warningCount++; break;
+            case 'error': errorCount++; break;
+        }
+    });
+
+    const totalSensors = sensors.length;
+    const healthPercentage = Math.round((okCount / totalSensors) * 100);
+
+    let overallStatus = 'ok';
+    if (errorCount > 0) {
+        overallStatus = errorCount >= totalSensors / 2 ? 'critical' : 'degraded';
+    } else if (warningCount > 0) {
+        overallStatus = 'warning';
+    }
+
+    return {
+        overall_status: overallStatus,
+        health_percentage: healthPercentage,
+        sensors_ok: okCount,
+        sensors_warning: warningCount,
+        sensors_error: errorCount,
+        total_sensors: totalSensors,
+        degraded_functionality: errorCount > 0,
+        critical_sensors_missing: []
+    };
+}
+
+// Get comprehensive sensor health report
+app.get('/api/sensors/health', (req, res) => {
+    const summary = getSystemHealthSummary();
+
+    // Build detailed sensor report
+    const sensorDetails = {};
+    const criticalMissing = [];
+
+    for (const [name, health] of Object.entries(sensorHealthState)) {
+        const sensorInfo = {
+            name: name.toUpperCase(),
+            status: health.status,
+            last_check: health.lastCheck ? new Date(health.lastCheck).toISOString() : null,
+            last_success: health.lastSuccess ? new Date(health.lastSuccess).toISOString() : null,
+            error_count: health.errorCount,
+            error_message: health.errorMessage,
+            features_affected: getSensorFeatures(name)
+        };
+
+        sensorDetails[name] = sensorInfo;
+
+        // Track critical missing sensors
+        if (health.status === 'error' && isCriticalSensor(name)) {
+            criticalMissing.push(name.toUpperCase());
+        }
+    }
+
+    summary.critical_sensors_missing = criticalMissing;
+
+    res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        summary,
+        sensors: sensorDetails,
+        degraded_features: getDegradedFeatures()
+    });
+});
+
+// Get status of specific sensor
+app.get('/api/sensors/health/:sensorName', (req, res) => {
+    const sensorName = req.params.sensorName.toLowerCase();
+
+    if (!sensorHealthState[sensorName]) {
+        return res.status(404).json({
+            success: false,
+            error: 'Sensor not found',
+            available_sensors: Object.keys(sensorHealthState)
+        });
+    }
+
+    const health = checkSensorHealth(sensorName);
+
+    res.json({
+        success: true,
+        sensor: sensorName.toUpperCase(),
+        status: health.status,
+        last_check: health.lastCheck ? new Date(health.lastCheck).toISOString() : null,
+        last_success: health.lastSuccess ? new Date(health.lastSuccess).toISOString() : null,
+        error_count: health.errorCount,
+        error_message: health.errorMessage,
+        features_affected: getSensorFeatures(sensorName)
+    });
+});
+
+// Simulate sensor failure for testing
+app.post('/api/sensors/simulate-failure', (req, res) => {
+    const { sensor, recover } = req.body;
+
+    if (!sensor) {
+        return res.status(400).json({
+            success: false,
+            error: 'Sensor name required'
+        });
+    }
+
+    const sensorName = sensor.toLowerCase();
+
+    if (!systemState.sensors.hasOwnProperty(sensorName)) {
+        return res.status(404).json({
+            success: false,
+            error: 'Invalid sensor name',
+            available: Object.keys(systemState.sensors)
+        });
+    }
+
+    if (recover) {
+        // Recover sensor
+        systemState.sensors[sensorName] = true;
+        sensorHealthState[sensorName].status = 'ok';
+        sensorHealthState[sensorName].errorCount = 0;
+        sensorHealthState[sensorName].errorMessage = null;
+        sensorHealthState[sensorName].lastSuccess = Date.now();
+
+        console.log(`[SENSOR] ${sensorName.toUpperCase()} recovered`);
+
+        res.json({
+            success: true,
+            message: `${sensorName.toUpperCase()} has been recovered`,
+            sensor: sensorName.toUpperCase(),
+            status: 'ok'
+        });
+    } else {
+        // Fail sensor
+        systemState.sensors[sensorName] = false;
+        sensorHealthState[sensorName].status = 'error';
+        sensorHealthState[sensorName].errorCount++;
+        sensorHealthState[sensorName].errorMessage = `Simulated failure for testing`;
+
+        console.log(`[SENSOR] ${sensorName.toUpperCase()} FAILED (simulated)`);
+
+        res.json({
+            success: true,
+            message: `${sensorName.toUpperCase()} has been marked as failed`,
+            sensor: sensorName.toUpperCase(),
+            status: 'error',
+            degraded_features: getSensorFeatures(sensorName)
+        });
+    }
+});
+
+// Helper: Get features affected by a sensor
+function getSensorFeatures(sensorName) {
+    const featureMap = {
+        gps: ['Navigation', 'Waypoints', 'Breadcrumb trails', 'I\'m Lost mode', 'SOS location'],
+        bme280: ['Temperature reading', 'Pressure tracking', 'Storm prediction', 'Altitude estimation'],
+        max30102: ['Heart rate monitoring', 'SpO2 measurement', 'Baseline vitals'],
+        mlx90614: ['Body temperature', 'Fever detection', 'Vital signs'],
+        camera: ['Plant identification', 'Visual hazard detection', 'Wound assessment']
+    };
+
+    return featureMap[sensorName] || [];
+}
+
+// Helper: Check if sensor is critical
+function isCriticalSensor(sensorName) {
+    const criticalSensors = ['gps', 'bme280'];
+    return criticalSensors.includes(sensorName);
+}
+
+// Helper: Get list of features with degraded functionality
+function getDegradedFeatures() {
+    const degraded = [];
+
+    for (const [name, health] of Object.entries(sensorHealthState)) {
+        if (health.status === 'error') {
+            const features = getSensorFeatures(name);
+            features.forEach(feature => {
+                if (!degraded.includes(feature)) {
+                    degraded.push(feature);
+                }
+            });
+        }
+    }
+
+    return degraded;
+}
+
+// ==============================================================================
 // Weather / Pressure History and Storm Prediction
 // ==============================================================================
 
