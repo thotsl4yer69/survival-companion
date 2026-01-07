@@ -2121,6 +2121,262 @@ app.get('/api/waypoints/distances', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Breadcrumb Trail API
+// ==============================================================================
+
+// Breadcrumb storage (persisted to JSON file)
+const breadcrumbsFile = join(__dirname, 'data', 'breadcrumbs.json');
+let breadcrumbTrails = [];
+let activeBreadcrumbTrail = null;
+let breadcrumbRecordingInterval = null;
+const BREADCRUMB_INTERVAL_MS = 5000; // Record position every 5 seconds
+const MIN_DISTANCE_METERS = 5; // Minimum distance to record new point
+
+// Load breadcrumbs from file
+function loadBreadcrumbs() {
+    try {
+        if (fs.existsSync(breadcrumbsFile)) {
+            breadcrumbTrails = JSON.parse(fs.readFileSync(breadcrumbsFile, 'utf8'));
+            console.log(`Loaded ${breadcrumbTrails.length} breadcrumb trails from file`);
+        }
+    } catch (e) {
+        console.log('No breadcrumbs file found, starting fresh');
+        breadcrumbTrails = [];
+    }
+}
+
+// Save breadcrumbs to file
+function saveBreadcrumbs() {
+    try {
+        const dir = dirname(breadcrumbsFile);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(breadcrumbsFile, JSON.stringify(breadcrumbTrails, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error saving breadcrumbs:', e);
+        return false;
+    }
+}
+
+// Load breadcrumbs on startup
+loadBreadcrumbs();
+
+// Get all breadcrumb trails
+app.get('/api/breadcrumbs', (req, res) => {
+    res.json({
+        success: true,
+        trails: breadcrumbTrails,
+        count: breadcrumbTrails.length,
+        active_trail: activeBreadcrumbTrail ? {
+            id: activeBreadcrumbTrail.id,
+            name: activeBreadcrumbTrail.name,
+            points_count: activeBreadcrumbTrail.points.length,
+            recording: true
+        } : null
+    });
+});
+
+// Get current recording status (must be before /:id to avoid route conflict)
+app.get('/api/breadcrumbs/status', (req, res) => {
+    if (!activeBreadcrumbTrail) {
+        return res.json({
+            recording: false,
+            message: 'No active trail recording'
+        });
+    }
+
+    const lastPoint = activeBreadcrumbTrail.points[activeBreadcrumbTrail.points.length - 1];
+
+    res.json({
+        recording: true,
+        trail: {
+            id: activeBreadcrumbTrail.id,
+            name: activeBreadcrumbTrail.name,
+            started_at: activeBreadcrumbTrail.started_at,
+            points_count: activeBreadcrumbTrail.points.length,
+            total_distance: formatDistance(activeBreadcrumbTrail.total_distance_meters),
+            last_point: lastPoint,
+            duration_seconds: Math.floor((Date.now() - new Date(activeBreadcrumbTrail.started_at).getTime()) / 1000)
+        }
+    });
+});
+
+// Get a single breadcrumb trail by ID
+app.get('/api/breadcrumbs/:id', (req, res) => {
+    const trail = breadcrumbTrails.find(t => t.id === parseInt(req.params.id));
+    if (trail) {
+        res.json({ success: true, trail });
+    } else {
+        res.status(404).json({ success: false, error: 'Trail not found' });
+    }
+});
+
+// Start recording a new breadcrumb trail
+app.post('/api/breadcrumbs/start', (req, res) => {
+    const { name } = req.body;
+
+    if (activeBreadcrumbTrail) {
+        return res.json({
+            success: false,
+            error: 'A trail is already being recorded',
+            active_trail: {
+                id: activeBreadcrumbTrail.id,
+                name: activeBreadcrumbTrail.name
+            }
+        });
+    }
+
+    // Create new trail
+    activeBreadcrumbTrail = {
+        id: breadcrumbTrails.length > 0 ? Math.max(...breadcrumbTrails.map(t => t.id)) + 1 : 1,
+        name: name || `Trail ${new Date().toLocaleString()}`,
+        started_at: new Date().toISOString(),
+        ended_at: null,
+        points: [],
+        total_distance_meters: 0
+    };
+
+    // Add initial point
+    activeBreadcrumbTrail.points.push({
+        latitude: gpsState.latitude,
+        longitude: gpsState.longitude,
+        altitude: gpsState.altitude,
+        timestamp: new Date().toISOString(),
+        accuracy: gpsState.accuracy
+    });
+
+    // Start recording interval
+    breadcrumbRecordingInterval = setInterval(() => {
+        recordBreadcrumbPoint();
+    }, BREADCRUMB_INTERVAL_MS);
+
+    res.json({
+        success: true,
+        message: `Started recording trail '${activeBreadcrumbTrail.name}'`,
+        trail: {
+            id: activeBreadcrumbTrail.id,
+            name: activeBreadcrumbTrail.name,
+            started_at: activeBreadcrumbTrail.started_at,
+            initial_position: activeBreadcrumbTrail.points[0]
+        }
+    });
+});
+
+// Record a breadcrumb point
+function recordBreadcrumbPoint() {
+    if (!activeBreadcrumbTrail) return;
+
+    const lastPoint = activeBreadcrumbTrail.points[activeBreadcrumbTrail.points.length - 1];
+    const distance = haversineDistance(
+        lastPoint.latitude, lastPoint.longitude,
+        gpsState.latitude, gpsState.longitude
+    );
+
+    // Only record if moved more than minimum distance
+    if (distance >= MIN_DISTANCE_METERS) {
+        activeBreadcrumbTrail.points.push({
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude,
+            altitude: gpsState.altitude,
+            timestamp: new Date().toISOString(),
+            accuracy: gpsState.accuracy
+        });
+
+        activeBreadcrumbTrail.total_distance_meters += distance;
+        console.log(`Breadcrumb recorded: ${gpsState.latitude.toFixed(6)}, ${gpsState.longitude.toFixed(6)} (moved ${distance.toFixed(1)}m)`);
+    }
+}
+
+// Stop recording breadcrumb trail
+app.post('/api/breadcrumbs/stop', (req, res) => {
+    if (!activeBreadcrumbTrail) {
+        return res.json({
+            success: false,
+            error: 'No active trail recording'
+        });
+    }
+
+    // Stop the interval
+    if (breadcrumbRecordingInterval) {
+        clearInterval(breadcrumbRecordingInterval);
+        breadcrumbRecordingInterval = null;
+    }
+
+    // Record final point
+    recordBreadcrumbPoint();
+
+    // Finalize trail
+    activeBreadcrumbTrail.ended_at = new Date().toISOString();
+
+    // Add to trails array
+    breadcrumbTrails.push(activeBreadcrumbTrail);
+
+    const finishedTrail = activeBreadcrumbTrail;
+    activeBreadcrumbTrail = null;
+
+    // Save to file
+    const saved = saveBreadcrumbs();
+
+    res.json({
+        success: true,
+        message: `Trail '${finishedTrail.name}' saved with ${finishedTrail.points.length} points`,
+        trail: {
+            id: finishedTrail.id,
+            name: finishedTrail.name,
+            started_at: finishedTrail.started_at,
+            ended_at: finishedTrail.ended_at,
+            points_count: finishedTrail.points.length,
+            total_distance: formatDistance(finishedTrail.total_distance_meters)
+        },
+        persisted: saved
+    });
+});
+
+// Delete a breadcrumb trail
+app.delete('/api/breadcrumbs/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const trailIndex = breadcrumbTrails.findIndex(t => t.id === id);
+
+    if (trailIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Trail not found' });
+    }
+
+    const deleted = breadcrumbTrails.splice(trailIndex, 1)[0];
+    const saved = saveBreadcrumbs();
+
+    res.json({
+        success: true,
+        deleted: {
+            id: deleted.id,
+            name: deleted.name,
+            points_count: deleted.points.length
+        },
+        persisted: saved,
+        message: `Trail '${deleted.name}' deleted`
+    });
+});
+
+// Get trail points for display
+app.get('/api/breadcrumbs/:id/points', (req, res) => {
+    const id = parseInt(req.params.id);
+    const trail = breadcrumbTrails.find(t => t.id === id);
+
+    if (!trail) {
+        return res.status(404).json({ success: false, error: 'Trail not found' });
+    }
+
+    res.json({
+        success: true,
+        trail_id: trail.id,
+        trail_name: trail.name,
+        points: trail.points,
+        count: trail.points.length
+    });
+});
+
 // Unload models
 app.post('/api/llm/unload', (req, res) => {
     if (llmState.phi3_loaded) {

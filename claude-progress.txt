@@ -168,20 +168,42 @@ distance/bearing calculation for waypoint navigation.
 - `GET /api/navigate/status` - Get navigation status with distance/bearing
 - `POST /api/navigate/stop` - Stop navigation
 
+### Feature #20: Breadcrumb trail recording (PASSING)
+- Implemented complete Breadcrumb API (`/api/breadcrumbs`)
+- Trail recording with automatic point collection every 5 seconds
+- Minimum distance threshold (5m) to avoid stationary points
+- Trail persistence to JSON file (`data/breadcrumbs.json`)
+- Haversine distance calculation for total distance traveled
+- All 5 test steps verified and passing
+
 ## Files Modified
-- `server.js` - Added Waypoint and Navigation APIs
+- `server.js` - Added Waypoint, Navigation, and Breadcrumb APIs
 - `templates/navigation.html` - Added GPS polling, waypoints list, navigation UI
+
+## API Endpoints Added (Breadcrumbs)
+- `GET /api/breadcrumbs` - List all trails
+- `GET /api/breadcrumbs/status` - Get current recording status
+- `GET /api/breadcrumbs/:id` - Get single trail
+- `POST /api/breadcrumbs/start` - Start recording trail
+- `POST /api/breadcrumbs/stop` - Stop recording and save
+- `DELETE /api/breadcrumbs/:id` - Delete trail
+- `GET /api/breadcrumbs/:id/points` - Get trail points
+
+## Current Status
+- **Features Passing: 19/260 (7.3%)**
+- 4 features implemented this session (#16, #18, #19, #20)
+- Feature #17 (offline maps) skipped - requires MBTiles infrastructure
 
 ## Next Steps for Next Session
 1. Continue with next feature from `feature_get_next`
-2. Consider implementing breadcrumb trails feature
-3. Work on more functional features
+2. Work on more functional features
 
 ## Environment State
 - Node.js server running on port 5000
 - GPS tracking active with position updates
 - Waypoints data stored in `data/waypoints.json`
-- Features database: 18/260 passing
+- Breadcrumbs data stored in `data/breadcrumbs.json`
+- Features database: 19/260 passing
 
 ## Commands for Quick Start
 ```bash
@@ -193,6 +215,9 @@ curl -X POST http://localhost:5000/api/boot
 
 # Start GPS tracking
 curl -X POST http://localhost:5000/api/gps/start
+
+# Start breadcrumb recording
+curl -X POST http://localhost:5000/api/breadcrumbs/start -H "Content-Type: application/json" -d '{"name": "My Trail"}'
 
 # Get feature stats
 # Use feature_get_stats MCP tool
