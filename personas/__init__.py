@@ -1,0 +1,3 @@
+"""
+Survival Companion - Personas package
+"""

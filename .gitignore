@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checking
+.mypy_cache/
+
+# Models (large files - download separately)
+personas/survival/models/*.gguf
+personas/survival/models/*.hef
+personas/survival/models/*.bin
+!personas/survival/models/*.placeholder
+
+# Maps (large files - download separately)
+personas/survival/data/maps/*.mbtiles
+personas/survival/navigation/maps/*.mbtiles
+
+# User data (privacy)
+personas/survival/data/user_data.db
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Environment variables
+.env
+.env.local
+
+# SQLite WAL files
+*.db-wal
+*.db-shm
+
+# Coverage reports
+coverage.xml
+*.cover
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Features database (managed by MCP server)
+features.db

@@ -1,0 +1,133 @@
+# ==============================================================================
+# Survival Companion Configuration
+# ==============================================================================
+
+# System Settings
+system:
+  persona_name: "Survival Companion"
+  version: "1.0.0"
+  debug_mode: false
+  log_level: "INFO"
+
+# Memory Management
+memory:
+  max_ram_usage_mb: 7500  # Leave buffer from 8GB total
+  llm_unload_timeout_sec: 30
+
+# Voice Interface
+voice:
+  wake_words: ["survival", "companion"]
+  stt_model: "base.en"  # whisper.cpp model
+  tts_voice: "en_US-lessac-medium"  # Piper voice
+  sample_rate: 16000
+  vad_threshold: 0.5
+  confidence_threshold: 0.7
+  volume: 0.8
+
+# LLM Settings
+llm:
+  fast_model: "phi-3-mini-4k-instruct-q4_k_m.gguf"
+  medical_model: "biomistral-7b-dare-q4_k_m.gguf"
+  context_length: 4096
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 1024
+
+# Medical Safety Layer
+safety:
+  enabled: true
+  forbidden_patterns:
+    - "you have .* cancer"
+    - "definitely .* disease"
+    - "take \\d+ mg of"
+    - "you will die"
+  required_disclaimers:
+    skin_analysis: "This is a screening tool only. See a dermatologist for diagnosis."
+    medication: "Consult a medical professional before taking any medication."
+    emergency: "If symptoms worsen, activate emergency beacon immediately."
+
+# Hardware Configuration
+hardware:
+  # SPI Bus 0 - Display and Touch
+  display:
+    enabled: true
+    driver: "ili9486"
+    cs_pin: 8  # GPIO8 / CE0
+    width: 480
+    height: 320
+    rotation: 0
+  touch:
+    enabled: true
+    driver: "ads7846"
+    cs_pin: 7  # GPIO7 / CE1
+
+  # SPI Bus 1 - ADC
+  adc:
+    enabled: true
+    driver: "mcp3008"
+    cs_pin: 16
+    clk_pin: 21
+    mosi_pin: 20
+    miso_pin: 19
+
+  # I2C Sensors
+  i2c:
+    bus: 1
+    speed_hz: 100000  # Limited by MLX90614
+
+  sensors:
+    max30102:
+      enabled: true
+      address: 0x57
+    mlx90614:
+      enabled: true
+      address: 0x5A
+    bme280:
+      enabled: true
+      address: 0x76
+
+  # GPS
+  gps:
+    enabled: true
+    port: "/dev/ttyS0"
+    baud: 9600
+
+  # Emergency
+  emergency:
+    buzzer_pin: 18  # PWM for piezo
+    buzzer_frequency: 2800  # Hz
+    ad8232_lo_plus_pin: 17
+    ad8232_lo_minus_pin: 27
+
+  # Camera
+  camera:
+    enabled: true
+    resolution: [1920, 1080]
+    inference_size: [224, 224]
+
+# Power Management
+power:
+  idle_timeout_sec: 30
+  display_timeout_sec: 60
+  low_battery_threshold: 20
+  critical_battery_threshold: 10
+
+# Vision Models (Hailo HEF)
+vision:
+  triage_model: "triage.hef"
+  skin_cancer_model: "skin_cancer.hef"
+  plant_classifier: "plant_classifier.hef"
+  wildlife_classifier: "wildlife_classifier.hef"
+  wound_assessor: "wound_assessor.hef"
+
+# Navigation
+navigation:
+  map_format: "mbtiles"
+  default_zoom: 15
+  breadcrumb_interval_sec: 10
+
+# Database Paths
+databases:
+  protocols: "personas/survival/medical/protocols.db"
+  species: "personas/survival/data/species.db"
+  user_data: "personas/survival/data/user_data.db"
