@@ -10469,6 +10469,7 @@ app.post('/api/plants/identify', (req, res) => {
     // Generate confidence based on visual hints
     let confidence = 0.65 + Math.random() * 0.25;
     let alternativeMatches = [];
+    const isLowConfidence = confidence < 0.7;
 
     // If visual hints provided, adjust results
     if (visual_hints) {
@@ -10495,20 +10496,41 @@ app.post('/api/plants/identify', (req, res) => {
             scientific_name: plant.scientific_name,
             alternative_names: plant.common_names.slice(1),
             confidence: parseFloat(confidence.toFixed(3)),
-            match_quality: confidence > 0.85 ? 'HIGH' : confidence > 0.7 ? 'MODERATE' : 'LOW'
+            match_quality: confidence > 0.85 ? 'HIGH' : confidence > 0.7 ? 'MODERATE' : 'LOW',
+            low_confidence: isLowConfidence,
+            assume_poisonous: isLowConfidence
         },
         safety: {
-            edibility: plant.edibility,
-            toxicity_level: plant.toxicity,
-            edible_parts: plant.edible_parts,
-            warnings: plant.warnings,
-            safety_recommendation: getSafetyRecommendation(plant)
+            edibility: isLowConfidence ? 'UNKNOWN' : plant.edibility,
+            toxicity_level: isLowConfidence ? 'ASSUME_TOXIC' : plant.toxicity,
+            edible_parts: isLowConfidence ? [] : plant.edible_parts,
+            warnings: isLowConfidence
+                ? ['⚠️ LOW CONFIDENCE - Do not consume', 'Treat as poisonous until properly identified']
+                : plant.warnings,
+            safety_recommendation: isLowConfidence
+                ? '⚠️ LOW CONFIDENCE: Assume this plant is POISONOUS. Do not touch or consume.'
+                : getSafetyRecommendation(plant)
         },
+        recapture_guidance: isLowConfidence ? {
+            recommended: true,
+            reason: 'Low confidence identification - better image may improve accuracy',
+            tips: [
+                'Get a clearer image of the leaves',
+                'Photograph flowers or berries if present',
+                'Include stem and overall plant shape',
+                'Ensure good lighting',
+                'Capture any distinctive features (thorns, hairs, patterns)',
+                'DO NOT taste or handle unknown plants'
+            ],
+            warning: 'Until re-identified with high confidence, treat as POISONOUS'
+        } : null,
         description: plant.description,
         region: plant.region || 'Unknown',
         inference_time_ms: 85 + Math.floor(Math.random() * 40),
         model_used: 'plant_classifier.hef',
-        disclaimer: 'NEVER eat a plant unless you are 100% certain of its identification. Many edible plants have deadly look-alikes.'
+        disclaimer: isLowConfidence
+            ? '⚠️ LOW CONFIDENCE: NEVER eat this plant. Many edible plants have deadly look-alikes. Re-capture a better image.'
+            : 'NEVER eat a plant unless you are 100% certain of its identification. Many edible plants have deadly look-alikes.'
     };
 
     // Add alternative matches if present
@@ -11259,6 +11281,18 @@ app.post('/api/wildlife/identify', (req, res) => {
         region: animal.region,
         inference_time_ms: 95 + Math.floor(Math.random() * 50),
         model_used: 'wildlife_classifier.hef',
+        recapture_guidance: isLowConfidence ? {
+            recommended: true,
+            reason: 'Low confidence identification - better image may improve accuracy',
+            tips: [
+                'Get a clearer image if safely possible',
+                'Capture from multiple angles',
+                'Ensure good lighting',
+                'Focus on distinctive features (patterns, colors, shape)',
+                'DO NOT approach dangerous animals for a better photo'
+            ],
+            warning: 'Until re-identified with high confidence, treat as DANGEROUS'
+        } : null,
         disclaimer: isLowConfidence
             ? 'LOW CONFIDENCE: Always assume unknown animals are dangerous. Maintain maximum distance and do not approach.'
             : 'Always assume unknown animals are dangerous. Maintain safe distance and do not approach.'
@@ -11669,6 +11703,192 @@ app.get('/api/snakes/:id', (req, res) => {
         ...snake,
         is_venomous: snake.classification === 'venomous',
         offline_data: true
+    });
+});
+
+// ==============================================================================
+// Skin Lesion Analysis System
+// ==============================================================================
+
+// Skin lesion classification categories based on ISIC2024
+const skinLesionCategories = {
+    melanoma_concern: {
+        concern_level: 'HIGH',
+        description: 'Features consistent with potential melanoma',
+        urgency: 'See a dermatologist as soon as possible',
+        warning_signs: ['Asymmetry', 'Border irregularity', 'Color variation', 'Diameter >6mm', 'Evolution/change']
+    },
+    moderate_concern: {
+        concern_level: 'MODERATE',
+        description: 'Some atypical features present',
+        urgency: 'Schedule a dermatologist appointment within 2-4 weeks',
+        warning_signs: ['Slightly irregular borders', 'Multiple colors', 'Recent changes']
+    },
+    low_concern: {
+        concern_level: 'LOW',
+        description: 'Features appear relatively benign',
+        urgency: 'Monitor for changes, routine skin check recommended',
+        warning_signs: ['None apparent, but continue monitoring']
+    },
+    benign: {
+        concern_level: 'LOW',
+        description: 'Features consistent with benign lesion',
+        urgency: 'Routine monitoring recommended',
+        warning_signs: ['None apparent']
+    }
+};
+
+// ABCDE criteria for skin lesion self-check
+const abcdeCriteria = {
+    A: {
+        name: 'Asymmetry',
+        description: 'One half does not match the other half',
+        concern_if: 'The lesion is asymmetrical'
+    },
+    B: {
+        name: 'Border',
+        description: 'Edges are irregular, ragged, or blurred',
+        concern_if: 'Borders are not smooth and well-defined'
+    },
+    C: {
+        name: 'Color',
+        description: 'Color is not uniform',
+        concern_if: 'Multiple colors or shades present'
+    },
+    D: {
+        name: 'Diameter',
+        description: 'Size larger than 6mm (pencil eraser)',
+        concern_if: 'Lesion is larger than 6mm'
+    },
+    E: {
+        name: 'Evolution',
+        description: 'Size, shape, or color has changed',
+        concern_if: 'Any recent changes in the lesion'
+    }
+};
+
+// Analyze skin lesion from image
+app.post('/api/skin/analyze', (req, res) => {
+    const { image_id, capture_date } = req.body;
+
+    // Ensure skin model is loaded
+    if (!visionState.skin_model_loaded) {
+        visionState.skin_model_loaded = true;
+        visionState.active_specialist = 'skin_lesion';
+    }
+
+    visionState.inference_count++;
+
+    // Simulate classification
+    const categories = Object.keys(skinLesionCategories);
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    const category = skinLesionCategories[randomCategory];
+    const confidence = 0.7 + Math.random() * 0.25;
+
+    res.json({
+        success: true,
+        image_id: image_id || 'captured_lesion',
+        capture_date: capture_date || new Date().toISOString(),
+        analysis: {
+            classification: randomCategory,
+            confidence: parseFloat(confidence.toFixed(3)),
+            concern_level: category.concern_level,
+            description: category.description,
+            urgency: category.urgency,
+            warning_signs_detected: category.warning_signs
+        },
+        recommendation: {
+            primary: category.concern_level === 'HIGH'
+                ? 'URGENT: See a dermatologist as soon as possible'
+                : category.concern_level === 'MODERATE'
+                    ? 'Schedule a dermatologist appointment within 2-4 weeks'
+                    : 'Continue routine self-monitoring',
+            secondary: 'Take photos periodically to track any changes',
+            follow_up: 'Always consult a medical professional for proper diagnosis'
+        },
+        abcde_guidance: abcdeCriteria,
+        disclaimer: {
+            primary: '⚠️ THIS IS NOT A MEDICAL DIAGNOSIS',
+            details: [
+                'This is a SCREENING TOOL only',
+                'It cannot diagnose skin cancer or any medical condition',
+                'Only a qualified dermatologist can provide a diagnosis',
+                'When in doubt, always see a doctor',
+                'Early detection saves lives - do not delay medical consultation'
+            ],
+            emergency: 'If the lesion is bleeding, rapidly changing, or you have concerns, seek medical attention immediately'
+        },
+        model_used: 'skin_cancer.hef (ISIC2024-based)',
+        inference_time_ms: 120 + Math.floor(Math.random() * 60),
+        offline_capable: true
+    });
+});
+
+// Get ABCDE criteria for self-examination
+app.get('/api/skin/abcde', (req, res) => {
+    res.json({
+        title: 'ABCDE Criteria for Skin Lesion Self-Check',
+        description: 'Use these criteria to evaluate skin lesions and moles',
+        criteria: abcdeCriteria,
+        when_to_see_doctor: [
+            'Any lesion that meets multiple ABCDE criteria',
+            'Any new mole appearing after age 30',
+            'Any mole or lesion that is changing',
+            'Any mole or lesion that looks different from others',
+            'Any mole that itches, bleeds, or crusts over',
+            'Any concern you have about your skin'
+        ],
+        disclaimer: 'This is for educational purposes only. Always consult a healthcare provider for medical advice.'
+    });
+});
+
+// Track lesion over time (simulated)
+app.post('/api/skin/track', (req, res) => {
+    const { lesion_id, image_id, notes } = req.body;
+
+    res.json({
+        success: true,
+        lesion_id: lesion_id || `lesion_${Date.now()}`,
+        image_id: image_id || 'captured_lesion',
+        tracked_at: new Date().toISOString(),
+        notes: notes || null,
+        message: 'Lesion image saved for tracking. Compare with future images to monitor changes.',
+        recommendation: 'Take photos monthly and compare for any changes in size, shape, or color.'
+    });
+});
+
+// Get skin screening guidance
+app.get('/api/skin/screening-guide', (req, res) => {
+    res.json({
+        title: 'How to Perform a Skin Self-Examination',
+        frequency: 'Monthly recommended',
+        steps: [
+            'Examine your face, ears, neck, and scalp',
+            'Check your arms, front and back, including underarms',
+            'Look at your hands, including between fingers and under nails',
+            'Examine your chest, abdomen, and sides',
+            'Check your back using a mirror or with help',
+            'Examine your buttocks, legs, and feet including soles',
+            'Use a hand mirror for hard-to-see areas'
+        ],
+        what_to_look_for: [
+            'New moles or growths',
+            'Moles that have changed in size, shape, or color',
+            'Moles that look different from others (ugly duckling sign)',
+            'Sores that do not heal',
+            'Rough or scaly patches',
+            'Pink or red growths'
+        ],
+        risk_factors: [
+            'Fair skin that burns easily',
+            'History of sunburns',
+            'Many moles (50+)',
+            'Family history of skin cancer',
+            'Previous skin cancer',
+            'Immunosuppression',
+            'Excessive sun or tanning bed exposure'
+        ],
+        disclaimer: 'Self-examination is not a substitute for professional skin checks. See a dermatologist regularly.'
     });
 });
 
