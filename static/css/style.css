@@ -176,6 +176,20 @@ body {
     color: var(--accent-warning);
 }
 
+/* Sensor Status */
+#sensor-status.sensor-ok {
+    color: var(--accent-primary);
+}
+
+#sensor-status.sensor-warning {
+    color: var(--accent-warning);
+}
+
+#sensor-status.sensor-error {
+    color: var(--accent-danger);
+    animation: blink 1s infinite;
+}
+
 /* Low-power mode body styling */
 body.low-power-mode-active {
     /* Dim the UI to save power */
