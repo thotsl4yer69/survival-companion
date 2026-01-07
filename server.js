@@ -10247,6 +10247,1432 @@ app.get('/api/vision/status', (req, res) => {
 });
 
 // ==============================================================================
+// Plant Identification System
+// ==============================================================================
+
+// Plant database for identification simulation (offline capable)
+const plantDatabase = {
+    // Edible plants
+    'dandelion': {
+        scientific_name: 'Taraxacum officinale',
+        common_names: ['Common Dandelion', 'Lion\'s Tooth'],
+        edibility: 'EDIBLE',
+        edible_parts: ['leaves', 'flowers', 'roots'],
+        toxicity: 'NONE',
+        warnings: [],
+        description: 'All parts edible. Young leaves best in salads. Flowers can be made into wine. Roots can be roasted as coffee substitute.',
+        calories_per_100g: 45,
+        region: 'Worldwide'
+    },
+    'plantain': {
+        scientific_name: 'Plantago major',
+        common_names: ['Broadleaf Plantain', 'White Man\'s Foot'],
+        edibility: 'EDIBLE',
+        edible_parts: ['young leaves', 'seeds'],
+        toxicity: 'NONE',
+        warnings: [],
+        description: 'Young leaves edible raw or cooked. Older leaves become fibrous. Seeds can be ground into flour.',
+        calories_per_100g: 25,
+        region: 'Worldwide'
+    },
+    'clover': {
+        scientific_name: 'Trifolium repens',
+        common_names: ['White Clover', 'Dutch Clover'],
+        edibility: 'EDIBLE',
+        edible_parts: ['flowers', 'leaves'],
+        toxicity: 'NONE',
+        warnings: ['May cause bloating if eaten in large quantities'],
+        description: 'Flowers are sweet and nutritious. Leaves can be eaten raw or cooked.',
+        calories_per_100g: 35,
+        region: 'Worldwide'
+    },
+    'chickweed': {
+        scientific_name: 'Stellaria media',
+        common_names: ['Common Chickweed', 'Starweed'],
+        edibility: 'EDIBLE',
+        edible_parts: ['leaves', 'stems', 'flowers'],
+        toxicity: 'NONE',
+        warnings: [],
+        description: 'Mild flavor, good raw in salads. High in vitamins A and C.',
+        calories_per_100g: 23,
+        region: 'Worldwide'
+    },
+    'nettle': {
+        scientific_name: 'Urtica dioica',
+        common_names: ['Stinging Nettle', 'Common Nettle'],
+        edibility: 'EDIBLE_COOKED',
+        edible_parts: ['young leaves'],
+        toxicity: 'IRRITANT',
+        warnings: ['MUST BE COOKED to neutralize stinging hairs', 'Wear gloves when harvesting'],
+        description: 'Highly nutritious once cooked. Stinging hairs neutralized by heat. Use only young tops.',
+        calories_per_100g: 42,
+        region: 'Northern Hemisphere'
+    },
+    // Poisonous plants
+    'poison_ivy': {
+        scientific_name: 'Toxicodendron radicans',
+        common_names: ['Poison Ivy', 'Eastern Poison Ivy'],
+        edibility: 'POISONOUS',
+        edible_parts: [],
+        toxicity: 'HIGH',
+        warnings: ['DO NOT TOUCH - causes severe skin rash', 'Leaves of three, let it be', 'Urushiol oil causes allergic reaction'],
+        description: 'Causes severe dermatitis. All parts contain urushiol. Smoke from burning is especially dangerous.',
+        region: 'North America',
+        first_aid: {
+            skin_contact: [
+                'Wash immediately with cold water and dish soap or specialized poison ivy wash',
+                'Do NOT use hot water - opens pores and spreads oil',
+                'Remove and wash all contaminated clothing separately',
+                'Apply calamine lotion or hydrocortisone cream for itching',
+                'Seek medical attention if rash is severe or near eyes/face'
+            ],
+            ingestion: ['Do not induce vomiting', 'Call Poison Control immediately', 'Seek emergency medical care'],
+            eye_contact: ['Flush eyes with cool water for 15 minutes', 'Seek immediate medical attention']
+        },
+        audio_warning: true
+    },
+    'poison_hemlock': {
+        scientific_name: 'Conium maculatum',
+        common_names: ['Poison Hemlock', 'Spotted Hemlock'],
+        edibility: 'DEADLY',
+        edible_parts: [],
+        toxicity: 'EXTREME',
+        warnings: ['DEADLY - DO NOT INGEST', 'Resembles wild carrot/parsley', 'All parts are toxic', 'Can be absorbed through skin'],
+        description: 'One of the most poisonous plants. Contains coniine which causes respiratory paralysis. Death possible from small amounts.',
+        region: 'Worldwide',
+        first_aid: {
+            skin_contact: ['Wash thoroughly with soap and water immediately', 'Remove contaminated clothing', 'Monitor for symptoms'],
+            ingestion: ['CALL EMERGENCY SERVICES IMMEDIATELY', 'Do NOT induce vomiting', 'Provide artificial respiration if breathing stops', 'Keep victim calm and still'],
+            eye_contact: ['Flush with water for 15 minutes', 'Seek immediate medical care'],
+            symptoms_to_watch: ['Muscle weakness', 'Difficulty breathing', 'Paralysis', 'Convulsions']
+        },
+        audio_warning: true
+    },
+    'water_hemlock': {
+        scientific_name: 'Cicuta maculata',
+        common_names: ['Water Hemlock', 'Cowbane'],
+        edibility: 'DEADLY',
+        edible_parts: [],
+        toxicity: 'EXTREME',
+        warnings: ['EXTREMELY DEADLY', 'Most toxic plant in North America', 'Even small amounts can kill'],
+        description: 'Contains cicutoxin. Violent convulsions and death within hours. Roots are especially toxic.',
+        region: 'North America',
+        first_aid: {
+            skin_contact: ['Wash thoroughly', 'Unlikely to cause harm through skin but wash as precaution'],
+            ingestion: ['CALL EMERGENCY SERVICES IMMEDIATELY - THIS IS LIFE THREATENING', 'Do NOT induce vomiting - may cause aspiration during seizures', 'Protect victim from injury during convulsions', 'Be prepared to perform CPR'],
+            symptoms_to_watch: ['Seizures within 30-60 minutes', 'Excessive salivation', 'Muscle tremors', 'Respiratory failure']
+        },
+        audio_warning: true
+    },
+    'foxglove': {
+        scientific_name: 'Digitalis purpurea',
+        common_names: ['Purple Foxglove', 'Fairy Gloves'],
+        edibility: 'DEADLY',
+        edible_parts: [],
+        toxicity: 'EXTREME',
+        warnings: ['DEADLY - DO NOT INGEST', 'Contains cardiac glycosides', 'Can cause fatal heart arrhythmia'],
+        description: 'All parts are toxic. Contains digitalis compounds that affect the heart. Even touching and then eating can be dangerous.',
+        region: 'Europe, worldwide in gardens',
+        first_aid: {
+            skin_contact: ['Wash hands thoroughly before eating or touching face', 'Generally safe unless ingested after contact'],
+            ingestion: ['CALL EMERGENCY SERVICES IMMEDIATELY', 'Do NOT induce vomiting', 'Keep victim calm - physical activity worsens cardiac effects', 'Prepare for cardiac monitoring'],
+            symptoms_to_watch: ['Irregular heartbeat', 'Nausea and vomiting', 'Visual disturbances (yellow-green halos)', 'Confusion', 'Cardiac arrest']
+        },
+        audio_warning: true
+    },
+    'nightshade': {
+        scientific_name: 'Atropa belladonna',
+        common_names: ['Deadly Nightshade', 'Belladonna'],
+        edibility: 'DEADLY',
+        edible_parts: [],
+        toxicity: 'EXTREME',
+        warnings: ['DEADLY - DO NOT INGEST', 'Berries look appetizing but are fatal', 'Contains tropane alkaloids'],
+        description: 'One of the most toxic plants. Children are especially vulnerable. 2-5 berries can kill a child.',
+        region: 'Europe, North Africa, Western Asia',
+        first_aid: {
+            skin_contact: ['Wash thoroughly - alkaloids can absorb through skin'],
+            ingestion: ['CALL EMERGENCY SERVICES IMMEDIATELY', 'Give activated charcoal if available and victim is conscious', 'Do NOT induce vomiting', 'Keep in cool environment - toxin raises body temperature'],
+            symptoms_to_watch: ['Dilated pupils', 'Rapid heartbeat', 'Dry mouth', 'Hallucinations', 'Fever', 'Convulsions']
+        },
+        audio_warning: true
+    },
+    'oleander': {
+        scientific_name: 'Nerium oleander',
+        common_names: ['Oleander', 'Rose Laurel'],
+        edibility: 'DEADLY',
+        edible_parts: [],
+        toxicity: 'EXTREME',
+        warnings: ['ALL PARTS ARE DEADLY', 'Do not use wood for cooking fires', 'Smoke is toxic'],
+        description: 'Extremely toxic. Even honey made from flowers can be poisonous. Burning the wood creates toxic smoke.',
+        region: 'Subtropical regions worldwide',
+        first_aid: {
+            skin_contact: ['Wash with soap and water', 'Generally safe unless sap enters cuts or is ingested'],
+            ingestion: ['CALL EMERGENCY SERVICES IMMEDIATELY', 'A single leaf can be fatal', 'Do NOT induce vomiting', 'Cardiac monitoring essential'],
+            smoke_inhalation: ['Move to fresh air immediately', 'Seek medical attention', 'NEVER burn oleander wood'],
+            symptoms_to_watch: ['Irregular or slow heartbeat', 'Nausea and vomiting', 'Abdominal pain', 'Dizziness', 'Drowsiness']
+        },
+        audio_warning: true
+    },
+    // Medicinal plants
+    'yarrow': {
+        scientific_name: 'Achillea millefolium',
+        common_names: ['Yarrow', 'Milfoil'],
+        edibility: 'MEDICINAL',
+        edible_parts: ['leaves', 'flowers'],
+        toxicity: 'LOW',
+        warnings: ['May cause allergic reaction in some people', 'Use in moderation'],
+        description: 'Traditional wound treatment. Helps stop bleeding. Can be used as tea but taste is bitter.',
+        medicinal_uses: ['wound healing', 'fever reduction', 'digestive aid'],
+        region: 'Northern Hemisphere'
+    },
+    'willow': {
+        scientific_name: 'Salix alba',
+        common_names: ['White Willow', 'Willow Bark'],
+        edibility: 'MEDICINAL',
+        edible_parts: ['inner bark'],
+        toxicity: 'LOW',
+        warnings: ['Natural source of aspirin compounds', 'Avoid if allergic to aspirin'],
+        description: 'Inner bark contains salicin (natural aspirin). Can be chewed or made into tea for pain relief.',
+        medicinal_uses: ['pain relief', 'fever reduction', 'anti-inflammatory'],
+        region: 'Europe, Asia'
+    }
+};
+
+// Plant visual features for identification hints
+const plantVisualFeatures = {
+    'three_leaves': ['poison_ivy'],
+    'purple_flowers': ['foxglove', 'nightshade'],
+    'white_umbel': ['poison_hemlock', 'water_hemlock'],
+    'yellow_flowers': ['dandelion'],
+    'feathery_leaves': ['yarrow'],
+    'berries': ['nightshade'],
+    'stinging_hairs': ['nettle']
+};
+
+// Identify plant from image
+app.post('/api/plants/identify', (req, res) => {
+    const { image_id, visual_hints, region } = req.body;
+
+    // Ensure plant model is loaded
+    if (!visionState.plant_model_loaded) {
+        visionState.plant_model_loaded = true;
+        visionState.active_specialist = 'plant';
+    }
+
+    visionState.inference_count++;
+
+    // Simulate identification - in production would use Hailo NPU inference
+    const plantKeys = Object.keys(plantDatabase);
+    const randomPlant = plantKeys[Math.floor(Math.random() * plantKeys.length)];
+    const plant = plantDatabase[randomPlant];
+
+    // Generate confidence based on visual hints
+    let confidence = 0.65 + Math.random() * 0.25;
+    let alternativeMatches = [];
+
+    // If visual hints provided, adjust results
+    if (visual_hints) {
+        const hintsLower = visual_hints.toLowerCase();
+
+        // Check for poisonous indicators
+        if (hintsLower.includes('three leaves') || hintsLower.includes('three leaflets')) {
+            confidence = 0.85;
+            alternativeMatches = [plantDatabase['poison_ivy']];
+        }
+        if (hintsLower.includes('umbrella') || hintsLower.includes('umbel')) {
+            alternativeMatches.push(plantDatabase['poison_hemlock']);
+            alternativeMatches.push(plantDatabase['water_hemlock']);
+        }
+    }
+
+    // Build response
+    const identification = {
+        success: true,
+        offline_capable: true,
+        image_id: image_id || 'captured_frame',
+        identification: {
+            common_name: plant.common_names[0],
+            scientific_name: plant.scientific_name,
+            alternative_names: plant.common_names.slice(1),
+            confidence: parseFloat(confidence.toFixed(3)),
+            match_quality: confidence > 0.85 ? 'HIGH' : confidence > 0.7 ? 'MODERATE' : 'LOW'
+        },
+        safety: {
+            edibility: plant.edibility,
+            toxicity_level: plant.toxicity,
+            edible_parts: plant.edible_parts,
+            warnings: plant.warnings,
+            safety_recommendation: getSafetyRecommendation(plant)
+        },
+        description: plant.description,
+        region: plant.region || 'Unknown',
+        inference_time_ms: 85 + Math.floor(Math.random() * 40),
+        model_used: 'plant_classifier.hef',
+        disclaimer: 'NEVER eat a plant unless you are 100% certain of its identification. Many edible plants have deadly look-alikes.'
+    };
+
+    // Add alternative matches if present
+    if (alternativeMatches.length > 0) {
+        identification.alternative_matches = alternativeMatches.slice(0, 3).map(p => ({
+            name: p.common_names[0],
+            toxicity: p.toxicity
+        }));
+    }
+
+    // Add nutrition info for edible plants
+    if (plant.calories_per_100g) {
+        identification.nutrition = {
+            calories_per_100g: plant.calories_per_100g
+        };
+    }
+
+    // Add medicinal uses if present
+    if (plant.medicinal_uses) {
+        identification.medicinal_uses = plant.medicinal_uses;
+    }
+
+    res.json(identification);
+});
+
+// Get safety recommendation based on plant data
+function getSafetyRecommendation(plant) {
+    switch (plant.edibility) {
+        case 'DEADLY':
+            return '⚠️ DEADLY - DO NOT TOUCH OR INGEST. Seek immediate medical attention if any exposure.';
+        case 'POISONOUS':
+            return '⚠️ POISONOUS - Avoid all contact. Can cause serious harm or death.';
+        case 'EDIBLE_COOKED':
+            return '⚠️ Must be cooked before eating. Raw consumption is dangerous.';
+        case 'EDIBLE':
+            return '✓ Edible when properly identified. Only consume if 100% certain.';
+        case 'MEDICINAL':
+            return 'ℹ️ Medicinal use only. Use in moderation and with caution.';
+        default:
+            return '⚠️ UNKNOWN - Assume poisonous. Do not consume.';
+    }
+}
+
+// Quick plant safety check
+app.post('/api/plants/safety-check', (req, res) => {
+    const { plant_name } = req.body;
+
+    if (!plant_name) {
+        return res.status(400).json({ error: 'plant_name required' });
+    }
+
+    const normalized = plant_name.toLowerCase().replace(/\s+/g, '_');
+    const plant = plantDatabase[normalized];
+
+    if (plant) {
+        res.json({
+            found: true,
+            name: plant.common_names[0],
+            edibility: plant.edibility,
+            toxicity: plant.toxicity,
+            safe_to_eat: plant.edibility === 'EDIBLE',
+            warnings: plant.warnings,
+            recommendation: getSafetyRecommendation(plant)
+        });
+    } else {
+        res.json({
+            found: false,
+            name: plant_name,
+            recommendation: '⚠️ UNKNOWN PLANT - Assume poisonous. Do not consume unless identified by an expert.'
+        });
+    }
+});
+
+// Get list of known plants
+app.get('/api/plants/database', (req, res) => {
+    const { filter } = req.query;
+
+    let plants = Object.entries(plantDatabase).map(([key, plant]) => ({
+        id: key,
+        name: plant.common_names[0],
+        scientific_name: plant.scientific_name,
+        edibility: plant.edibility,
+        toxicity: plant.toxicity,
+        region: plant.region
+    }));
+
+    if (filter === 'edible') {
+        plants = plants.filter(p => p.edibility === 'EDIBLE' || p.edibility === 'EDIBLE_COOKED');
+    } else if (filter === 'poisonous') {
+        plants = plants.filter(p => p.edibility === 'POISONOUS' || p.edibility === 'DEADLY');
+    } else if (filter === 'medicinal') {
+        plants = plants.filter(p => p.edibility === 'MEDICINAL');
+    }
+
+    res.json({
+        count: plants.length,
+        filter: filter || 'all',
+        plants,
+        offline_capable: true
+    });
+});
+
+// Get detailed plant info
+app.get('/api/plants/:id', (req, res) => {
+    const plant = plantDatabase[req.params.id];
+
+    if (!plant) {
+        return res.status(404).json({ error: 'Plant not found in database' });
+    }
+
+    res.json({
+        id: req.params.id,
+        ...plant,
+        safety_recommendation: getSafetyRecommendation(plant),
+        offline_data: true
+    });
+});
+
+// Simulate plant identification with captured image
+app.post('/api/plants/identify-from-capture', async (req, res) => {
+    const { auto_capture = true } = req.body;
+
+    // Step 1: Capture image (simulated)
+    const captureResult = {
+        image_id: `plant_${Date.now()}`,
+        captured: true,
+        quality: 'good',
+        resolution: '224x224'
+    };
+
+    // Step 2: Run identification
+    visionState.plant_model_loaded = true;
+    visionState.active_specialist = 'plant';
+    visionState.inference_count++;
+
+    // Simulate identification
+    const plantKeys = Object.keys(plantDatabase);
+    const randomPlant = plantKeys[Math.floor(Math.random() * plantKeys.length)];
+    const plant = plantDatabase[randomPlant];
+    const confidence = 0.7 + Math.random() * 0.25;
+
+    res.json({
+        success: true,
+        pipeline: ['capture', 'identify'],
+        capture: captureResult,
+        identification: {
+            name: plant.common_names[0],
+            scientific_name: plant.scientific_name,
+            confidence: parseFloat(confidence.toFixed(3)),
+            edibility: plant.edibility,
+            toxicity: plant.toxicity,
+            warnings: plant.warnings,
+            edible_parts: plant.edible_parts,
+            description: plant.description
+        },
+        safety: getSafetyRecommendation(plant),
+        disclaimer: 'NEVER eat a plant unless you are 100% certain of its identification.',
+        inference_time_ms: 95 + Math.floor(Math.random() * 50),
+        offline_capable: true
+    });
+});
+
+// ==============================================================================
+// Poisonous Plant Warning System
+// ==============================================================================
+
+// Warning state for tracking active warnings
+const plantWarningState = {
+    active_warning: null,
+    warning_history: [],
+    audio_enabled: true
+};
+
+// Generate danger warning for poisonous plant
+app.post('/api/plants/danger-warning', (req, res) => {
+    const { plant_id, trigger_audio = true } = req.body;
+
+    const plant = plantDatabase[plant_id];
+    if (!plant) {
+        return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    // Check if this plant is poisonous/deadly
+    const isPoisonous = ['POISONOUS', 'DEADLY'].includes(plant.edibility);
+    if (!isPoisonous) {
+        return res.json({
+            warning_triggered: false,
+            plant: plant.common_names[0],
+            message: 'This plant is not classified as poisonous'
+        });
+    }
+
+    // Build danger warning
+    const dangerLevel = plant.edibility === 'DEADLY' ? 'EXTREME' : 'HIGH';
+    const warning = {
+        id: `warn_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        plant: {
+            id: plant_id,
+            name: plant.common_names[0],
+            scientific_name: plant.scientific_name
+        },
+        danger: {
+            level: dangerLevel,
+            display: dangerLevel === 'EXTREME' ? '!!! DEADLY PLANT !!!' : '!! POISONOUS PLANT !!',
+            toxicity: plant.toxicity,
+            warnings: plant.warnings
+        },
+        first_aid: plant.first_aid || {
+            general: ['Avoid all contact', 'If ingested, call Poison Control immediately', 'Seek emergency medical care']
+        },
+        audio_warning: {
+            triggered: trigger_audio && plantWarningState.audio_enabled,
+            message: dangerLevel === 'EXTREME'
+                ? `DANGER! ${plant.common_names[0]} is EXTREMELY TOXIC! Do not touch or ingest!`
+                : `WARNING! ${plant.common_names[0]} is POISONOUS! Avoid contact!`,
+            priority: 'high',
+            volume: 1.0
+        },
+        safety_recommendation: getSafetyRecommendation(plant)
+    };
+
+    // Store in state
+    plantWarningState.active_warning = warning;
+    plantWarningState.warning_history.push({
+        plant_id,
+        timestamp: warning.timestamp,
+        danger_level: dangerLevel
+    });
+
+    // Keep only last 20 warnings in history
+    if (plantWarningState.warning_history.length > 20) {
+        plantWarningState.warning_history = plantWarningState.warning_history.slice(-20);
+    }
+
+    res.json({
+        success: true,
+        warning_triggered: true,
+        warning
+    });
+});
+
+// Get current warning status
+app.get('/api/plants/warning/status', (req, res) => {
+    res.json({
+        active_warning: plantWarningState.active_warning,
+        audio_enabled: plantWarningState.audio_enabled,
+        recent_warnings: plantWarningState.warning_history.slice(-5)
+    });
+});
+
+// Dismiss current warning
+app.post('/api/plants/warning/dismiss', (req, res) => {
+    const dismissed = plantWarningState.active_warning;
+    plantWarningState.active_warning = null;
+
+    res.json({
+        success: true,
+        dismissed: dismissed ? dismissed.id : null
+    });
+});
+
+// Toggle audio warnings
+app.post('/api/plants/warning/audio-toggle', (req, res) => {
+    plantWarningState.audio_enabled = !plantWarningState.audio_enabled;
+
+    res.json({
+        success: true,
+        audio_enabled: plantWarningState.audio_enabled
+    });
+});
+
+// Identify plant and auto-generate warning if poisonous
+app.post('/api/plants/identify-with-warning', (req, res) => {
+    const { image_id, visual_hints } = req.body;
+
+    // Ensure plant model is loaded
+    if (!visionState.plant_model_loaded) {
+        visionState.plant_model_loaded = true;
+        visionState.active_specialist = 'plant';
+    }
+
+    visionState.inference_count++;
+
+    // Simulate identification
+    const plantKeys = Object.keys(plantDatabase);
+    const randomPlant = plantKeys[Math.floor(Math.random() * plantKeys.length)];
+    const plant = plantDatabase[randomPlant];
+    const confidence = 0.7 + Math.random() * 0.25;
+
+    // Check if poisonous and should trigger warning
+    const isPoisonous = ['POISONOUS', 'DEADLY'].includes(plant.edibility);
+    let warning = null;
+
+    if (isPoisonous) {
+        const dangerLevel = plant.edibility === 'DEADLY' ? 'EXTREME' : 'HIGH';
+        warning = {
+            triggered: true,
+            danger_level: dangerLevel,
+            display: dangerLevel === 'EXTREME' ? '!!! DEADLY PLANT !!!' : '!! POISONOUS PLANT !!',
+            audio: {
+                triggered: plantWarningState.audio_enabled,
+                message: dangerLevel === 'EXTREME'
+                    ? `DANGER! ${plant.common_names[0]} is EXTREMELY TOXIC! Do not touch or ingest!`
+                    : `WARNING! ${plant.common_names[0]} is POISONOUS! Avoid contact!`,
+                volume: 1.0,
+                priority: 'high'
+            },
+            first_aid: plant.first_aid,
+            toxicity: plant.toxicity,
+            warnings: plant.warnings
+        };
+
+        // Store warning
+        plantWarningState.active_warning = {
+            id: `warn_${Date.now()}`,
+            plant_id: randomPlant,
+            plant_name: plant.common_names[0],
+            ...warning
+        };
+    }
+
+    res.json({
+        success: true,
+        offline_capable: true,
+        image_id: image_id || 'captured_frame',
+        identification: {
+            common_name: plant.common_names[0],
+            scientific_name: plant.scientific_name,
+            confidence: parseFloat(confidence.toFixed(3)),
+            edibility: plant.edibility,
+            toxicity: plant.toxicity
+        },
+        is_poisonous: isPoisonous,
+        warning,
+        description: plant.description,
+        first_aid: plant.first_aid,
+        inference_time_ms: 90 + Math.floor(Math.random() * 45),
+        model_used: 'plant_classifier.hef'
+    });
+});
+
+// Get first aid for a specific plant
+app.get('/api/plants/:id/first-aid', (req, res) => {
+    const plant = plantDatabase[req.params.id];
+
+    if (!plant) {
+        return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    if (!plant.first_aid) {
+        return res.json({
+            plant: plant.common_names[0],
+            first_aid_available: false,
+            general_advice: 'If you suspect poisoning, call Poison Control immediately and seek emergency medical care.'
+        });
+    }
+
+    res.json({
+        plant: plant.common_names[0],
+        scientific_name: plant.scientific_name,
+        toxicity: plant.toxicity,
+        first_aid_available: true,
+        first_aid: plant.first_aid,
+        emergency_contacts: {
+            poison_control: '1-800-222-1222 (US)',
+            note: 'Call emergency services if symptoms are severe'
+        }
+    });
+});
+
+// Simulate TTS warning for poisonous plant (would use Piper TTS in production)
+app.post('/api/plants/warning/speak', (req, res) => {
+    const { plant_id, urgency = 'high' } = req.body;
+
+    const plant = plantDatabase[plant_id];
+    if (!plant) {
+        return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    const isPoisonous = ['POISONOUS', 'DEADLY'].includes(plant.edibility);
+    if (!isPoisonous) {
+        return res.json({
+            spoken: false,
+            message: 'No warning needed - plant is not poisonous'
+        });
+    }
+
+    const warningText = plant.edibility === 'DEADLY'
+        ? `DANGER! DANGER! ${plant.common_names[0]} is EXTREMELY TOXIC! Do not touch or ingest! This plant can be fatal!`
+        : `WARNING! ${plant.common_names[0]} is POISONOUS! Avoid all contact with this plant!`;
+
+    // In production, this would use Piper TTS
+    res.json({
+        success: true,
+        spoken: true,
+        text: warningText,
+        volume: urgency === 'high' ? 1.0 : 0.8,
+        speaking: true,
+        estimated_duration_ms: warningText.length * 65 // Rough estimate
+    });
+});
+
+// ==============================================================================
+// Wildlife Identification System
+// ==============================================================================
+
+// Wildlife database for identification (offline capable)
+const wildlifeDatabase = {
+    // Dangerous animals
+    'grizzly_bear': {
+        scientific_name: 'Ursus arctos horribilis',
+        common_names: ['Grizzly Bear', 'Brown Bear'],
+        danger_level: 'EXTREME',
+        classification: 'dangerous',
+        size: 'Large - up to 800 lbs',
+        habitat: ['forests', 'mountains', 'meadows'],
+        behavior: {
+            aggressive_signs: ['Standing on hind legs', 'Jaw popping', 'Huffing', 'Charging'],
+            feeding: 'Omnivore - fish, berries, carrion, small mammals',
+            active_time: 'Dawn and dusk, also daytime'
+        },
+        encounter_guidance: {
+            prevention: ['Make noise while hiking', 'Travel in groups', 'Store food in bear canisters', 'Never approach cubs'],
+            if_encountered: [
+                'DO NOT RUN - bears can reach 35 mph',
+                'Speak calmly and wave arms slowly to appear larger',
+                'Back away slowly while facing the bear',
+                'If charged, stand your ground - most charges are bluffs',
+                'If attacked by grizzly: PLAY DEAD - lie face down, hands over neck',
+                'Use bear spray if available when bear is within 30 feet'
+            ],
+            first_aid: ['Treat any wounds immediately', 'Seek medical attention for all bear attacks', 'Watch for signs of infection']
+        },
+        region: 'North America - Alaska, Western Canada, Northwestern US'
+    },
+    'mountain_lion': {
+        scientific_name: 'Puma concolor',
+        common_names: ['Mountain Lion', 'Cougar', 'Puma'],
+        danger_level: 'HIGH',
+        classification: 'dangerous',
+        size: 'Medium-Large - 100-200 lbs',
+        habitat: ['mountains', 'forests', 'deserts'],
+        behavior: {
+            aggressive_signs: ['Crouching', 'Tail twitching', 'Ears flattened', 'Stalking'],
+            feeding: 'Carnivore - deer, elk, small mammals',
+            active_time: 'Dawn, dusk, and night'
+        },
+        encounter_guidance: {
+            prevention: ['Make noise', 'Hike in groups', 'Keep children close', 'Avoid hiking at dusk/dawn'],
+            if_encountered: [
+                'DO NOT RUN - triggers chase instinct',
+                'Face the animal and maintain eye contact',
+                'Make yourself look larger - raise arms, open jacket wide',
+                'Speak firmly and loudly',
+                'Back away slowly while facing the lion',
+                'If attacked: FIGHT BACK aggressively - target eyes and nose'
+            ],
+            first_aid: ['Apply pressure to wounds', 'Seek immediate medical attention', 'Get rabies prophylaxis']
+        },
+        region: 'North and South America'
+    },
+    'rattlesnake': {
+        scientific_name: 'Crotalus',
+        common_names: ['Rattlesnake', 'Diamondback'],
+        danger_level: 'HIGH',
+        classification: 'venomous',
+        size: 'Medium - 3-6 feet',
+        habitat: ['deserts', 'grasslands', 'rocky areas'],
+        behavior: {
+            aggressive_signs: ['Coiling', 'Rattling tail', 'Raised head', 'S-shaped striking position'],
+            feeding: 'Carnivore - rodents, birds, lizards',
+            active_time: 'Day in cool weather, night in hot weather'
+        },
+        encounter_guidance: {
+            prevention: ['Watch where you step', 'Wear boots and long pants', 'Use a flashlight at night', 'Never reach into holes or under rocks'],
+            if_encountered: [
+                'FREEZE when you hear a rattle',
+                'Identify the snake location before moving',
+                'Back away slowly - most strikes occur within striking distance (half body length)',
+                'Give the snake at least 6 feet clearance',
+                'Never try to handle or kill the snake'
+            ],
+            if_bitten: [
+                'STAY CALM - panic increases venom spread',
+                'Remove jewelry/watches before swelling',
+                'Keep bite below heart level if possible',
+                'DO NOT cut, suck, or tourniquet',
+                'Note the time of bite',
+                'SEEK IMMEDIATE MEDICAL CARE - antivenom required'
+            ]
+        },
+        venom_type: 'Hemotoxic - destroys blood cells and tissue',
+        region: 'Americas - deserts and grasslands'
+    },
+    'black_widow': {
+        scientific_name: 'Latrodectus mactans',
+        common_names: ['Black Widow', 'Southern Black Widow'],
+        danger_level: 'HIGH',
+        classification: 'venomous',
+        size: 'Small - 0.5 inches body',
+        identifying_marks: 'Black body with red hourglass on abdomen',
+        habitat: ['woodpiles', 'sheds', 'outdoor toilets', 'dark crevices'],
+        behavior: {
+            aggressive_signs: ['Generally not aggressive unless disturbed'],
+            feeding: 'Carnivore - insects',
+            active_time: 'Night'
+        },
+        encounter_guidance: {
+            prevention: ['Wear gloves when handling wood/debris', 'Shake out shoes/clothing before wearing', 'Check outdoor toilets before sitting'],
+            if_encountered: [
+                'Do not touch - they will bite if threatened',
+                'Use a container to capture if needed for identification',
+                'Vacuum or use long stick to remove from area'
+            ],
+            if_bitten: [
+                'Clean bite with soap and water',
+                'Apply ice to reduce swelling',
+                'Capture spider if possible for identification',
+                'Seek medical attention - especially children/elderly',
+                'Antivenom available for severe reactions'
+            ]
+        },
+        venom_type: 'Neurotoxic - affects nervous system',
+        symptoms: ['Severe pain at bite site', 'Muscle cramps', 'Nausea', 'Difficulty breathing'],
+        region: 'North America - throughout southern US'
+    },
+    'coral_snake': {
+        scientific_name: 'Micrurus fulvius',
+        common_names: ['Eastern Coral Snake', 'Coral Snake'],
+        danger_level: 'EXTREME',
+        classification: 'venomous',
+        size: 'Medium - 2-3 feet',
+        identifying_marks: 'Red, yellow, and black bands - "Red touches yellow, kills a fellow"',
+        habitat: ['forests', 'sandy areas', 'under leaf litter'],
+        behavior: {
+            aggressive_signs: ['Generally reclusive', 'Will bite if handled'],
+            feeding: 'Carnivore - other snakes, lizards',
+            active_time: 'Day and night'
+        },
+        encounter_guidance: {
+            prevention: ['Never handle colorful snakes', 'Watch where you reach', 'Remember: Red touches yellow = danger'],
+            if_encountered: [
+                'Leave immediately - do not attempt to handle',
+                'Coral snakes are not aggressive but have potent venom'
+            ],
+            if_bitten: [
+                'MEDICAL EMERGENCY - seek help immediately',
+                'Symptoms may be delayed hours but venom is very dangerous',
+                'Keep calm and still',
+                'DO NOT apply tourniquet or cut wound',
+                'Note time of bite and snake description',
+                'Antivenom is required'
+            ]
+        },
+        venom_type: 'Neurotoxic - causes paralysis and respiratory failure',
+        region: 'Southeastern United States'
+    },
+    // Safe/beneficial animals
+    'deer': {
+        scientific_name: 'Odocoileus virginianus',
+        common_names: ['White-tailed Deer', 'Deer'],
+        danger_level: 'LOW',
+        classification: 'safe',
+        size: 'Medium - 100-300 lbs',
+        habitat: ['forests', 'meadows', 'suburban areas'],
+        behavior: {
+            aggressive_signs: ['Stomping feet', 'Snorting', 'Lowered head (bucks)', 'Raised tail'],
+            feeding: 'Herbivore - plants, leaves, acorns',
+            active_time: 'Dawn and dusk'
+        },
+        encounter_guidance: {
+            general: [
+                'Generally harmless and will flee',
+                'Do not approach or feed',
+                'Bucks may be aggressive during rut (mating season)',
+                'Does may be protective of fawns',
+                'Keep distance of at least 50 feet'
+            ],
+            for_survival: 'Presence indicates water sources nearby. Can be tracked to find water.'
+        },
+        region: 'North America'
+    },
+    'rabbit': {
+        scientific_name: 'Sylvilagus',
+        common_names: ['Cottontail Rabbit', 'Rabbit', 'Bunny'],
+        danger_level: 'NONE',
+        classification: 'safe',
+        size: 'Small - 2-4 lbs',
+        habitat: ['meadows', 'brush', 'forests', 'suburban areas'],
+        behavior: {
+            feeding: 'Herbivore - grasses, clover, vegetables',
+            active_time: 'Dawn and dusk'
+        },
+        encounter_guidance: {
+            general: ['Harmless - will flee from humans', 'Do not attempt to catch - they are fast'],
+            for_survival: 'Presence indicates good foraging area. Rabbits are also a potential food source in survival situations. Look for burrows to find water sources.'
+        },
+        region: 'Worldwide'
+    },
+    'coyote': {
+        scientific_name: 'Canis latrans',
+        common_names: ['Coyote', 'Prairie Wolf'],
+        danger_level: 'MODERATE',
+        classification: 'cautious',
+        size: 'Medium - 20-50 lbs',
+        habitat: ['prairies', 'forests', 'deserts', 'suburban areas'],
+        behavior: {
+            aggressive_signs: ['Raised hackles', 'Growling', 'Baring teeth', 'Following closely'],
+            feeding: 'Omnivore - rodents, rabbits, fruit, carrion',
+            active_time: 'Night, also dawn and dusk'
+        },
+        encounter_guidance: {
+            prevention: ['Make noise while walking', 'Keep pets on leash', 'Do not leave food out'],
+            if_encountered: [
+                'Make yourself appear large',
+                'Shout and wave arms',
+                'Do not run - walk away facing the animal',
+                'Throw objects if it approaches',
+                'Fight back if attacked'
+            ]
+        },
+        region: 'North America'
+    },
+    'scorpion': {
+        scientific_name: 'Centruroides sculpturatus',
+        common_names: ['Arizona Bark Scorpion', 'Scorpion'],
+        danger_level: 'HIGH',
+        classification: 'venomous',
+        size: 'Small - 2-3 inches',
+        habitat: ['deserts', 'under rocks', 'in shoes/clothing'],
+        behavior: {
+            active_time: 'Night - hide during day'
+        },
+        encounter_guidance: {
+            prevention: ['Shake out shoes and clothing', 'Check bedding before use', 'Use UV flashlight at night to spot them', 'Seal entry points in shelters'],
+            if_stung: [
+                'Clean sting site',
+                'Apply ice',
+                'Most stings cause only local pain',
+                'Seek medical attention for children, elderly, or if symptoms worsen',
+                'Watch for: numbness, difficulty breathing, muscle twitching'
+            ]
+        },
+        venom_type: 'Neurotoxic',
+        region: 'Deserts - Southwestern US, Mexico'
+    },
+    'moose': {
+        scientific_name: 'Alces alces',
+        common_names: ['Moose', 'Elk (European)'],
+        danger_level: 'HIGH',
+        classification: 'dangerous',
+        size: 'Very Large - up to 1500 lbs',
+        habitat: ['forests', 'wetlands', 'lakes'],
+        behavior: {
+            aggressive_signs: ['Ears laid back', 'Hair raised on neck', 'Licking lips', 'Lowering head'],
+            feeding: 'Herbivore - aquatic plants, willows, bark',
+            active_time: 'Dawn and dusk'
+        },
+        encounter_guidance: {
+            prevention: ['Give wide berth - at least 50 yards', 'Be especially careful in spring (cows with calves) and fall (rutting bulls)'],
+            if_encountered: [
+                'Moose injure more people than bears!',
+                'Keep your distance - they can run 35 mph',
+                'Watch for warning signs',
+                'Get behind a large tree or obstacle if charged',
+                'If knocked down, curl into a ball and protect your head',
+                'Do not get up until moose leaves the area'
+            ]
+        },
+        region: 'Northern North America, Scandinavia, Russia'
+    }
+};
+
+// Identify wildlife from image
+app.post('/api/wildlife/identify', (req, res) => {
+    const { image_id, visual_hints } = req.body;
+
+    // Ensure wildlife model is loaded
+    if (!visionState.wildlife_model_loaded) {
+        visionState.wildlife_model_loaded = true;
+        visionState.active_specialist = 'animal';
+    }
+
+    visionState.inference_count++;
+
+    // Simulate identification
+    const animalKeys = Object.keys(wildlifeDatabase);
+    const randomAnimal = animalKeys[Math.floor(Math.random() * animalKeys.length)];
+    const animal = wildlifeDatabase[randomAnimal];
+    const confidence = 0.65 + Math.random() * 0.3;
+
+    // For low confidence, assume dangerous
+    const isLowConfidence = confidence < 0.7;
+    const actuallyDangerous = ['EXTREME', 'HIGH'].includes(animal.danger_level);
+    const assumeDangerous = isLowConfidence; // Always assume dangerous for low confidence
+
+    // Build danger warning for dangerous animals or low confidence
+    let dangerWarning = null;
+    if (actuallyDangerous || assumeDangerous) {
+        dangerWarning = {
+            display: actuallyDangerous
+                ? (animal.danger_level === 'EXTREME' ? '!!! EXTREME DANGER !!!' : '!! DANGER !!')
+                : '! CAUTION - ASSUME DANGEROUS !',
+            reason: isLowConfidence && !actuallyDangerous
+                ? 'Low confidence identification - treating as dangerous for safety'
+                : `${animal.common_names[0]} is a ${animal.classification} species`,
+            audio_alert: actuallyDangerous,
+            message: actuallyDangerous
+                ? `DANGER! ${animal.common_names[0]} detected! Do not approach!`
+                : `Caution! Unknown animal detected. Assume dangerous until properly identified.`
+        };
+    }
+
+    // Build response
+    res.json({
+        success: true,
+        offline_capable: true,
+        image_id: image_id || 'captured_frame',
+        identification: {
+            common_name: animal.common_names[0],
+            scientific_name: animal.scientific_name,
+            alternative_names: animal.common_names.slice(1),
+            confidence: parseFloat(confidence.toFixed(3)),
+            match_quality: confidence > 0.85 ? 'HIGH' : confidence > 0.7 ? 'MODERATE' : 'LOW'
+        },
+        danger_assessment: {
+            level: assumeDangerous && !actuallyDangerous ? 'ASSUMED_DANGEROUS' : animal.danger_level,
+            classification: animal.classification,
+            is_dangerous: actuallyDangerous,
+            is_venomous: animal.classification === 'venomous',
+            assume_dangerous: assumeDangerous,
+            low_confidence_caution: isLowConfidence
+        },
+        danger_warning: dangerWarning,
+        physical: {
+            size: animal.size,
+            identifying_marks: animal.identifying_marks || null,
+            habitat: animal.habitat
+        },
+        behavior: animal.behavior,
+        encounter_guidance: animal.encounter_guidance,
+        first_aid: animal.encounter_guidance.if_bitten || animal.encounter_guidance.if_stung || animal.encounter_guidance.first_aid || null,
+        venom_info: animal.venom_type ? {
+            type: animal.venom_type,
+            symptoms: animal.symptoms || null
+        } : null,
+        region: animal.region,
+        inference_time_ms: 95 + Math.floor(Math.random() * 50),
+        model_used: 'wildlife_classifier.hef',
+        disclaimer: isLowConfidence
+            ? 'LOW CONFIDENCE: Always assume unknown animals are dangerous. Maintain maximum distance and do not approach.'
+            : 'Always assume unknown animals are dangerous. Maintain safe distance and do not approach.'
+    });
+});
+
+// Get danger assessment for specific animal
+app.get('/api/wildlife/:id/danger', (req, res) => {
+    const animal = wildlifeDatabase[req.params.id];
+
+    if (!animal) {
+        return res.status(404).json({ error: 'Animal not found in database' });
+    }
+
+    res.json({
+        animal: animal.common_names[0],
+        danger_level: animal.danger_level,
+        classification: animal.classification,
+        is_dangerous: ['EXTREME', 'HIGH'].includes(animal.danger_level),
+        is_venomous: animal.classification === 'venomous',
+        warning: getAnimalDangerWarning(animal),
+        encounter_guidance: animal.encounter_guidance
+    });
+});
+
+// Get danger warning text
+function getAnimalDangerWarning(animal) {
+    switch (animal.danger_level) {
+        case 'EXTREME':
+            return `!!! EXTREME DANGER !!! ${animal.common_names[0]} - Keep maximum distance. Do not approach under any circumstances.`;
+        case 'HIGH':
+            return `!! HIGH DANGER !! ${animal.common_names[0]} - Maintain safe distance. Be prepared to defend yourself.`;
+        case 'MODERATE':
+            return `! CAUTION ! ${animal.common_names[0]} - Keep distance and do not provoke.`;
+        case 'LOW':
+            return `Low risk - ${animal.common_names[0]} is generally not dangerous but maintain respectful distance.`;
+        default:
+            return `${animal.common_names[0]} - No significant danger, but always be cautious with wildlife.`;
+    }
+}
+
+// Get full wildlife database
+app.get('/api/wildlife/database', (req, res) => {
+    const { filter } = req.query;
+
+    let animals = Object.entries(wildlifeDatabase).map(([key, animal]) => ({
+        id: key,
+        name: animal.common_names[0],
+        scientific_name: animal.scientific_name,
+        danger_level: animal.danger_level,
+        classification: animal.classification,
+        region: animal.region
+    }));
+
+    if (filter === 'dangerous') {
+        animals = animals.filter(a => ['EXTREME', 'HIGH'].includes(a.danger_level));
+    } else if (filter === 'venomous') {
+        animals = animals.filter(a => a.classification === 'venomous');
+    } else if (filter === 'safe') {
+        animals = animals.filter(a => ['NONE', 'LOW'].includes(a.danger_level));
+    }
+
+    res.json({
+        count: animals.length,
+        filter: filter || 'all',
+        animals,
+        offline_capable: true
+    });
+});
+
+// Get detailed animal info
+app.get('/api/wildlife/:id', (req, res) => {
+    const animal = wildlifeDatabase[req.params.id];
+
+    if (!animal) {
+        return res.status(404).json({ error: 'Animal not found in database' });
+    }
+
+    res.json({
+        id: req.params.id,
+        ...animal,
+        danger_warning: getAnimalDangerWarning(animal),
+        offline_data: true
+    });
+});
+
+// Identify and auto-warn for dangerous animals
+app.post('/api/wildlife/identify-with-warning', (req, res) => {
+    const { image_id } = req.body;
+
+    // Ensure wildlife model loaded
+    if (!visionState.wildlife_model_loaded) {
+        visionState.wildlife_model_loaded = true;
+        visionState.active_specialist = 'animal';
+    }
+
+    visionState.inference_count++;
+
+    // Simulate identification
+    const animalKeys = Object.keys(wildlifeDatabase);
+    const randomAnimal = animalKeys[Math.floor(Math.random() * animalKeys.length)];
+    const animal = wildlifeDatabase[randomAnimal];
+    const confidence = 0.7 + Math.random() * 0.25;
+
+    const isDangerous = ['EXTREME', 'HIGH'].includes(animal.danger_level);
+    let warning = null;
+
+    if (isDangerous) {
+        warning = {
+            triggered: true,
+            level: animal.danger_level,
+            display: animal.danger_level === 'EXTREME' ? '!!! EXTREME DANGER !!!' : '!! HIGH DANGER !!',
+            audio: {
+                triggered: true,
+                message: `DANGER! ${animal.common_names[0]} detected! ${animal.classification === 'venomous' ? 'This animal is VENOMOUS!' : 'This animal is DANGEROUS!'} Do not approach!`,
+                volume: 1.0,
+                priority: 'high'
+            },
+            immediate_action: animal.encounter_guidance.if_encountered || animal.encounter_guidance.general
+        };
+    }
+
+    res.json({
+        success: true,
+        offline_capable: true,
+        image_id: image_id || 'captured_frame',
+        identification: {
+            common_name: animal.common_names[0],
+            scientific_name: animal.scientific_name,
+            confidence: parseFloat(confidence.toFixed(3)),
+            danger_level: animal.danger_level,
+            classification: animal.classification
+        },
+        is_dangerous: isDangerous,
+        warning,
+        behavior: animal.behavior,
+        encounter_guidance: animal.encounter_guidance,
+        inference_time_ms: 100 + Math.floor(Math.random() * 50),
+        model_used: 'wildlife_classifier.hef'
+    });
+});
+
+// ==============================================================================
+// Snake Identification System (Priority Feature)
+// ==============================================================================
+
+// Snake-specific database
+const snakeDatabase = {
+    'rattlesnake': wildlifeDatabase['rattlesnake'],
+    'coral_snake': wildlifeDatabase['coral_snake'],
+    'copperhead': {
+        scientific_name: 'Agkistrodon contortrix',
+        common_names: ['Copperhead', 'Highland Moccasin'],
+        danger_level: 'HIGH',
+        classification: 'venomous',
+        size: 'Medium - 2-3 feet',
+        identifying_marks: 'Copper-colored head, hourglass pattern on body',
+        habitat: ['forests', 'rocky areas', 'woodpiles'],
+        behavior: {
+            aggressive_signs: ['Vibrating tail', 'Striking pose'],
+            feeding: 'Carnivore - mice, frogs, insects',
+            active_time: 'Day in spring/fall, night in summer'
+        },
+        venom_type: 'Hemotoxic - less potent than rattlesnake',
+        first_aid: {
+            if_bitten: [
+                'Stay calm - copperhead bites rarely fatal',
+                'Remove jewelry before swelling',
+                'Keep bite below heart level',
+                'DO NOT cut, suck, or tourniquet',
+                'Seek medical attention - may need antivenom'
+            ]
+        },
+        region: 'Eastern and Central United States'
+    },
+    'cottonmouth': {
+        scientific_name: 'Agkistrodon piscivorus',
+        common_names: ['Cottonmouth', 'Water Moccasin'],
+        danger_level: 'HIGH',
+        classification: 'venomous',
+        size: 'Medium-Large - 2-4 feet',
+        identifying_marks: 'Dark body, white mouth interior (hence cottonmouth)',
+        habitat: ['swamps', 'marshes', 'streams', 'lakes'],
+        behavior: {
+            aggressive_signs: ['Opens mouth wide showing white interior', 'Coils body', 'May stand ground rather than flee'],
+            feeding: 'Carnivore - fish, frogs, rodents',
+            active_time: 'Day and night'
+        },
+        venom_type: 'Hemotoxic - can cause tissue damage',
+        first_aid: {
+            if_bitten: [
+                'Seek immediate medical attention',
+                'Stay calm to slow venom spread',
+                'Remove constrictive items',
+                'DO NOT cut, suck, or tourniquet',
+                'Mark the edge of swelling with time'
+            ]
+        },
+        region: 'Southeastern United States'
+    },
+    'garter_snake': {
+        scientific_name: 'Thamnophis sirtalis',
+        common_names: ['Garter Snake', 'Garden Snake'],
+        danger_level: 'NONE',
+        classification: 'non-venomous',
+        size: 'Small - 1-3 feet',
+        identifying_marks: 'Stripes running length of body, yellow/green/red colors',
+        habitat: ['gardens', 'meadows', 'near water'],
+        behavior: {
+            aggressive_signs: ['May musk when handled', 'Rarely bites'],
+            feeding: 'Carnivore - worms, frogs, fish',
+            active_time: 'Day'
+        },
+        venom_type: null,
+        first_aid: null,
+        region: 'North America'
+    },
+    'king_snake': {
+        scientific_name: 'Lampropeltis',
+        common_names: ['King Snake', 'Kingsnake'],
+        danger_level: 'NONE',
+        classification: 'non-venomous',
+        size: 'Medium - 3-4 feet',
+        identifying_marks: 'Bands of black/white/red or yellow - may resemble coral snake',
+        habitat: ['forests', 'fields', 'rocky areas'],
+        behavior: {
+            aggressive_signs: ['Rarely aggressive', 'May vibrate tail like rattlesnake'],
+            feeding: 'Carnivore - other snakes (including venomous), rodents',
+            active_time: 'Day'
+        },
+        venom_type: null,
+        beneficial: 'Eats venomous snakes - beneficial to have around',
+        first_aid: null,
+        region: 'North America'
+    }
+};
+
+// Identify snake - ALWAYS treat uncertain IDs as venomous
+app.post('/api/snakes/identify', (req, res) => {
+    const { image_id, visual_hints } = req.body;
+
+    // Ensure wildlife model is loaded
+    if (!visionState.wildlife_model_loaded) {
+        visionState.wildlife_model_loaded = true;
+        visionState.active_specialist = 'animal';
+    }
+
+    visionState.inference_count++;
+
+    // Simulate identification
+    const snakeKeys = Object.keys(snakeDatabase);
+    const randomSnake = snakeKeys[Math.floor(Math.random() * snakeKeys.length)];
+    const snake = snakeDatabase[randomSnake];
+    const confidence = 0.5 + Math.random() * 0.45; // Lower confidence range for snakes
+
+    // CRITICAL: For uncertain snake IDs, ALWAYS treat as venomous
+    const isLowConfidence = confidence < 0.75;
+    const isVenomous = snake.classification === 'venomous';
+    const treatAsVenomous = isLowConfidence || isVenomous; // Always treat uncertain snakes as venomous
+
+    // Build response
+    res.json({
+        success: true,
+        offline_capable: true,
+        image_id: image_id || 'captured_frame',
+        identification: {
+            common_name: snake.common_names[0],
+            scientific_name: snake.scientific_name,
+            confidence: parseFloat(confidence.toFixed(3)),
+            match_quality: confidence > 0.85 ? 'HIGH' : confidence > 0.75 ? 'MODERATE' : 'LOW'
+        },
+        venom_status: {
+            is_venomous: isVenomous,
+            treat_as_venomous: treatAsVenomous,
+            reason: isLowConfidence && !isVenomous
+                ? '⚠️ LOW CONFIDENCE - Treat as venomous until properly identified by expert'
+                : isVenomous
+                    ? `⚠️ VENOMOUS - ${snake.common_names[0]} is a confirmed venomous species`
+                    : '✓ Non-venomous species (high confidence identification)',
+            venom_type: snake.venom_type || 'Unknown - assume venomous'
+        },
+        danger_warning: treatAsVenomous ? {
+            level: isVenomous ? 'HIGH' : 'ASSUMED_VENOMOUS',
+            display: isVenomous ? '!! VENOMOUS SNAKE !!' : '! TREAT AS VENOMOUS !',
+            audio_alert: true,
+            message: `WARNING! Snake detected! ${treatAsVenomous ? 'Treat as VENOMOUS!' : ''} Do not approach or handle!`,
+            immediate_action: [
+                'FREEZE - do not make sudden movements',
+                'Slowly back away from the snake',
+                'Give at least 6 feet clearance',
+                'Do NOT attempt to kill or capture',
+                'Watch where you step as you retreat'
+            ]
+        } : {
+            level: 'LOW',
+            display: 'Likely Non-venomous',
+            message: 'This appears to be a non-venomous snake, but still avoid handling.',
+            immediate_action: ['Keep distance', 'Do not handle', 'Allow snake to leave area']
+        },
+        physical: {
+            size: snake.size,
+            identifying_marks: snake.identifying_marks,
+            habitat: snake.habitat
+        },
+        behavior: snake.behavior,
+        first_aid: snake.first_aid || {
+            if_bitten: [
+                'Stay calm and still',
+                'Call emergency services immediately',
+                'Remove jewelry/watches before swelling',
+                'Keep bite below heart level if possible',
+                'DO NOT cut, suck, ice, or tourniquet the bite',
+                'Note the time of bite',
+                'Try to remember snake appearance for medics',
+                'SEEK IMMEDIATE MEDICAL CARE'
+            ]
+        },
+        snake_rhyme: snake.common_names[0].toLowerCase().includes('coral')
+            ? '"Red touches yellow, kills a fellow. Red touches black, friend of Jack."'
+            : null,
+        region: snake.region,
+        inference_time_ms: 90 + Math.floor(Math.random() * 45),
+        model_used: 'wildlife_classifier.hef',
+        disclaimer: '⚠️ CRITICAL: If you cannot positively identify a snake, TREAT IT AS VENOMOUS. Many non-venomous snakes mimic venomous species.'
+    });
+});
+
+// Get snake first aid protocol
+app.get('/api/snakes/first-aid', (req, res) => {
+    res.json({
+        title: 'Snake Bite First Aid Protocol',
+        critical_warning: 'SEEK IMMEDIATE MEDICAL ATTENTION FOR ALL SNAKE BITES',
+        do_this: [
+            'Stay calm - panic increases venom circulation',
+            'Keep the bitten area still and below heart level',
+            'Remove rings, watches, tight clothing before swelling',
+            'Clean the wound with soap and water if available',
+            'Mark the time of the bite',
+            'Mark the edge of swelling with pen and time',
+            'Take a photo of the snake if safely possible',
+            'Get to a hospital as quickly and calmly as possible'
+        ],
+        do_not_do: [
+            '❌ Do NOT cut the wound or try to suck out venom',
+            '❌ Do NOT apply a tourniquet',
+            '❌ Do NOT apply ice or cold packs',
+            '❌ Do NOT drink alcohol or take aspirin',
+            '❌ Do NOT run or exercise - keeps you calm',
+            '❌ Do NOT try to catch or kill the snake',
+            '❌ Do NOT apply electric shock'
+        ],
+        symptoms_to_watch: [
+            'Swelling and pain at bite site',
+            'Nausea and vomiting',
+            'Difficulty breathing',
+            'Blurred vision',
+            'Numbness or tingling',
+            'Metallic taste in mouth',
+            'Muscle twitching'
+        ],
+        emergency_contacts: {
+            poison_control: '1-800-222-1222 (US)',
+            note: 'Call 911 or your emergency number immediately'
+        }
+    });
+});
+
+// Get list of known snakes
+app.get('/api/snakes/database', (req, res) => {
+    const { filter } = req.query;
+
+    let snakes = Object.entries(snakeDatabase).map(([key, snake]) => ({
+        id: key,
+        name: snake.common_names[0],
+        scientific_name: snake.scientific_name,
+        danger_level: snake.danger_level,
+        classification: snake.classification,
+        is_venomous: snake.classification === 'venomous',
+        venom_type: snake.venom_type,
+        region: snake.region
+    }));
+
+    if (filter === 'venomous') {
+        snakes = snakes.filter(s => s.is_venomous);
+    } else if (filter === 'non-venomous') {
+        snakes = snakes.filter(s => !s.is_venomous);
+    }
+
+    res.json({
+        count: snakes.length,
+        filter: filter || 'all',
+        snakes,
+        offline_capable: true,
+        safety_note: 'When in doubt, treat ALL snakes as venomous. Many non-venomous species mimic venomous ones.'
+    });
+});
+
+// Get specific snake info
+app.get('/api/snakes/:id', (req, res) => {
+    const snake = snakeDatabase[req.params.id];
+
+    if (!snake) {
+        return res.status(404).json({ error: 'Snake not found in database' });
+    }
+
+    res.json({
+        id: req.params.id,
+        ...snake,
+        is_venomous: snake.classification === 'venomous',
+        offline_data: true
+    });
+});
+
+// ==============================================================================
 // Boot Sequence Logic
 // ==============================================================================
 async function runBootSequence() {
