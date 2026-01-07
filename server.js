@@ -1068,7 +1068,7 @@ const firstAidProtocolDatabase = [
         category: 'wound',
         name: 'Minor Cut Treatment',
         severity: 'minor',
-        keywords: ['cut', 'wound', 'bleeding', 'laceration', 'scrape', 'abrasion'],
+        keywords: ['cut', 'wound', 'bleeding', 'laceration', 'scrape', 'abrasion', 'infection', 'cleaning', 'bandage', 'bandaging'],
         summary: 'Cleaning and bandaging minor wounds to prevent infection',
         steps: [
             { step: 1, summary: 'Wash your hands', detail: 'Clean your hands thoroughly before treating wound to prevent infection.' },
@@ -1076,16 +1076,28 @@ const firstAidProtocolDatabase = [
             { step: 3, summary: 'Clean the wound', detail: 'Rinse with clean water. Remove any debris gently. Do not use hydrogen peroxide or iodine on open wounds.' },
             { step: 4, summary: 'Apply antibiotic', detail: 'If available, apply thin layer of antibiotic ointment to prevent infection.' },
             { step: 5, summary: 'Cover wound', detail: 'Apply clean bandage. Change daily or when wet/dirty.' },
-            { step: 6, summary: 'Monitor for infection', detail: 'Watch for: increasing pain, redness spreading, swelling, pus, fever, red streaks from wound.' }
+            { step: 6, summary: 'Monitor for infection', detail: 'Watch for infection signs over next 3-5 days: increasing pain, redness spreading beyond wound edges, swelling, warmth around wound, pus or discharge, fever, red streaks leading away from wound toward heart.' }
         ],
         warnings: [
-            'Deep cuts may need stitches - seek help if edges gap',
-            'Animal bites always need medical evaluation - high infection risk',
-            'Puncture wounds are prone to infection',
-            'Watch for tetanus risk with dirty wounds'
+            'Deep cuts may need stitches - seek help if wound edges gap or do not stay together',
+            'Animal bites ALWAYS need medical evaluation - high infection risk and possible rabies',
+            'Puncture wounds are prone to infection - they seal over before healing inside',
+            'Watch for tetanus risk with dirty wounds, rusty objects, or soil contamination',
+            'Wounds with embedded debris need professional cleaning'
         ],
-        contraindications: ['No hydrogen peroxide on open wounds', 'No iodine directly in wound'],
-        when_to_seek_help: 'Seek help if: bleeding does not stop after 10 minutes of pressure, wound is deep or gaping, caused by dirty/rusty object, animal bite, signs of infection appear.'
+        infection_signs: [
+            'Increasing pain after first 24 hours (should be improving, not worsening)',
+            'Redness spreading beyond wound edges',
+            'Swelling increasing after day 2',
+            'Warmth or heat around the wound',
+            'Pus or cloudy discharge',
+            'Fever (temperature above 38°C/100.4°F)',
+            'Red streaks leading away from wound toward heart',
+            'Foul odor from wound',
+            'Wound reopening or not healing'
+        ],
+        contraindications: ['No hydrogen peroxide on open wounds', 'No iodine directly in wound', 'No alcohol directly in wound'],
+        when_to_seek_help: 'Seek help if: bleeding does not stop after 10 minutes of pressure, wound is deep or gaping, wound edges do not stay together, caused by dirty/rusty object or bite, any signs of infection appear, you cannot clean wound properly, or wound does not show improvement in 3-5 days.'
     },
     // ALLERGIC REACTION
     {
