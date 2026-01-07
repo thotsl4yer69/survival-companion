@@ -1608,6 +1608,311 @@ app.get('/api/models/registry', (req, res) => {
 });
 
 // ==============================================================================
+// Memory Usage Monitoring System
+// ==============================================================================
+
+// Memory thresholds (in bytes)
+const MEMORY_CONFIG = {
+    max_heap_mb: 7500,  // Max heap usage (leave buffer from 8GB total)
+    warning_threshold: 0.75,  // 75% of max
+    critical_threshold: 0.90,  // 90% of max
+    sample_interval_ms: 5000,  // Sample every 5 seconds
+    history_duration_ms: 3600000  // Keep 1 hour of history
+};
+
+// Memory history for trend analysis
+const memoryHistory = [];
+let memoryMonitorInterval = null;
+let peakMemoryUsage = 0;
+let memoryAlertActive = false;
+
+// Simulated model memory tracking
+const loadedModels = {
+    'phi-3-mini': { loaded: false, memory_mb: 0, max_memory_mb: 2000 },
+    'biomistral': { loaded: false, memory_mb: 0, max_memory_mb: 4000 },
+    'vision_models': { loaded: false, memory_mb: 0, max_memory_mb: 500 }
+};
+
+// Get current memory usage
+function getMemoryUsage() {
+    const usage = process.memoryUsage();
+    const heapUsedMb = Math.round(usage.heapUsed / (1024 * 1024) * 10) / 10;
+    const heapTotalMb = Math.round(usage.heapTotal / (1024 * 1024) * 10) / 10;
+    const rssMb = Math.round(usage.rss / (1024 * 1024) * 10) / 10;
+    const externalMb = Math.round(usage.external / (1024 * 1024) * 10) / 10;
+
+    // Calculate model memory (simulated)
+    let modelMemoryMb = 0;
+    for (const model of Object.values(loadedModels)) {
+        modelMemoryMb += model.memory_mb;
+    }
+
+    const totalUsedMb = heapUsedMb + modelMemoryMb;
+    const percentUsed = Math.round((totalUsedMb / MEMORY_CONFIG.max_heap_mb) * 100 * 10) / 10;
+
+    // Update peak
+    if (totalUsedMb > peakMemoryUsage) {
+        peakMemoryUsage = totalUsedMb;
+    }
+
+    return {
+        heap_used_mb: heapUsedMb,
+        heap_total_mb: heapTotalMb,
+        rss_mb: rssMb,
+        external_mb: externalMb,
+        model_memory_mb: modelMemoryMb,
+        total_used_mb: totalUsedMb,
+        max_allowed_mb: MEMORY_CONFIG.max_heap_mb,
+        percent_used: percentUsed,
+        peak_mb: peakMemoryUsage,
+        status: getMemoryStatus(percentUsed)
+    };
+}
+
+// Determine memory status based on usage
+function getMemoryStatus(percentUsed) {
+    if (percentUsed >= MEMORY_CONFIG.critical_threshold * 100) {
+        return 'critical';
+    } else if (percentUsed >= MEMORY_CONFIG.warning_threshold * 100) {
+        return 'warning';
+    }
+    return 'normal';
+}
+
+// Record memory sample
+function recordMemorySample() {
+    const now = Date.now();
+    const usage = getMemoryUsage();
+
+    memoryHistory.push({
+        timestamp: now,
+        ...usage
+    });
+
+    // Trim history older than duration
+    const cutoff = now - MEMORY_CONFIG.history_duration_ms;
+    while (memoryHistory.length > 0 && memoryHistory[0].timestamp < cutoff) {
+        memoryHistory.shift();
+    }
+
+    // Check for alerts
+    checkMemoryAlerts(usage);
+}
+
+// Check for memory alerts and trigger OOM prevention
+function checkMemoryAlerts(usage) {
+    if (usage.status === 'critical' && !memoryAlertActive) {
+        memoryAlertActive = true;
+        console.log(`[MEMORY] CRITICAL: ${usage.percent_used}% memory used - initiating OOM prevention`);
+        performOOMPrevention();
+    } else if (usage.status === 'warning' && !memoryAlertActive) {
+        memoryAlertActive = true;
+        console.log(`[MEMORY] WARNING: ${usage.percent_used}% memory used`);
+    } else if (usage.status === 'normal' && memoryAlertActive) {
+        memoryAlertActive = false;
+        console.log(`[MEMORY] Memory returned to normal: ${usage.percent_used}%`);
+    }
+}
+
+// OOM prevention - unload non-essential models
+function performOOMPrevention() {
+    console.log('[MEMORY] Performing OOM prevention measures...');
+
+    // Unload vision models first (optional)
+    if (loadedModels.vision_models.loaded) {
+        loadedModels.vision_models.loaded = false;
+        loadedModels.vision_models.memory_mb = 0;
+        console.log('[MEMORY] Unloaded vision models');
+    }
+
+    // Force garbage collection if available
+    if (global.gc) {
+        global.gc();
+        console.log('[MEMORY] Forced garbage collection');
+    }
+
+    return {
+        actions_taken: ['unloaded_vision_models', 'garbage_collection_requested'],
+        models_unloaded: ['vision_models']
+    };
+}
+
+// Start memory monitoring
+function startMemoryMonitoring() {
+    if (memoryMonitorInterval) {
+        clearInterval(memoryMonitorInterval);
+    }
+
+    // Record initial sample
+    recordMemorySample();
+
+    // Start periodic recording
+    memoryMonitorInterval = setInterval(recordMemorySample, MEMORY_CONFIG.sample_interval_ms);
+    console.log('[MEMORY] Memory monitoring started');
+}
+
+// Initialize memory monitoring
+startMemoryMonitoring();
+
+// Get memory status
+app.get('/api/memory/status', (req, res) => {
+    const current = getMemoryUsage();
+
+    res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        current: current,
+        config: {
+            max_heap_mb: MEMORY_CONFIG.max_heap_mb,
+            warning_threshold_percent: MEMORY_CONFIG.warning_threshold * 100,
+            critical_threshold_percent: MEMORY_CONFIG.critical_threshold * 100
+        },
+        loaded_models: loadedModels,
+        alert_active: memoryAlertActive
+    });
+});
+
+// Get memory history
+app.get('/api/memory/history', (req, res) => {
+    const limit = parseInt(req.query.limit) || 60;
+    const samples = memoryHistory.slice(-limit);
+
+    // Calculate trends
+    let trend = 'stable';
+    if (samples.length >= 2) {
+        const first = samples[0].total_used_mb;
+        const last = samples[samples.length - 1].total_used_mb;
+        const change = last - first;
+
+        if (change > 50) trend = 'increasing';
+        else if (change < -50) trend = 'decreasing';
+    }
+
+    // Check for leaks (continuous increase over long period)
+    let leakSuspected = false;
+    if (samples.length >= 10) {
+        const increases = samples.slice(1).filter((s, i) =>
+            s.total_used_mb > samples[i].total_used_mb
+        ).length;
+
+        leakSuspected = increases / (samples.length - 1) > 0.8;
+    }
+
+    res.json({
+        success: true,
+        sample_count: samples.length,
+        duration_seconds: samples.length * MEMORY_CONFIG.sample_interval_ms / 1000,
+        trend: trend,
+        leak_suspected: leakSuspected,
+        peak_mb: peakMemoryUsage,
+        samples: samples.map(s => ({
+            timestamp: new Date(s.timestamp).toISOString(),
+            total_used_mb: s.total_used_mb,
+            percent_used: s.percent_used,
+            status: s.status
+        }))
+    });
+});
+
+// Simulate model loading (for testing)
+app.post('/api/memory/load-model', (req, res) => {
+    const { model } = req.body;
+
+    if (!model || !loadedModels[model]) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid model',
+            available: Object.keys(loadedModels)
+        });
+    }
+
+    if (loadedModels[model].loaded) {
+        return res.json({
+            success: true,
+            message: `${model} already loaded`,
+            model: loadedModels[model],
+            current_memory: getMemoryUsage()
+        });
+    }
+
+    // Simulate loading
+    loadedModels[model].loaded = true;
+    loadedModels[model].memory_mb = loadedModels[model].max_memory_mb;
+
+    console.log(`[MEMORY] Model ${model} loaded (${loadedModels[model].memory_mb}MB)`);
+
+    const currentMemory = getMemoryUsage();
+
+    // Check if we need OOM prevention after loading
+    if (currentMemory.status === 'critical') {
+        performOOMPrevention();
+    }
+
+    res.json({
+        success: true,
+        message: `${model} loaded`,
+        model: loadedModels[model],
+        current_memory: currentMemory
+    });
+});
+
+// Simulate model unloading (for testing)
+app.post('/api/memory/unload-model', (req, res) => {
+    const { model } = req.body;
+
+    if (!model || !loadedModels[model]) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid model'
+        });
+    }
+
+    if (!loadedModels[model].loaded) {
+        return res.json({
+            success: true,
+            message: `${model} not loaded`,
+            model: loadedModels[model]
+        });
+    }
+
+    // Simulate unloading
+    loadedModels[model].loaded = false;
+    loadedModels[model].memory_mb = 0;
+
+    console.log(`[MEMORY] Model ${model} unloaded`);
+
+    res.json({
+        success: true,
+        message: `${model} unloaded`,
+        model: loadedModels[model],
+        current_memory: getMemoryUsage()
+    });
+});
+
+// Force OOM prevention (for testing)
+app.post('/api/memory/force-oom-prevention', (req, res) => {
+    const actions = performOOMPrevention();
+
+    res.json({
+        success: true,
+        ...actions,
+        current_memory: getMemoryUsage()
+    });
+});
+
+// Reset peak memory tracking
+app.post('/api/memory/reset-peak', (req, res) => {
+    const previousPeak = peakMemoryUsage;
+    peakMemoryUsage = getMemoryUsage().total_used_mb;
+
+    res.json({
+        success: true,
+        previous_peak_mb: previousPeak,
+        new_peak_mb: peakMemoryUsage
+    });
+});
+
+// ==============================================================================
 // Weather / Pressure History and Storm Prediction
 // ==============================================================================
 
