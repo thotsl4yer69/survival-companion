@@ -61,11 +61,21 @@
     <div class="alerts card">
         <h2>Weather Alerts</h2>
         <div id="weather-alerts">
-            <div class="alert-item success">
+            <div id="no-alerts" class="alert-item success">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
                 <span>No severe weather expected</span>
+            </div>
+            <div id="storm-alert" class="alert-item danger hidden">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                </svg>
+                <div class="storm-alert-content">
+                    <span class="storm-alert-severity" id="storm-severity">SEVERE</span>
+                    <span class="storm-alert-message" id="storm-message">Storm warning</span>
+                    <span class="storm-alert-action" id="storm-action">Take shelter</span>
+                </div>
             </div>
         </div>
     </div>
@@ -286,11 +296,98 @@
     .recommendation.caution {
         border-left: 3px solid var(--accent-warning);
     }
+
+    /* Storm Alert Styles */
+    #storm-alert {
+        flex-direction: column;
+        align-items: flex-start;
+        animation: storm-pulse 1s infinite;
+    }
+
+    #storm-alert.hidden {
+        display: none;
+    }
+
+    #storm-alert svg {
+        align-self: flex-start;
+    }
+
+    @keyframes storm-pulse {
+        0%, 100% {
+            background: rgba(239, 68, 68, 0.1);
+        }
+        50% {
+            background: rgba(239, 68, 68, 0.25);
+        }
+    }
+
+    .storm-alert-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        width: 100%;
+    }
+
+    .storm-alert-severity {
+        font-weight: 700;
+        font-size: var(--font-size-lg);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .storm-alert-message {
+        font-size: var(--font-size-base);
+    }
+
+    .storm-alert-action {
+        font-size: var(--font-size-sm);
+        background: rgba(0, 0, 0, 0.3);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-sm);
+        margin-top: var(--spacing-xs);
+    }
+
+    /* Severity-specific colors */
+    #storm-alert.minor {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--accent-warning);
+        animation: none;
+    }
+
+    #storm-alert.moderate {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-warning);
+    }
+
+    #storm-alert.severe {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--accent-danger);
+    }
+
+    #storm-alert.extreme {
+        background: rgba(239, 68, 68, 0.25);
+        color: var(--accent-danger);
+        animation: storm-pulse-extreme 0.5s infinite;
+    }
+
+    @keyframes storm-pulse-extreme {
+        0%, 100% {
+            background: rgba(239, 68, 68, 0.25);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+        50% {
+            background: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Storm alert audio
+    let stormAlertAudio = null;
+
     document.addEventListener('DOMContentLoaded', function() {
         loadWeatherData();
 
@@ -299,22 +396,186 @@
     });
 
     async function loadWeatherData() {
-        const sensors = await loadSensorData();
+        try {
+            // Use the new weather API instead of sensors
+            const response = await fetch('/api/weather');
+            const weather = await response.json();
 
-        if (sensors) {
-            if (sensors.temperature) {
-                document.getElementById('weather-temp').textContent = sensors.temperature.value.toFixed(1);
+            if (weather) {
+                // Update temperature
+                if (weather.temperature) {
+                    document.getElementById('weather-temp').textContent = weather.temperature.value.toFixed(1);
+                }
+
+                // Update humidity
+                if (weather.humidity) {
+                    document.getElementById('weather-humidity').textContent = weather.humidity.value + '%';
+                }
+
+                // Update pressure
+                if (weather.pressure) {
+                    document.getElementById('weather-pressure').textContent = weather.pressure.value.toFixed(0) + ' hPa';
+
+                    // Update pressure trend
+                    updatePressureTrend(weather.pressure.trend, weather.pressure.trend_change);
+
+                    // Update pressure graph
+                    if (weather.pressure.history) {
+                        updatePressureGraph(weather.pressure.history);
+                    }
+                }
+
+                // Update altitude
+                if (weather.altitude !== undefined) {
+                    document.getElementById('weather-altitude').textContent = weather.altitude + ' m';
+                }
+
+                // Handle storm alerts
+                handleStormAlert(weather.storm_alert);
             }
-            if (sensors.humidity) {
-                document.getElementById('weather-humidity').textContent = sensors.humidity.value + '%';
-            }
-            if (sensors.pressure) {
-                document.getElementById('weather-pressure').textContent = sensors.pressure.value.toFixed(0) + ' hPa';
-            }
-            if (sensors.gps) {
-                document.getElementById('weather-altitude').textContent = sensors.gps.altitude + ' m';
+        } catch (error) {
+            console.error('Failed to load weather data:', error);
+            // Fallback to sensors API
+            const sensors = await loadSensorData();
+            if (sensors) {
+                if (sensors.temperature) {
+                    document.getElementById('weather-temp').textContent = sensors.temperature.value.toFixed(1);
+                }
+                if (sensors.humidity) {
+                    document.getElementById('weather-humidity').textContent = sensors.humidity.value + '%';
+                }
+                if (sensors.pressure) {
+                    document.getElementById('weather-pressure').textContent = sensors.pressure.value.toFixed(0) + ' hPa';
+                }
+                if (sensors.gps) {
+                    document.getElementById('weather-altitude').textContent = sensors.gps.altitude + ' m';
+                }
             }
         }
+    }
+
+    function updatePressureTrend(trend, change) {
+        const trendIndicator = document.getElementById('pressure-trend');
+        const trendArrow = trendIndicator.querySelector('.trend-arrow');
+        const trendLabel = trendIndicator.querySelector('.trend-label');
+        const trendChange = trendIndicator.querySelector('.trend-change');
+
+        // Remove existing classes
+        trendArrow.classList.remove('stable', 'rising', 'falling');
+
+        // Set new class and label
+        switch (trend) {
+            case 'rising':
+                trendArrow.classList.add('rising');
+                trendLabel.textContent = 'Rising';
+                break;
+            case 'falling':
+                trendArrow.classList.add('falling');
+                trendLabel.textContent = 'Falling';
+                break;
+            default:
+                trendArrow.classList.add('stable');
+                trendLabel.textContent = 'Stable';
+        }
+
+        // Format change value
+        const changeVal = parseFloat(change);
+        const sign = changeVal >= 0 ? '+' : '';
+        trendChange.textContent = `${sign}${changeVal.toFixed(1)} hPa`;
+    }
+
+    function updatePressureGraph(history) {
+        const bars = document.querySelectorAll('.graph-bars .bar');
+        if (history.length === 0 || bars.length === 0) return;
+
+        // Find min/max for scaling
+        const pressures = history.map(h => h.pressure);
+        const min = Math.min(...pressures) - 2;
+        const max = Math.max(...pressures) + 2;
+        const range = max - min;
+
+        // Update bars
+        bars.forEach((bar, index) => {
+            if (index < history.length) {
+                const pressure = history[index].pressure;
+                const height = Math.max(10, Math.min(100, ((pressure - min) / range) * 100));
+                bar.style.height = `${height}%`;
+
+                // Mark latest as active
+                bar.classList.toggle('active', index === history.length - 1);
+            }
+        });
+    }
+
+    function handleStormAlert(alert) {
+        const noAlertsEl = document.getElementById('no-alerts');
+        const stormAlertEl = document.getElementById('storm-alert');
+        const severityEl = document.getElementById('storm-severity');
+        const messageEl = document.getElementById('storm-message');
+        const actionEl = document.getElementById('storm-action');
+
+        if (alert) {
+            // Show storm alert
+            noAlertsEl.classList.add('hidden');
+            stormAlertEl.classList.remove('hidden');
+
+            // Update severity class
+            stormAlertEl.className = 'alert-item danger ' + alert.severity;
+
+            // Update content
+            severityEl.textContent = alert.severity.toUpperCase() + ' STORM WARNING';
+            messageEl.textContent = alert.message;
+            actionEl.textContent = 'Action: ' + alert.recommended_action;
+
+            // Play audio for severe/extreme alerts
+            if (alert.audio_alert) {
+                playStormAlert();
+            }
+        } else {
+            // Hide storm alert, show no alerts
+            noAlertsEl.classList.remove('hidden');
+            stormAlertEl.classList.add('hidden');
+            stopStormAlert();
+        }
+    }
+
+    function playStormAlert() {
+        // Create audio context for alert sound
+        if (!stormAlertAudio) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+
+                function beep() {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'sine';
+                    gainNode.gain.value = 0.3;
+
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                }
+
+                // Beep 3 times
+                beep();
+                setTimeout(beep, 300);
+                setTimeout(beep, 600);
+
+                // Store to prevent repeated plays
+                stormAlertAudio = true;
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        }
+    }
+
+    function stopStormAlert() {
+        stormAlertAudio = null;
     }
 </script>
 {% endblock %}

@@ -281,6 +281,281 @@ app.get('/api/sensors', (req, res) => {
     res.json(data);
 });
 
+// ==============================================================================
+// Weather / Pressure History and Storm Prediction
+// ==============================================================================
+
+// Pressure history for trend analysis (3-hour window)
+const pressureHistory = [];
+const PRESSURE_HISTORY_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours
+const PRESSURE_SAMPLE_INTERVAL_MS = 60 * 1000; // Sample every minute
+
+// Storm alert state
+let activeStormAlert = null;
+let pressureRecordingInterval = null;
+
+// Storm thresholds
+const STORM_THRESHOLDS = {
+    minor: { drop_per_hour: 2, severity: 'minor', message: 'Slight pressure drop detected - weather may change' },
+    moderate: { drop_per_hour: 4, severity: 'moderate', message: 'Moderate pressure drop - storm possible in next few hours' },
+    severe: { drop_per_hour: 6, severity: 'severe', message: 'Rapid pressure drop - storm likely imminent, seek shelter!' },
+    extreme: { drop_per_hour: 10, severity: 'extreme', message: 'EXTREME pressure drop - severe storm approaching, take cover immediately!' }
+};
+
+// Initialize pressure recording
+function startPressureRecording() {
+    if (pressureRecordingInterval) {
+        clearInterval(pressureRecordingInterval);
+    }
+
+    // Record initial pressure
+    recordPressure();
+
+    // Record every minute
+    pressureRecordingInterval = setInterval(recordPressure, PRESSURE_SAMPLE_INTERVAL_MS);
+}
+
+function recordPressure() {
+    const currentPressure = sensorData.pressure.value + (Math.random() - 0.5) * 2;
+    const timestamp = Date.now();
+
+    pressureHistory.push({
+        timestamp,
+        pressure: currentPressure
+    });
+
+    // Remove old entries (older than 3 hours)
+    const cutoff = timestamp - PRESSURE_HISTORY_DURATION_MS;
+    while (pressureHistory.length > 0 && pressureHistory[0].timestamp < cutoff) {
+        pressureHistory.shift();
+    }
+
+    // Check for storm conditions
+    checkForStorm();
+}
+
+function checkForStorm() {
+    if (pressureHistory.length < 2) return;
+
+    // Calculate pressure change over the last hour (or available time)
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
+
+    // Find the earliest reading within the last hour
+    let earliestReading = null;
+    for (const reading of pressureHistory) {
+        if (reading.timestamp >= oneHourAgo) {
+            earliestReading = reading;
+            break;
+        }
+    }
+
+    if (!earliestReading) {
+        earliestReading = pressureHistory[0];
+    }
+
+    const latestReading = pressureHistory[pressureHistory.length - 1];
+    const timeSpanHours = (latestReading.timestamp - earliestReading.timestamp) / (60 * 60 * 1000);
+
+    if (timeSpanHours < 0.1) return; // Need at least some time span
+
+    const pressureChange = latestReading.pressure - earliestReading.pressure;
+    const pressureChangePerHour = pressureChange / timeSpanHours;
+
+    // Check thresholds (negative values = pressure drop = potential storm)
+    let newAlert = null;
+
+    if (pressureChangePerHour <= -STORM_THRESHOLDS.extreme.drop_per_hour) {
+        newAlert = createStormAlert('extreme', pressureChangePerHour, latestReading.pressure);
+    } else if (pressureChangePerHour <= -STORM_THRESHOLDS.severe.drop_per_hour) {
+        newAlert = createStormAlert('severe', pressureChangePerHour, latestReading.pressure);
+    } else if (pressureChangePerHour <= -STORM_THRESHOLDS.moderate.drop_per_hour) {
+        newAlert = createStormAlert('moderate', pressureChangePerHour, latestReading.pressure);
+    } else if (pressureChangePerHour <= -STORM_THRESHOLDS.minor.drop_per_hour) {
+        newAlert = createStormAlert('minor', pressureChangePerHour, latestReading.pressure);
+    }
+
+    // Only update alert if severity increased or no previous alert
+    if (newAlert) {
+        if (!activeStormAlert ||
+            getSeverityRank(newAlert.severity) > getSeverityRank(activeStormAlert.severity)) {
+            activeStormAlert = newAlert;
+            console.log(`Storm alert: ${newAlert.severity} - ${newAlert.message}`);
+        }
+    } else if (activeStormAlert && pressureChangePerHour > -1) {
+        // Clear alert if pressure stabilized
+        console.log('Storm alert cleared - pressure stabilized');
+        activeStormAlert = null;
+    }
+}
+
+function getSeverityRank(severity) {
+    const ranks = { minor: 1, moderate: 2, severe: 3, extreme: 4 };
+    return ranks[severity] || 0;
+}
+
+function createStormAlert(severity, changePerHour, currentPressure) {
+    const threshold = STORM_THRESHOLDS[severity];
+    return {
+        severity,
+        message: threshold.message,
+        pressure_change_per_hour: changePerHour.toFixed(1),
+        current_pressure: currentPressure.toFixed(1),
+        timestamp: new Date().toISOString(),
+        recommended_action: getRecommendedAction(severity),
+        audio_alert: severity === 'severe' || severity === 'extreme'
+    };
+}
+
+function getRecommendedAction(severity) {
+    switch (severity) {
+        case 'minor':
+            return 'Monitor conditions. Consider adjusting travel plans if weather worsens.';
+        case 'moderate':
+            return 'Prepare for weather change. Identify shelter options. Secure loose items.';
+        case 'severe':
+            return 'Seek shelter immediately. Avoid exposed areas. Stay away from trees and water.';
+        case 'extreme':
+            return 'TAKE COVER NOW. Move to the lowest, most protected area available. Stay away from windows.';
+        default:
+            return 'Monitor weather conditions.';
+    }
+}
+
+// Start pressure recording on server start
+startPressureRecording();
+
+// Get weather with storm alerts
+app.get('/api/weather', (req, res) => {
+    const currentPressure = sensorData.pressure.value + (Math.random() - 0.5) * 2;
+    const currentTemp = sensorData.temperature.value + (Math.random() - 0.5);
+    const currentHumidity = Math.round(sensorData.humidity.value + (Math.random() - 0.5) * 2);
+
+    // Calculate pressure trend
+    let trend = 'stable';
+    let trendChange = 0;
+
+    if (pressureHistory.length >= 2) {
+        const threeHoursAgo = Date.now() - PRESSURE_HISTORY_DURATION_MS;
+        const oldReading = pressureHistory.find(r => r.timestamp >= threeHoursAgo) || pressureHistory[0];
+        const newReading = pressureHistory[pressureHistory.length - 1];
+        trendChange = newReading.pressure - oldReading.pressure;
+
+        if (trendChange > 1) trend = 'rising';
+        else if (trendChange < -1) trend = 'falling';
+    }
+
+    // Get history for graph (last 7 points representing 3 hours)
+    const historyPoints = [];
+    const step = Math.max(1, Math.floor(pressureHistory.length / 7));
+    for (let i = 0; i < pressureHistory.length; i += step) {
+        historyPoints.push({
+            timestamp: pressureHistory[i].timestamp,
+            pressure: pressureHistory[i].pressure
+        });
+    }
+    if (historyPoints.length > 7) {
+        historyPoints.splice(0, historyPoints.length - 7);
+    }
+
+    res.json({
+        temperature: {
+            value: currentTemp,
+            unit: 'C',
+            source: 'BME280'
+        },
+        humidity: {
+            value: currentHumidity,
+            unit: '%',
+            source: 'BME280'
+        },
+        pressure: {
+            value: currentPressure,
+            unit: 'hPa',
+            source: 'BME280',
+            trend,
+            trend_change: trendChange.toFixed(1),
+            history: historyPoints
+        },
+        altitude: sensorData.gps.altitude,
+        storm_alert: activeStormAlert,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Get pressure history for detailed analysis
+app.get('/api/weather/pressure-history', (req, res) => {
+    res.json({
+        success: true,
+        history: pressureHistory,
+        count: pressureHistory.length,
+        oldest: pressureHistory.length > 0 ? new Date(pressureHistory[0].timestamp).toISOString() : null,
+        newest: pressureHistory.length > 0 ? new Date(pressureHistory[pressureHistory.length - 1].timestamp).toISOString() : null
+    });
+});
+
+// Simulate pressure drop for testing storm alerts
+app.post('/api/weather/simulate-pressure-drop', (req, res) => {
+    const { drop_rate } = req.body; // hPa per hour
+
+    if (!drop_rate || typeof drop_rate !== 'number') {
+        return res.status(400).json({
+            success: false,
+            error: 'drop_rate required (hPa per hour, positive number for drop)'
+        });
+    }
+
+    // Clear existing history
+    pressureHistory.length = 0;
+
+    // Simulate 1 hour of pressure readings at the specified drop rate
+    const now = Date.now();
+    const startPressure = 1013.25;
+    const numSamples = 60; // One per minute for an hour
+
+    for (let i = 0; i < numSamples; i++) {
+        const timestamp = now - (numSamples - i - 1) * 60 * 1000;
+        const timeHours = (numSamples - i - 1) / 60;
+        const pressure = startPressure - (drop_rate * (1 - timeHours));
+
+        pressureHistory.push({
+            timestamp,
+            pressure: pressure + (Math.random() - 0.5) * 0.5 // Small noise
+        });
+    }
+
+    // Check for storm conditions
+    checkForStorm();
+
+    res.json({
+        success: true,
+        message: `Simulated ${drop_rate} hPa/hour pressure drop over 1 hour`,
+        samples_added: numSamples,
+        current_pressure: pressureHistory[pressureHistory.length - 1].pressure.toFixed(1),
+        storm_alert: activeStormAlert
+    });
+});
+
+// Get current storm alert status
+app.get('/api/weather/storm-alert', (req, res) => {
+    res.json({
+        has_alert: activeStormAlert !== null,
+        alert: activeStormAlert
+    });
+});
+
+// Clear storm alert manually
+app.post('/api/weather/clear-alert', (req, res) => {
+    const cleared = activeStormAlert !== null;
+    activeStormAlert = null;
+
+    res.json({
+        success: true,
+        cleared,
+        message: cleared ? 'Storm alert cleared' : 'No active alert to clear'
+    });
+});
+
 // Battery level
 app.get('/api/battery', (req, res) => {
     res.json({ battery_level: systemState.bootStatus.battery_level });
