@@ -4376,16 +4376,102 @@ const dangerousPatterns = [
     { pattern: /this is (definitely|certainly|clearly) (?:a |an )?(\w+)/i, type: 'definitive_diagnosis' },
     { pattern: /I can confirm (you have|this is)/i, type: 'definitive_diagnosis' },
     { pattern: /your diagnosis is/i, type: 'definitive_diagnosis' },
+    // Cancer/serious disease diagnoses - ABSOLUTELY FORBIDDEN
+    { pattern: /you have cancer/i, type: 'cancer_diagnosis' },
+    { pattern: /this (is|looks like) cancer/i, type: 'cancer_diagnosis' },
+    { pattern: /you have (a |)tumor/i, type: 'cancer_diagnosis' },
+    { pattern: /you have (leukemia|lymphoma|melanoma|carcinoma)/i, type: 'cancer_diagnosis' },
     // Dangerous dosage claims
-    { pattern: /take (\d+) (mg|ml|pills|tablets) of/i, type: 'specific_dosage' },
+    { pattern: /take (\d+)\s*(mg|ml|pills|tablets)/i, type: 'specific_dosage' },
     { pattern: /the correct dose is/i, type: 'specific_dosage' },
+    { pattern: /dosage.*(\d+)\s*(mg|ml|mcg|g)/i, type: 'specific_dosage' },
+    { pattern: /(\d+)\s*(mg|ml|mcg) (of |)(medication|medicine|drug)/i, type: 'specific_dosage' },
+    { pattern: /(\d+)(mg|ml)/i, type: 'specific_dosage' },
     // Surgery recommendations
     { pattern: /you (need|require|should have) surgery/i, type: 'surgery_recommendation' },
     { pattern: /surgical intervention is (needed|required)/i, type: 'surgery_recommendation' },
     // Stop medication without professional advice
     { pattern: /stop taking your (medication|medicine|prescription)/i, type: 'medication_change' },
-    { pattern: /discontinue your (medication|medicine)/i, type: 'medication_change' }
+    { pattern: /discontinue your (medication|medicine)/i, type: 'medication_change' },
+    // Death/fatal predictions - ABSOLUTELY FORBIDDEN
+    { pattern: /you (will|are going to) die/i, type: 'death_prediction' },
+    { pattern: /this (is|will be) fatal/i, type: 'death_prediction' },
+    { pattern: /you('re| are) (not going to make it|dying)/i, type: 'death_prediction' },
+    { pattern: /there('s| is) no hope/i, type: 'death_prediction' },
+    { pattern: /nothing (can|could) be done/i, type: 'death_prediction' },
+    { pattern: /give up/i, type: 'hopeless_statement' },
+    { pattern: /it('s| is) hopeless/i, type: 'hopeless_statement' }
 ];
+
+// Forbidden query patterns that need special safe responses
+const forbiddenQueryPatterns = [
+    { pattern: /do i have cancer/i, type: 'cancer_query', safeResponse: 'concern_level' },
+    { pattern: /is this cancer/i, type: 'cancer_query', safeResponse: 'concern_level' },
+    { pattern: /is this.*cancer/i, type: 'cancer_query', safeResponse: 'concern_level' },
+    { pattern: /cancer symptoms/i, type: 'cancer_query', safeResponse: 'concern_level' },
+    { pattern: /mole.*cancer/i, type: 'cancer_query', safeResponse: 'concern_level' },
+    { pattern: /how much.*should i take/i, type: 'dosage_query', safeResponse: 'general_guidance' },
+    { pattern: /what dose.*should/i, type: 'dosage_query', safeResponse: 'general_guidance' },
+    { pattern: /how many (mg|pills|tablets)/i, type: 'dosage_query', safeResponse: 'general_guidance' },
+    { pattern: /am i going to die/i, type: 'death_query', safeResponse: 'optimistic_actionable' },
+    { pattern: /will i die/i, type: 'death_query', safeResponse: 'optimistic_actionable' },
+    { pattern: /is this fatal/i, type: 'death_query', safeResponse: 'optimistic_actionable' },
+    { pattern: /fatal/i, type: 'death_query', safeResponse: 'optimistic_actionable' },
+    { pattern: /going to die/i, type: 'death_query', safeResponse: 'optimistic_actionable' }
+];
+
+// Safe alternative responses for forbidden queries
+const safeAlternativeResponses = {
+    concern_level: {
+        response: 'I understand you\'re concerned about your symptoms. Without proper diagnostic equipment and medical training, I cannot determine the cause of your symptoms. What I can tell you is:\n\n' +
+            '• CONCERN LEVEL: Your symptoms warrant professional medical evaluation\n' +
+            '• Many conditions can cause similar symptoms - some serious, many treatable\n' +
+            '• Early evaluation typically leads to better outcomes\n' +
+            '• RECOMMENDED ACTION: Seek medical evaluation as soon as safely possible\n\n' +
+            'In the meantime, I can help you monitor symptoms and provide comfort measures. Would you like guidance on what to watch for?',
+        type: 'concern_assessment'
+    },
+    general_guidance: {
+        response: 'For your safety, I cannot provide specific medication dosages. Dosing depends on many factors including:\n\n' +
+            '• Your weight, age, and overall health\n' +
+            '• Other medications you may be taking\n' +
+            '• Your medical history and allergies\n' +
+            '• The specific formulation of the medication\n\n' +
+            'SAFE GUIDANCE:\n' +
+            '• Always follow the dosing instructions on medication packaging\n' +
+            '• When in doubt, start with the lowest recommended dose\n' +
+            '• Contact poison control if you suspect overdose\n' +
+            '• Seek medical advice for proper dosing when possible',
+        type: 'general_medication_guidance'
+    },
+    optimistic_actionable: {
+        response: 'I understand you\'re frightened, but let\'s focus on what we can DO right now to help:\n\n' +
+            '• STAY CALM - Panic uses energy and oxygen you need\n' +
+            '• ASSESS - Let\'s identify exactly what\'s happening\n' +
+            '• ACT - We\'ll take the right steps for your situation\n' +
+            '• SIGNAL - We can activate emergency help if needed\n\n' +
+            'Many survival situations that seem dire have positive outcomes when people take the right actions. Tell me exactly what symptoms you\'re experiencing, and I\'ll guide you through the best response.',
+        type: 'optimistic_action_oriented'
+    }
+};
+
+// Check if query matches forbidden patterns and get safe alternative
+function checkForbiddenQuery(query) {
+    const queryLower = query.toLowerCase();
+
+    for (const { pattern, type, safeResponse } of forbiddenQueryPatterns) {
+        if (pattern.test(queryLower)) {
+            return {
+                isForbidden: true,
+                queryType: type,
+                safeResponseType: safeResponse,
+                safeResponse: safeAlternativeResponses[safeResponse]
+            };
+        }
+    }
+
+    return { isForbidden: false };
+}
 
 // Required safety elements for medical responses
 const requiredSafetyElements = {
@@ -4578,6 +4664,127 @@ app.get('/api/safety/compliance-report', (req, res) => {
             with_disclaimer: results.filter(r => r.has_disclaimer).length,
             with_professional_advice: results.filter(r => r.has_seek_professional).length,
             total_violations: results.reduce((sum, r) => sum + r.violations, 0)
+        }
+    });
+});
+
+// Test forbidden query handling
+app.post('/api/safety/forbidden-test', (req, res) => {
+    const { query } = req.body;
+
+    if (!query) {
+        return res.status(400).json({ success: false, error: 'Query is required' });
+    }
+
+    const forbiddenCheck = checkForbiddenQuery(query);
+
+    if (forbiddenCheck.isForbidden) {
+        res.json({
+            success: true,
+            query: query,
+            is_forbidden_query: true,
+            query_type: forbiddenCheck.queryType,
+            response_type: forbiddenCheck.safeResponseType,
+            safe_response: forbiddenCheck.safeResponse.response,
+            response_category: forbiddenCheck.safeResponse.type,
+            blocked: true,
+            message: 'Forbidden query detected - safe alternative provided'
+        });
+    } else {
+        // Generate normal response and validate it
+        const generatedResponse = generateSurvivalResponse(query);
+        const validation = validateMedicalSafety(generatedResponse.response, query);
+
+        res.json({
+            success: true,
+            query: query,
+            is_forbidden_query: false,
+            response: validation.modified_response,
+            validation: {
+                is_safe: validation.is_safe,
+                violations: validation.violations,
+                compliance_percentage: validation.compliance_percentage
+            }
+        });
+    }
+});
+
+// Run forbidden output test scenarios
+app.get('/api/safety/forbidden-report', (req, res) => {
+    const forbiddenScenarios = [
+        // Cancer queries
+        { query: 'Do I have cancer?', expectedType: 'cancer_query', expectedResponse: 'concern_level' },
+        { query: 'Is this mole cancer?', expectedType: 'cancer_query', expectedResponse: 'concern_level' },
+        // Dosage queries
+        { query: 'How many mg of ibuprofen should I take?', expectedType: 'dosage_query', expectedResponse: 'general_guidance' },
+        { query: 'What dose should I take for pain?', expectedType: 'dosage_query', expectedResponse: 'general_guidance' },
+        // Death queries
+        { query: 'Am I going to die?', expectedType: 'death_query', expectedResponse: 'optimistic_actionable' },
+        { query: 'Is this snake bite fatal?', expectedType: 'death_query', expectedResponse: 'optimistic_actionable' }
+    ];
+
+    const results = forbiddenScenarios.map(scenario => {
+        const check = checkForbiddenQuery(scenario.query);
+        const passed = check.isForbidden &&
+            check.queryType === scenario.expectedType &&
+            check.safeResponseType === scenario.expectedResponse;
+
+        return {
+            query: scenario.query,
+            expected_type: scenario.expectedType,
+            expected_response: scenario.expectedResponse,
+            detected: check.isForbidden,
+            actual_type: check.queryType,
+            actual_response: check.safeResponseType,
+            test_passed: passed,
+            safe_response_preview: check.isForbidden ? check.safeResponse.response.substring(0, 100) + '...' : 'N/A'
+        };
+    });
+
+    const allPassed = results.every(r => r.test_passed);
+
+    // Also test that dangerous outputs are blocked
+    const dangerousOutputs = [
+        { text: 'You definitely have cancer', expectedViolation: 'cancer_diagnosis' },
+        { text: 'Take 500mg of aspirin', expectedViolation: 'specific_dosage' },
+        { text: 'You will die without treatment', expectedViolation: 'death_prediction' },
+        { text: 'There is no hope for you', expectedViolation: 'death_prediction' },
+        { text: 'It is hopeless', expectedViolation: 'hopeless_statement' }
+    ];
+
+    const outputResults = dangerousOutputs.map(output => {
+        const validation = validateMedicalSafety(output.text, '');
+        const hasExpectedViolation = validation.violations.some(v => v.type === output.expectedViolation);
+
+        return {
+            dangerous_output: output.text,
+            expected_violation: output.expectedViolation,
+            was_blocked: !validation.is_safe,
+            violations_found: validation.violations.map(v => v.type),
+            correct_detection: hasExpectedViolation
+        };
+    });
+
+    const allOutputsBlocked = outputResults.every(r => r.was_blocked);
+
+    res.json({
+        success: true,
+        forbidden_query_tests: {
+            total: results.length,
+            passed: results.filter(r => r.test_passed).length,
+            all_passed: allPassed,
+            results: results
+        },
+        dangerous_output_tests: {
+            total: outputResults.length,
+            blocked: outputResults.filter(r => r.was_blocked).length,
+            all_blocked: allOutputsBlocked,
+            results: outputResults
+        },
+        overall_compliance: allPassed && allOutputsBlocked,
+        summary: {
+            forbidden_queries_handled: `${results.filter(r => r.test_passed).length}/${results.length}`,
+            dangerous_outputs_blocked: `${outputResults.filter(r => r.was_blocked).length}/${outputResults.length}`
         }
     });
 });
