@@ -556,17 +556,244 @@ app.post('/api/weather/clear-alert', (req, res) => {
     });
 });
 
-// Battery level
+// ==============================================================================
+// Battery Management & Low-Power Emergency Mode
+// ==============================================================================
+
+// Low-power mode state
+let lowPowerState = {
+    active: false,
+    activated_at: null,
+    auto_activated: false,
+    critical_threshold: 10, // 10% battery triggers low-power mode
+    warning_threshold: 20,  // 20% battery shows warning
+    disabled_features: [],
+    estimated_runtime_hours: null
+};
+
+// Battery level endpoint
 app.get('/api/battery', (req, res) => {
-    res.json({ battery_level: systemState.bootStatus.battery_level });
+    const level = systemState.bootStatus.battery_level;
+    const is_critical = level <= lowPowerState.critical_threshold;
+    const is_low = level <= lowPowerState.warning_threshold;
+
+    res.json({
+        battery_level: level,
+        is_critical: is_critical,
+        is_low: is_low,
+        low_power_mode: lowPowerState.active,
+        charging: false, // Simulated - would check actual charging state
+        estimated_runtime_minutes: Math.round(level * 3.6), // Rough estimate: 6 hours at 100%
+        warning_threshold: lowPowerState.warning_threshold,
+        critical_threshold: lowPowerState.critical_threshold
+    });
 });
 
+// Set battery level (for simulation/testing)
 app.post('/api/battery', (req, res) => {
     const { level } = req.body;
     if (typeof level === 'number') {
+        const oldLevel = systemState.bootStatus.battery_level;
         systemState.bootStatus.battery_level = Math.max(0, Math.min(100, level));
+
+        // Check if we need to auto-activate low-power mode
+        if (systemState.bootStatus.battery_level <= lowPowerState.critical_threshold &&
+            oldLevel > lowPowerState.critical_threshold &&
+            !lowPowerState.active) {
+            // Auto-activate low-power emergency mode
+            activateLowPowerMode(true);
+        }
+
+        // Check if we can deactivate low-power mode
+        if (systemState.bootStatus.battery_level > lowPowerState.warning_threshold &&
+            lowPowerState.active &&
+            lowPowerState.auto_activated) {
+            // Auto-deactivate if battery recovered and was auto-activated
+            deactivateLowPowerMode();
+        }
     }
-    res.json({ battery_level: systemState.bootStatus.battery_level });
+
+    const level_now = systemState.bootStatus.battery_level;
+    res.json({
+        battery_level: level_now,
+        is_critical: level_now <= lowPowerState.critical_threshold,
+        is_low: level_now <= lowPowerState.warning_threshold,
+        low_power_mode: lowPowerState.active,
+        message: lowPowerState.active ? 'Battery critical - Low-power emergency mode active' : undefined
+    });
+});
+
+// Low-power mode status
+app.get('/api/power/status', (req, res) => {
+    const level = systemState.bootStatus.battery_level;
+
+    res.json({
+        success: true,
+        battery_level: level,
+        low_power_mode: {
+            active: lowPowerState.active,
+            activated_at: lowPowerState.activated_at,
+            auto_activated: lowPowerState.auto_activated,
+            critical_threshold: lowPowerState.critical_threshold,
+            warning_threshold: lowPowerState.warning_threshold,
+            disabled_features: lowPowerState.disabled_features,
+            estimated_runtime_hours: lowPowerState.estimated_runtime_hours
+        },
+        active_features: {
+            gps_beacon: true, // Always active in low-power mode
+            emergency_beacon: true, // Always active in low-power mode
+            audio_beacon: lowPowerState.active ? 'reduced' : 'full',
+            display: lowPowerState.active ? 'minimal' : 'full',
+            sensors: lowPowerState.active ? 'essential_only' : 'all',
+            llm: lowPowerState.active ? false : true,
+            voice_recognition: lowPowerState.active ? false : true,
+            camera: lowPowerState.active ? false : true
+        }
+    });
+});
+
+// Activate low-power emergency mode
+app.post('/api/power/low-power/activate', (req, res) => {
+    if (lowPowerState.active) {
+        return res.json({
+            success: true,
+            already_active: true,
+            message: 'Low-power emergency mode is already active'
+        });
+    }
+
+    activateLowPowerMode(false);
+
+    res.json({
+        success: true,
+        low_power_mode: {
+            active: true,
+            activated_at: lowPowerState.activated_at,
+            disabled_features: lowPowerState.disabled_features,
+            estimated_runtime_hours: lowPowerState.estimated_runtime_hours
+        },
+        message: 'Low-power emergency mode activated. Non-essential functions disabled.',
+        active_features: ['GPS Beacon', 'Emergency Beacon', 'Basic Display', 'Essential Sensors']
+    });
+});
+
+// Deactivate low-power emergency mode
+app.post('/api/power/low-power/deactivate', (req, res) => {
+    if (!lowPowerState.active) {
+        return res.json({
+            success: true,
+            already_inactive: true,
+            message: 'Low-power mode is not active'
+        });
+    }
+
+    const level = systemState.bootStatus.battery_level;
+
+    // Warn if battery is still critical
+    if (level <= lowPowerState.critical_threshold) {
+        return res.status(400).json({
+            success: false,
+            error: 'Cannot deactivate low-power mode while battery is critical',
+            battery_level: level,
+            message: 'Battery level must be above ' + lowPowerState.critical_threshold + '% to deactivate'
+        });
+    }
+
+    deactivateLowPowerMode();
+
+    res.json({
+        success: true,
+        low_power_mode: {
+            active: false,
+            was_active_for_seconds: Math.round((Date.now() - new Date(lowPowerState.activated_at).getTime()) / 1000)
+        },
+        message: 'Low-power mode deactivated. Full functionality restored.',
+        battery_level: level
+    });
+});
+
+// Helper function to activate low-power mode
+function activateLowPowerMode(autoActivated) {
+    const level = systemState.bootStatus.battery_level;
+
+    // Calculate estimated runtime in low-power mode
+    // In low-power mode, we can extend runtime by ~3x
+    const baseRuntime = level * 3.6 / 60; // Base runtime in hours
+    const extendedRuntime = baseRuntime * 3; // Triple in low-power mode
+
+    lowPowerState = {
+        active: true,
+        activated_at: new Date().toISOString(),
+        auto_activated: autoActivated,
+        critical_threshold: lowPowerState.critical_threshold,
+        warning_threshold: lowPowerState.warning_threshold,
+        disabled_features: [
+            'LLM (AI Assistant)',
+            'Voice Recognition',
+            'Camera',
+            'Non-essential Sensors',
+            'Full Display Mode',
+            'Background Sync'
+        ],
+        estimated_runtime_hours: Math.round(extendedRuntime * 10) / 10
+    };
+
+    console.log(`LOW-POWER MODE ${autoActivated ? 'AUTO-' : ''}ACTIVATED at ${level}% battery`);
+    console.log(`Estimated runtime: ${lowPowerState.estimated_runtime_hours} hours`);
+}
+
+// Helper function to deactivate low-power mode
+function deactivateLowPowerMode() {
+    const wasActive = lowPowerState.active;
+
+    lowPowerState = {
+        active: false,
+        activated_at: null,
+        auto_activated: false,
+        critical_threshold: 10,
+        warning_threshold: 20,
+        disabled_features: [],
+        estimated_runtime_hours: null
+    };
+
+    if (wasActive) {
+        console.log('LOW-POWER MODE DEACTIVATED - Full functionality restored');
+    }
+}
+
+// Simulate battery drain over time (for testing)
+app.post('/api/battery/simulate-drain', (req, res) => {
+    const { drain_to, drain_rate_percent_per_second } = req.body;
+    const targetLevel = drain_to !== undefined ? drain_to : 5;
+    const drainRate = drain_rate_percent_per_second || 1;
+
+    // Start draining in background
+    const drainInterval = setInterval(() => {
+        if (systemState.bootStatus.battery_level > targetLevel) {
+            const oldLevel = systemState.bootStatus.battery_level;
+            systemState.bootStatus.battery_level = Math.max(targetLevel, systemState.bootStatus.battery_level - drainRate);
+
+            // Check for auto low-power mode activation
+            if (systemState.bootStatus.battery_level <= lowPowerState.critical_threshold &&
+                oldLevel > lowPowerState.critical_threshold &&
+                !lowPowerState.active) {
+                activateLowPowerMode(true);
+            }
+        } else {
+            clearInterval(drainInterval);
+        }
+    }, 1000);
+
+    // Stop after 60 seconds max
+    setTimeout(() => clearInterval(drainInterval), 60000);
+
+    res.json({
+        success: true,
+        message: `Battery drain simulation started. Draining to ${targetLevel}% at ${drainRate}%/sec`,
+        current_level: systemState.bootStatus.battery_level,
+        target_level: targetLevel,
+        low_power_will_activate_at: lowPowerState.critical_threshold
+    });
 });
 
 // Confirmation state for critical actions

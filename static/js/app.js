@@ -13,7 +13,8 @@ const SurvivalApp = {
         systemState: 'not_started',
         batteryLevel: 100,
         gpsFixed: false,
-        isListening: false
+        isListening: false,
+        lowPowerMode: false
     },
     config: {
         pollInterval: 2000,
@@ -21,7 +22,8 @@ const SurvivalApp = {
     },
     intervals: {
         statusPoll: null,
-        timeClock: null
+        timeClock: null,
+        powerPoll: null
     }
 };
 
@@ -39,6 +41,10 @@ function initializeApp() {
 
     // Check initial system status
     checkSystemStatus();
+
+    // Check power status (for low-power mode)
+    checkPowerStatus();
+    startPowerPolling();
 
     // Set up event listeners
     setupEventListeners();
@@ -354,6 +360,109 @@ function checkNightMode() {
 checkNightMode();
 
 // ==============================================================================
+// Power Management & Low-Power Mode
+// ==============================================================================
+async function checkPowerStatus() {
+    const status = await apiGet('/api/power/status');
+
+    if (status && status.success) {
+        const isLowPower = status.low_power_mode.active;
+        const batteryLevel = status.battery_level;
+
+        // Update state
+        SurvivalApp.state.lowPowerMode = isLowPower;
+        SurvivalApp.state.batteryLevel = batteryLevel;
+
+        // Update UI
+        updateLowPowerUI(isLowPower, batteryLevel, status.low_power_mode);
+        updateBatteryUI(batteryLevel, status.low_power_mode.critical_threshold, status.low_power_mode.warning_threshold);
+    }
+}
+
+function startPowerPolling() {
+    if (SurvivalApp.intervals.powerPoll) {
+        clearInterval(SurvivalApp.intervals.powerPoll);
+    }
+
+    SurvivalApp.intervals.powerPoll = setInterval(checkPowerStatus, 5000); // Check every 5 seconds
+}
+
+function updateLowPowerUI(isActive, batteryLevel, lowPowerInfo) {
+    // Update low-power indicator in status bar
+    const indicator = document.getElementById('low-power-indicator');
+    if (indicator) {
+        if (isActive) {
+            indicator.classList.remove('hidden');
+        } else {
+            indicator.classList.add('hidden');
+        }
+    }
+
+    // Update body class for dimmed UI
+    if (isActive) {
+        document.body.classList.add('low-power-mode-active');
+    } else {
+        document.body.classList.remove('low-power-mode-active');
+    }
+
+    // Show/create low-power banner
+    let banner = document.getElementById('low-power-banner');
+    if (isActive) {
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'low-power-banner';
+            banner.className = 'low-power-banner';
+            banner.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/>
+                </svg>
+                <span>LOW POWER MODE - Battery ${batteryLevel}% | Est. ${lowPowerInfo.estimated_runtime_hours || '--'}h remaining</span>
+            `;
+            document.body.insertBefore(banner, document.getElementById('main-content'));
+        } else {
+            banner.querySelector('span').textContent =
+                `LOW POWER MODE - Battery ${batteryLevel}% | Est. ${lowPowerInfo.estimated_runtime_hours || '--'}h remaining`;
+            banner.classList.remove('hidden');
+        }
+
+        // Adjust main content padding
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.paddingTop = 'calc(var(--status-bar-height) + 40px)';
+        }
+    } else {
+        if (banner) {
+            banner.classList.add('hidden');
+        }
+
+        // Reset main content padding
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.paddingTop = '';
+        }
+    }
+}
+
+function updateBatteryUI(level, criticalThreshold, warningThreshold) {
+    const batteryStatus = document.getElementById('battery-status');
+    const batteryPercent = document.getElementById('battery-percent');
+
+    if (batteryPercent) {
+        batteryPercent.textContent = `${level}%`;
+    }
+
+    if (batteryStatus) {
+        batteryStatus.classList.remove('critical', 'low');
+
+        if (level <= criticalThreshold) {
+            batteryStatus.classList.add('critical');
+        } else if (level <= warningThreshold) {
+            batteryStatus.classList.add('low');
+        }
+    }
+}
+
+// ==============================================================================
 // Export for use in templates
 // ==============================================================================
 window.SurvivalApp = SurvivalApp;
@@ -361,3 +470,4 @@ window.loadSensorData = loadSensorData;
 window.activateEmergency = activateEmergency;
 window.deactivateEmergency = deactivateEmergency;
 window.toggleNightMode = toggleNightMode;
+window.checkPowerStatus = checkPowerStatus;

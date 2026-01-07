@@ -153,6 +153,67 @@ body {
     color: var(--accent-primary);
 }
 
+/* Low-power mode indicator */
+.low-power-mode {
+    color: var(--accent-warning);
+    animation: blink 2s infinite;
+    background: rgba(245, 158, 11, 0.2);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.low-power-mode.hidden {
+    display: none;
+}
+
+/* Battery critical indicator */
+#battery-status.critical {
+    color: var(--accent-danger);
+    animation: blink 1s infinite;
+}
+
+#battery-status.low {
+    color: var(--accent-warning);
+}
+
+/* Low-power mode body styling */
+body.low-power-mode-active {
+    /* Dim the UI to save power */
+    filter: brightness(0.8);
+}
+
+body.low-power-mode-active #nav-bar {
+    opacity: 0.8;
+}
+
+/* Low-power mode banner */
+.low-power-banner {
+    position: fixed;
+    top: var(--status-bar-height);
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, var(--accent-warning), #d97706);
+    color: #000;
+    text-align: center;
+    padding: var(--spacing-sm);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.low-power-banner.hidden {
+    display: none;
+}
+
+.low-power-banner svg {
+    width: 16px;
+    height: 16px;
+}
+
 /* ==============================================================================
    Navigation Bar
 ============================================================================== */
