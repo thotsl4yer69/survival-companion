@@ -6494,9 +6494,62 @@ app.post('/api/cold-weather/search', (req, res) => {
     res.json(response);
 });
 
-// Generate contextually appropriate survival response
-function generateSurvivalResponse(query) {
+// Generate medical response using protocol database
+function generateMedicalResponse(query) {
     const queryLower = query.toLowerCase();
+
+    // Map symptoms to protocol keywords
+    const symptomToProtocol = {
+        'chest pain': { protocol: 'cardiac', urgency: 'CRITICAL', action: 'Potential cardiac emergency. Call for help immediately. Have person sit upright, loosen tight clothing. If aspirin available and no allergy, chew one adult aspirin. Monitor breathing and pulse. Be prepared for CPR.' },
+        'shortness of breath': { protocol: 'cardiac', urgency: 'HIGH', action: 'Breathing difficulty requires immediate assessment. Sit person upright. Loosen clothing. Check for allergic reaction signs. If wheezing and history of asthma, use inhaler if available. Activate SOS if worsening.' },
+        'heart attack': { protocol: 'cpr', urgency: 'CRITICAL', action: 'EMERGENCY: Call for help NOW. Have person rest in comfortable position. Loosen tight clothing. Chew aspirin if available and no allergy. Monitor constantly. Be ready for CPR if they become unresponsive.' },
+        'choking': { protocol: 'choking', urgency: 'CRITICAL', action: 'If person can cough, encourage coughing. If cannot breathe/speak: Heimlich maneuver - stand behind, fist above navel, quick upward thrusts. For unconscious person: begin CPR.' },
+        'bleeding': { protocol: 'bleeding_control', urgency: 'HIGH', action: 'Apply direct pressure with cleanest material available. Elevate wound above heart if possible. Do NOT remove dressing if soaked - add more on top. Tourniquet ONLY for life-threatening limb bleeding.' },
+        'snake bite': { protocol: 'snake_bite', urgency: 'CRITICAL', action: 'Keep person calm and STILL. Do NOT cut, suck, or apply tourniquet. Remove jewelry before swelling. Keep bitten area below heart level. Mark swelling edges with time. Activate SOS IMMEDIATELY.' },
+        'hypothermia': { protocol: 'hypothermia', urgency: 'HIGH', action: 'Get person out of cold/wet. Remove wet clothing. Warm core first - warm blankets, body heat, warm (not hot) drinks if conscious. Do NOT rub limbs. Handle gently to avoid cardiac arrest.' },
+        'burn': { protocol: 'burns', urgency: 'MEDIUM', action: 'Cool burn under cool running water 10-20 minutes. Do NOT use ice. Do NOT break blisters. Cover with clean, non-stick dressing. For severe/large burns, treat for shock and activate SOS.' },
+        'allergic': { protocol: 'allergic_reaction', urgency: 'HIGH', action: 'For severe reaction: EpiPen if available (mid-outer thigh). Lie person flat with legs raised (or sitting if breathing difficult). Monitor airway. Be ready for CPR. Activate SOS immediately.' },
+        'unconscious': { protocol: 'cpr', urgency: 'CRITICAL', action: 'Check for response. Check breathing (10 sec max). If not breathing normally: Begin CPR - 30 chest compressions, 2 breaths. Continue until help arrives or person recovers.' },
+        'fracture': { protocol: 'fractures', urgency: 'MEDIUM', action: 'Do NOT try to realign bone. Immobilize joint above and below injury. Use splints (sticks, rolled magazines). Pad for comfort. Check circulation below injury. Treat for shock if needed.' },
+        'poison': { protocol: 'poisoning', urgency: 'HIGH', action: 'Identify poison if possible. Do NOT induce vomiting unless advised. If conscious, rinse mouth with water. For skin contact, remove clothing and flush with water. Call poison control/activate SOS.' },
+        'seizure': { protocol: 'seizure', urgency: 'HIGH', action: 'Clear area of hazards. Do NOT restrain person. Do NOT put anything in mouth. Protect head. Time the seizure. Turn on side when convulsions stop. Stay until fully recovered.' },
+        'stroke': { protocol: 'stroke', urgency: 'CRITICAL', action: 'Remember F.A.S.T.: Face drooping, Arm weakness, Speech difficulty, Time to call for help. Note time symptoms started. Keep person comfortable. Do NOT give food/water. Activate SOS immediately.' },
+        'dehydration': { protocol: 'dehydration', urgency: 'MEDIUM', action: 'Rehydrate slowly with small sips. Add salt and sugar if available (oral rehydration). Rest in shade. Monitor urine color. Severe cases (confusion, no urination): activate SOS.' }
+    };
+
+    // Check for matching symptoms in query
+    for (const [symptom, info] of Object.entries(symptomToProtocol)) {
+        if (queryLower.includes(symptom)) {
+            return {
+                topic: 'medical_emergency',
+                protocol: info.protocol,
+                urgency: info.urgency,
+                response: `[MEDICAL GUIDANCE - ${info.urgency} URGENCY]\n\n${info.action}\n\n⚠️ DISCLAIMER: This is emergency guidance only. Seek professional medical help as soon as possible. If symptoms are severe or worsening, activate SOS beacon immediately.`,
+                confidence: 0.95,
+                model_type: 'biomistral',
+                contextually_appropriate: true
+            };
+        }
+    }
+
+    // Default medical response
+    return {
+        topic: 'medical_guidance',
+        response: `I'm here to help with medical concerns. Based on your query about "${query.substring(0, 50)}...", I recommend:\n\n1. ASSESS: Evaluate the severity of symptoms\n2. ACT: Apply appropriate first aid from the Medical section\n3. MONITOR: Watch for any changes or worsening\n4. SEEK HELP: If severe or worsening, activate SOS beacon\n\nWould you like specific protocol guidance for a particular condition?`,
+        confidence: 0.85,
+        model_type: 'biomistral',
+        contextually_appropriate: true
+    };
+}
+
+// Generate contextually appropriate survival response
+function generateSurvivalResponse(query, useMedicalModel = false) {
+    const queryLower = query.toLowerCase();
+
+    // If using medical model (BioMistral), prioritize medical response
+    if (useMedicalModel) {
+        return generateMedicalResponse(query);
+    }
 
     for (const [topic, data] of Object.entries(survivalKnowledge)) {
         for (const keyword of data.keywords) {
@@ -7589,13 +7642,23 @@ app.post('/api/llm/unload', (req, res) => {
 const medicalKeywords = [
     'symptom', 'symptoms', 'pain', 'hurt', 'injury', 'bleeding', 'broken', 'fracture',
     'hypothermia', 'hyperthermia', 'dehydration', 'infection', 'fever', 'wound',
-    'bite', 'sting', 'allergic', 'allergy', 'anaphylaxis', 'shock', 'unconscious',
-    'cpr', 'resuscitation', 'pulse', 'breathing', 'choking', 'burn', 'frostbite',
-    'poison', 'poisoning', 'toxic', 'venom', 'medication', 'medicine', 'treatment',
+    'bite', 'bitten', 'sting', 'stung', 'allergic', 'allergy', 'anaphylaxis', 'shock', 'unconscious',
+    'cpr', 'resuscitation', 'pulse', 'breathing', 'choking', 'burn', 'burned', 'burnt', 'frostbite',
+    'poison', 'poisoned', 'poisoning', 'toxic', 'venom', 'medication', 'medicine', 'treatment',
     'diagnosis', 'condition', 'disease', 'illness', 'sick', 'nausea', 'vomiting',
-    'diarrhea', 'rash', 'swelling', 'inflammation', 'sprain', 'strain', 'dislocation',
+    'diarrhea', 'rash', 'swelling', 'swollen', 'inflammation', 'sprain', 'sprained', 'strain', 'strained', 'dislocation',
     'heat stroke', 'sunburn', 'altitude sickness', 'snake bite', 'spider bite',
-    'first aid', 'medical', 'emergency', 'sos', 'help'
+    'first aid', 'medical', 'emergency', 'sos', 'help',
+    // Cardiac/emergency symptoms
+    'chest', 'heart', 'cardiac', 'heart attack', 'shortness of breath', 'dizzy', 'dizziness',
+    'fainting', 'faint', 'fainted', 'collapse', 'collapsed', 'seizure', 'stroke', 'numbness', 'tingling',
+    'arm pain', 'jaw pain', 'sweating', 'cold sweat', 'palpitation', 'irregular heartbeat',
+    // Severe conditions
+    'severe', 'acute', 'sudden', 'intense', 'unbearable', 'excruciating',
+    // Additional medical terms
+    'blood pressure', 'blood sugar', 'diabetes', 'asthma', 'epilepsy',
+    // Past tense and common variations
+    'injured', 'cut', 'cuts', 'hurting', 'wounded', 'snake', 'spider', 'insect'
 ];
 
 // General survival keywords
@@ -7779,9 +7842,10 @@ app.post('/api/llm/smart-query', async (req, res) => {
         llmState.memory_usage_mb += llmState.phi3_memory_mb;
     }
 
-    // Generate response
+    // Generate response - use medical model responses when BioMistral is active
     const startTime = Date.now();
-    const generatedResponse = generateSurvivalResponse(query || '');
+    const useMedicalModel = llmState.active_model === 'biomistral-7b';
+    const generatedResponse = generateSurvivalResponse(query || '', useMedicalModel);
 
     await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
 
@@ -7794,6 +7858,8 @@ app.post('/api/llm/smart-query', async (req, res) => {
         classification_confidence: classification.confidence,
         response: generatedResponse.response,
         topic: generatedResponse.topic,
+        urgency: generatedResponse.urgency || null,
+        protocol: generatedResponse.protocol || null,
         model_used: llmState.active_model,
         recommended_model: classification.recommended_model,
         inference_time_ms: Date.now() - startTime,
@@ -8991,6 +9057,605 @@ app.get('/api/vitals/compare', (req, res) => {
         summary: overallStatus === 'normal' ? 'All vitals within normal range of your baselines' :
                  overallStatus === 'attention' ? 'Some vitals need attention - review alerts' :
                  'Critical vital signs detected - seek help immediately'
+    });
+});
+
+// ==============================================================================
+// Vitals History Tracking
+// ==============================================================================
+
+// In-memory vitals history (last 1 hour of readings, sampled every 30 seconds)
+const vitalsHistory = {
+    heart_rate: [],
+    spo2: [],
+    body_temp: [],
+    max_samples: 120 // 1 hour at 30-second intervals
+};
+
+// Sample vitals periodically
+function sampleVitals() {
+    const timestamp = new Date().toISOString();
+    const hr = Math.round(72 + (Math.random() - 0.5) * 8);
+    const spo2 = Math.round(97 + Math.random() * 2);
+    const bodyTemp = parseFloat((36.6 + (Math.random() - 0.5) * 0.4).toFixed(1));
+
+    // Add samples
+    vitalsHistory.heart_rate.push({ timestamp, value: hr });
+    vitalsHistory.spo2.push({ timestamp, value: spo2 });
+    vitalsHistory.body_temp.push({ timestamp, value: bodyTemp });
+
+    // Trim to max samples
+    if (vitalsHistory.heart_rate.length > vitalsHistory.max_samples) {
+        vitalsHistory.heart_rate.shift();
+        vitalsHistory.spo2.shift();
+        vitalsHistory.body_temp.shift();
+    }
+}
+
+// Initialize with some historical data
+function initializeVitalsHistory() {
+    const now = Date.now();
+    // Generate last 30 minutes of data (60 samples at 30-second intervals)
+    for (let i = 60; i >= 0; i--) {
+        const timestamp = new Date(now - i * 30000).toISOString();
+        const hr = Math.round(72 + (Math.random() - 0.5) * 8);
+        const spo2 = Math.round(97 + Math.random() * 2);
+        const bodyTemp = parseFloat((36.6 + (Math.random() - 0.5) * 0.4).toFixed(1));
+
+        vitalsHistory.heart_rate.push({ timestamp, value: hr });
+        vitalsHistory.spo2.push({ timestamp, value: spo2 });
+        vitalsHistory.body_temp.push({ timestamp, value: bodyTemp });
+    }
+}
+
+// Start sampling
+initializeVitalsHistory();
+setInterval(sampleVitals, 30000); // Sample every 30 seconds
+
+// Get vitals history
+app.get('/api/vitals/history', (req, res) => {
+    const { minutes = 30, metric } = req.query;
+    const minutesNum = parseInt(minutes) || 30;
+    const cutoff = new Date(Date.now() - minutesNum * 60000);
+
+    const filterByTime = (arr) => arr.filter(item => new Date(item.timestamp) >= cutoff);
+
+    if (metric) {
+        // Return single metric history
+        if (vitalsHistory[metric]) {
+            const data = filterByTime(vitalsHistory[metric]);
+            const values = data.map(d => d.value);
+            res.json({
+                success: true,
+                metric,
+                data,
+                stats: {
+                    count: values.length,
+                    min: Math.min(...values),
+                    max: Math.max(...values),
+                    avg: parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1)),
+                    latest: values[values.length - 1]
+                },
+                time_range_minutes: minutesNum
+            });
+        } else {
+            res.status(400).json({ error: 'Unknown metric', available: ['heart_rate', 'spo2', 'body_temp'] });
+        }
+    } else {
+        // Return all metrics
+        const hrData = filterByTime(vitalsHistory.heart_rate);
+        const spo2Data = filterByTime(vitalsHistory.spo2);
+        const tempData = filterByTime(vitalsHistory.body_temp);
+
+        res.json({
+            success: true,
+            time_range_minutes: minutesNum,
+            heart_rate: {
+                data: hrData,
+                stats: {
+                    count: hrData.length,
+                    min: Math.min(...hrData.map(d => d.value)),
+                    max: Math.max(...hrData.map(d => d.value)),
+                    avg: parseFloat((hrData.map(d => d.value).reduce((a, b) => a + b, 0) / hrData.length).toFixed(1)),
+                    latest: hrData[hrData.length - 1]?.value,
+                    unit: 'BPM'
+                }
+            },
+            spo2: {
+                data: spo2Data,
+                stats: {
+                    count: spo2Data.length,
+                    min: Math.min(...spo2Data.map(d => d.value)),
+                    max: Math.max(...spo2Data.map(d => d.value)),
+                    avg: parseFloat((spo2Data.map(d => d.value).reduce((a, b) => a + b, 0) / spo2Data.length).toFixed(1)),
+                    latest: spo2Data[spo2Data.length - 1]?.value,
+                    unit: '%'
+                }
+            },
+            body_temp: {
+                data: tempData,
+                stats: {
+                    count: tempData.length,
+                    min: Math.min(...tempData.map(d => d.value)),
+                    max: Math.max(...tempData.map(d => d.value)),
+                    avg: parseFloat((tempData.map(d => d.value).reduce((a, b) => a + b, 0) / tempData.length).toFixed(1)),
+                    latest: tempData[tempData.length - 1]?.value,
+                    unit: '°C'
+                }
+            }
+        });
+    }
+});
+
+// Get latest vitals with trend direction
+app.get('/api/vitals/current', (req, res) => {
+    const getTrend = (history) => {
+        if (history.length < 5) return 'stable';
+        const recent = history.slice(-5);
+        const older = history.slice(-10, -5);
+        if (older.length < 5) return 'stable';
+
+        const recentAvg = recent.map(d => d.value).reduce((a, b) => a + b, 0) / recent.length;
+        const olderAvg = older.map(d => d.value).reduce((a, b) => a + b, 0) / older.length;
+        const diff = recentAvg - olderAvg;
+
+        if (Math.abs(diff) < 2) return 'stable';
+        return diff > 0 ? 'rising' : 'falling';
+    };
+
+    const hrHistory = vitalsHistory.heart_rate;
+    const spo2History = vitalsHistory.spo2;
+    const tempHistory = vitalsHistory.body_temp;
+
+    res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        heart_rate: {
+            value: hrHistory[hrHistory.length - 1]?.value || 72,
+            unit: 'BPM',
+            trend: getTrend(hrHistory),
+            status: (hrHistory[hrHistory.length - 1]?.value || 72) > 100 ? 'elevated' :
+                    (hrHistory[hrHistory.length - 1]?.value || 72) < 60 ? 'low' : 'normal'
+        },
+        spo2: {
+            value: spo2History[spo2History.length - 1]?.value || 98,
+            unit: '%',
+            trend: getTrend(spo2History),
+            status: (spo2History[spo2History.length - 1]?.value || 98) < 95 ? 'low' :
+                    (spo2History[spo2History.length - 1]?.value || 98) < 90 ? 'critical' : 'normal'
+        },
+        body_temp: {
+            value: tempHistory[tempHistory.length - 1]?.value || 36.6,
+            unit: '°C',
+            trend: getTrend(tempHistory),
+            status: (tempHistory[tempHistory.length - 1]?.value || 36.6) >= 38 ? 'fever' :
+                    (tempHistory[tempHistory.length - 1]?.value || 36.6) <= 35 ? 'hypothermia' : 'normal'
+        }
+    });
+});
+
+// ==============================================================================
+// SpO2 Altitude Compensation
+// ==============================================================================
+
+// Altitude-adjusted SpO2 normal ranges
+// At sea level: 95-100% normal
+// At altitude, lower values are expected due to reduced oxygen partial pressure
+const altitudeSpO2Ranges = {
+    sea_level: { altitude_max: 1500, normal_min: 95, concern_min: 90, description: 'Sea level to moderate altitude' },
+    moderate: { altitude_max: 2500, normal_min: 92, concern_min: 87, description: 'Moderate altitude (1500-2500m)' },
+    high: { altitude_max: 3500, normal_min: 88, concern_min: 82, description: 'High altitude (2500-3500m)' },
+    very_high: { altitude_max: 5500, normal_min: 82, concern_min: 75, description: 'Very high altitude (3500-5500m)' },
+    extreme: { altitude_max: 9000, normal_min: 75, concern_min: 65, description: 'Extreme altitude (5500m+)' }
+};
+
+function getAltitudeCategory(altitude) {
+    if (altitude < 1500) return 'sea_level';
+    if (altitude < 2500) return 'moderate';
+    if (altitude < 3500) return 'high';
+    if (altitude < 5500) return 'very_high';
+    return 'extreme';
+}
+
+function getAltitudeAdjustedSpO2Status(spo2, altitude) {
+    const category = getAltitudeCategory(altitude);
+    const ranges = altitudeSpO2Ranges[category];
+
+    if (spo2 >= ranges.normal_min) {
+        return {
+            status: 'normal',
+            message: `SpO2 ${spo2}% is normal for ${ranges.description}`,
+            altitude_context: `Normal range at this altitude: ${ranges.normal_min}-100%`
+        };
+    } else if (spo2 >= ranges.concern_min) {
+        return {
+            status: 'low',
+            message: `SpO2 ${spo2}% is below normal for ${ranges.description}`,
+            altitude_context: `Expected range: ${ranges.normal_min}-100%. Monitor closely.`
+        };
+    } else {
+        return {
+            status: 'critical',
+            message: `SpO2 ${spo2}% is critically low even accounting for altitude`,
+            altitude_context: `Critically low - seek lower altitude immediately or activate SOS`
+        };
+    }
+}
+
+// Get altitude-compensated SpO2 reading
+app.get('/api/vitals/spo2/altitude-compensated', (req, res) => {
+    const altitude = sensorData.gps.altitude || 0;
+    const spo2Value = sensorData.spo2.value || 98;
+
+    const category = getAltitudeCategory(altitude);
+    const ranges = altitudeSpO2Ranges[category];
+    const status = getAltitudeAdjustedSpO2Status(spo2Value, altitude);
+
+    res.json({
+        success: true,
+        spo2: {
+            raw_value: spo2Value,
+            unit: '%'
+        },
+        altitude: {
+            current: altitude,
+            unit: 'm',
+            category: category,
+            description: ranges.description
+        },
+        altitude_adjusted: {
+            status: status.status,
+            message: status.message,
+            context: status.altitude_context,
+            normal_range_for_altitude: {
+                min: ranges.normal_min,
+                max: 100
+            },
+            concern_threshold: ranges.concern_min,
+            sea_level_equivalent: {
+                description: 'At sea level, this would be considered:',
+                status: spo2Value >= 95 ? 'normal' : spo2Value >= 90 ? 'low' : 'critical'
+            }
+        },
+        recommendations: altitude > 2500 && spo2Value < ranges.normal_min ? [
+            'Descend to lower altitude if possible',
+            'Rest and avoid exertion',
+            'Hydrate well',
+            'Monitor for altitude sickness symptoms',
+            'Seek medical attention if symptoms worsen'
+        ] : []
+    });
+});
+
+// Simulate different altitudes for testing
+app.post('/api/vitals/spo2/simulate-altitude', (req, res) => {
+    const { altitude } = req.body;
+    if (altitude === undefined || altitude < 0) {
+        return res.status(400).json({ error: 'Valid altitude required (0-9000m)' });
+    }
+
+    // Temporarily modify GPS altitude
+    const originalAltitude = sensorData.gps.altitude;
+    sensorData.gps.altitude = Math.min(altitude, 9000);
+
+    // Simulate SpO2 decrease at altitude
+    // At sea level: ~98%, at 5000m: ~85%
+    const altitudeDropFactor = Math.max(0, (altitude - 1500) / 100);
+    const simulatedSpO2 = Math.max(70, Math.round(98 - altitudeDropFactor));
+    const originalSpO2 = sensorData.spo2.value;
+    sensorData.spo2.value = simulatedSpO2;
+
+    const category = getAltitudeCategory(altitude);
+    const ranges = altitudeSpO2Ranges[category];
+    const status = getAltitudeAdjustedSpO2Status(simulatedSpO2, altitude);
+
+    res.json({
+        success: true,
+        simulation: {
+            altitude: altitude,
+            simulated_spo2: simulatedSpO2,
+            original_spo2: originalSpO2,
+            original_altitude: originalAltitude
+        },
+        altitude_category: category,
+        altitude_description: ranges.description,
+        adjusted_status: status,
+        normal_range_at_altitude: {
+            min: ranges.normal_min,
+            max: 100
+        },
+        message: `Simulated altitude of ${altitude}m with SpO2 of ${simulatedSpO2}%`
+    });
+});
+
+// ==============================================================================
+// Critical Vitals Alert System
+// ==============================================================================
+
+// Alert thresholds (configurable)
+const vitalsAlertThresholds = {
+    heart_rate: {
+        critical_high: 150,
+        warning_high: 120,
+        warning_low: 50,
+        critical_low: 40
+    },
+    spo2: {
+        warning_low: 92,
+        critical_low: 88
+    },
+    body_temp: {
+        critical_high: 40.0,    // Hyperpyrexia
+        warning_high: 38.0,     // Fever
+        warning_low: 35.0,      // Hypothermia mild
+        critical_low: 32.0      // Hypothermia severe
+    }
+};
+
+// Active alerts storage
+const activeVitalsAlerts = [];
+const alertHistory = [];
+let alertIdCounter = 1;
+
+function checkVitalsForAlerts() {
+    const now = new Date().toISOString();
+    const hr = vitalsHistory.heart_rate[vitalsHistory.heart_rate.length - 1]?.value || 72;
+    const spo2 = vitalsHistory.spo2[vitalsHistory.spo2.length - 1]?.value || 98;
+    const temp = vitalsHistory.body_temp[vitalsHistory.body_temp.length - 1]?.value || 36.6;
+
+    const newAlerts = [];
+
+    // Heart Rate Alerts
+    if (hr >= vitalsAlertThresholds.heart_rate.critical_high) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'critical',
+            metric: 'heart_rate',
+            value: hr,
+            unit: 'BPM',
+            threshold: vitalsAlertThresholds.heart_rate.critical_high,
+            message: `CRITICAL: Heart rate extremely high at ${hr} BPM`,
+            action: 'Stop all activity immediately. Rest in comfortable position. Monitor breathing. Activate SOS if symptoms worsen.',
+            audio_alert: true,
+            timestamp: now
+        });
+    } else if (hr >= vitalsAlertThresholds.heart_rate.warning_high) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'warning',
+            metric: 'heart_rate',
+            value: hr,
+            unit: 'BPM',
+            threshold: vitalsAlertThresholds.heart_rate.warning_high,
+            message: `WARNING: Heart rate elevated at ${hr} BPM`,
+            action: 'Reduce activity and rest. Stay hydrated. Monitor for changes.',
+            audio_alert: false,
+            timestamp: now
+        });
+    } else if (hr <= vitalsAlertThresholds.heart_rate.critical_low) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'critical',
+            metric: 'heart_rate',
+            value: hr,
+            unit: 'BPM',
+            threshold: vitalsAlertThresholds.heart_rate.critical_low,
+            message: `CRITICAL: Heart rate dangerously low at ${hr} BPM`,
+            action: 'Check responsiveness. Keep person warm. Be ready for CPR. Activate SOS immediately.',
+            audio_alert: true,
+            timestamp: now
+        });
+    } else if (hr <= vitalsAlertThresholds.heart_rate.warning_low) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'warning',
+            metric: 'heart_rate',
+            value: hr,
+            unit: 'BPM',
+            threshold: vitalsAlertThresholds.heart_rate.warning_low,
+            message: `WARNING: Heart rate low at ${hr} BPM`,
+            action: 'Check for other symptoms. Keep warm. Monitor closely.',
+            audio_alert: false,
+            timestamp: now
+        });
+    }
+
+    // SpO2 Alerts
+    if (spo2 <= vitalsAlertThresholds.spo2.critical_low) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'critical',
+            metric: 'spo2',
+            value: spo2,
+            unit: '%',
+            threshold: vitalsAlertThresholds.spo2.critical_low,
+            message: `CRITICAL: Blood oxygen critically low at ${spo2}%`,
+            action: 'EMERGENCY - Sit upright. Loosen clothing. Deep breaths. Activate SOS immediately. Descend if at altitude.',
+            audio_alert: true,
+            timestamp: now
+        });
+    } else if (spo2 <= vitalsAlertThresholds.spo2.warning_low) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'warning',
+            metric: 'spo2',
+            value: spo2,
+            unit: '%',
+            threshold: vitalsAlertThresholds.spo2.warning_low,
+            message: `WARNING: Blood oxygen low at ${spo2}%`,
+            action: 'Rest and take deep breaths. If at altitude, consider descending. Monitor closely.',
+            audio_alert: false,
+            timestamp: now
+        });
+    }
+
+    // Body Temperature Alerts
+    if (temp >= vitalsAlertThresholds.body_temp.critical_high) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'critical',
+            metric: 'body_temp',
+            value: temp,
+            unit: '°C',
+            threshold: vitalsAlertThresholds.body_temp.critical_high,
+            message: `CRITICAL: Body temperature dangerously high at ${temp}°C`,
+            action: 'HEAT EMERGENCY - Move to shade. Remove clothing. Apply cool water. Fan. Activate SOS.',
+            audio_alert: true,
+            timestamp: now
+        });
+    } else if (temp >= vitalsAlertThresholds.body_temp.warning_high) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'warning',
+            metric: 'body_temp',
+            value: temp,
+            unit: '°C',
+            threshold: vitalsAlertThresholds.body_temp.warning_high,
+            message: `WARNING: Fever detected at ${temp}°C`,
+            action: 'Rest, stay hydrated, monitor for other symptoms.',
+            audio_alert: false,
+            timestamp: now
+        });
+    } else if (temp <= vitalsAlertThresholds.body_temp.critical_low) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'critical',
+            metric: 'body_temp',
+            value: temp,
+            unit: '°C',
+            threshold: vitalsAlertThresholds.body_temp.critical_low,
+            message: `CRITICAL: Severe hypothermia at ${temp}°C`,
+            action: 'COLD EMERGENCY - Handle gently. Remove wet clothing. Warm core slowly. Do NOT rub limbs. Activate SOS.',
+            audio_alert: true,
+            timestamp: now
+        });
+    } else if (temp <= vitalsAlertThresholds.body_temp.warning_low) {
+        newAlerts.push({
+            id: alertIdCounter++,
+            type: 'warning',
+            metric: 'body_temp',
+            value: temp,
+            unit: '°C',
+            threshold: vitalsAlertThresholds.body_temp.warning_low,
+            message: `WARNING: Mild hypothermia detected at ${temp}°C`,
+            action: 'Get to warmth. Remove wet clothing. Add layers. Drink warm fluids if conscious.',
+            audio_alert: false,
+            timestamp: now
+        });
+    }
+
+    // Add to active alerts and history
+    newAlerts.forEach(alert => {
+        activeVitalsAlerts.push(alert);
+        alertHistory.push(alert);
+    });
+
+    // Trim alert history to last 100 entries
+    while (alertHistory.length > 100) {
+        alertHistory.shift();
+    }
+
+    return newAlerts;
+}
+
+// Get active vitals alerts
+app.get('/api/vitals/alerts', (req, res) => {
+    res.json({
+        success: true,
+        active_alerts: activeVitalsAlerts,
+        thresholds: vitalsAlertThresholds,
+        alert_count: activeVitalsAlerts.length,
+        has_critical: activeVitalsAlerts.some(a => a.type === 'critical'),
+        has_warning: activeVitalsAlerts.some(a => a.type === 'warning')
+    });
+});
+
+// Get alert history
+app.get('/api/vitals/alerts/history', (req, res) => {
+    const { limit = 20 } = req.query;
+    res.json({
+        success: true,
+        alerts: alertHistory.slice(-parseInt(limit)),
+        total_count: alertHistory.length
+    });
+});
+
+// Acknowledge/dismiss an alert
+app.post('/api/vitals/alerts/dismiss', (req, res) => {
+    const { alert_id, dismiss_all } = req.body;
+
+    if (dismiss_all) {
+        const count = activeVitalsAlerts.length;
+        activeVitalsAlerts.length = 0;
+        return res.json({
+            success: true,
+            dismissed_count: count,
+            message: 'All alerts dismissed'
+        });
+    }
+
+    if (!alert_id) {
+        return res.status(400).json({ error: 'alert_id required' });
+    }
+
+    const index = activeVitalsAlerts.findIndex(a => a.id === alert_id);
+    if (index !== -1) {
+        const dismissed = activeVitalsAlerts.splice(index, 1)[0];
+        return res.json({
+            success: true,
+            dismissed_alert: dismissed,
+            remaining_alerts: activeVitalsAlerts.length
+        });
+    }
+
+    res.status(404).json({ error: 'Alert not found' });
+});
+
+// Update alert thresholds
+app.put('/api/vitals/alerts/thresholds', (req, res) => {
+    const { metric, thresholds } = req.body;
+
+    if (!metric || !vitalsAlertThresholds[metric]) {
+        return res.status(400).json({ error: 'Valid metric required', available: Object.keys(vitalsAlertThresholds) });
+    }
+
+    // Update thresholds
+    Object.assign(vitalsAlertThresholds[metric], thresholds);
+
+    res.json({
+        success: true,
+        metric,
+        updated_thresholds: vitalsAlertThresholds[metric],
+        message: `${metric} alert thresholds updated`
+    });
+});
+
+// Simulate abnormal vital for testing
+app.post('/api/vitals/alerts/simulate', (req, res) => {
+    const { metric, value } = req.body;
+
+    if (!metric || !['heart_rate', 'spo2', 'body_temp'].includes(metric)) {
+        return res.status(400).json({ error: 'Valid metric required', available: ['heart_rate', 'spo2', 'body_temp'] });
+    }
+
+    // Add simulated reading to history
+    const timestamp = new Date().toISOString();
+    vitalsHistory[metric].push({ timestamp, value });
+
+    // Trim history
+    if (vitalsHistory[metric].length > vitalsHistory.max_samples) {
+        vitalsHistory[metric].shift();
+    }
+
+    // Check for alerts
+    const newAlerts = checkVitalsForAlerts();
+
+    res.json({
+        success: true,
+        simulated: { metric, value },
+        new_alerts: newAlerts,
+        active_alerts: activeVitalsAlerts,
+        message: `Simulated ${metric} value of ${value} - ${newAlerts.length} new alert(s) generated`
     });
 });
 
