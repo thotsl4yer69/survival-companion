@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
 import yaml from 'js-yaml';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1251,6 +1252,359 @@ app.post('/api/config/import', (req, res) => {
             error: 'Invalid YAML: ' + error.message
         });
     }
+});
+
+// ==============================================================================
+// Model File Verification System
+// ==============================================================================
+
+const MODELS_PATH = join(__dirname, 'personas', 'survival', 'models');
+const CHECKSUMS_PATH = join(__dirname, 'data', 'model_checksums.json');
+
+// Model registry - defines expected models with expected checksums
+const modelRegistry = {
+    'phi-3-mini-4k-instruct-q4_k_m.gguf': {
+        type: 'llm',
+        description: 'Phi-3 Mini LLM for general queries',
+        required: true,
+        expected_size_mb: 2000  // Approximate expected size
+    },
+    'biomistral-7b-dare-q4_k_m.gguf': {
+        type: 'llm',
+        description: 'BioMistral medical LLM',
+        required: true,
+        expected_size_mb: 4000
+    },
+    'triage.hef': {
+        type: 'hailo',
+        description: 'Medical triage classifier',
+        required: false,
+        expected_size_mb: 50
+    },
+    'skin_cancer.hef': {
+        type: 'hailo',
+        description: 'Skin lesion analyzer',
+        required: false,
+        expected_size_mb: 50
+    },
+    'plant_classifier.hef': {
+        type: 'hailo',
+        description: 'Plant/mushroom identifier',
+        required: false,
+        expected_size_mb: 50
+    },
+    'wildlife_classifier.hef': {
+        type: 'hailo',
+        description: 'Wildlife identifier',
+        required: false,
+        expected_size_mb: 50
+    },
+    'wound_assessor.hef': {
+        type: 'hailo',
+        description: 'Wound severity assessor',
+        required: false,
+        expected_size_mb: 50
+    }
+};
+
+// Stored checksums (loaded from file or generated)
+let storedChecksums = {};
+
+// Load stored checksums
+function loadChecksums() {
+    try {
+        if (fs.existsSync(CHECKSUMS_PATH)) {
+            const content = fs.readFileSync(CHECKSUMS_PATH, 'utf8');
+            storedChecksums = JSON.parse(content);
+            console.log('[MODEL] Checksums loaded');
+            return true;
+        }
+    } catch (error) {
+        console.log('[MODEL] Error loading checksums:', error.message);
+    }
+    return false;
+}
+
+// Save checksums
+function saveChecksums() {
+    try {
+        const dataDir = join(__dirname, 'data');
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        const data = {
+            generated_at: new Date().toISOString(),
+            checksums: storedChecksums
+        };
+
+        fs.writeFileSync(CHECKSUMS_PATH, JSON.stringify(data, null, 2));
+        console.log('[MODEL] Checksums saved');
+        return true;
+    } catch (error) {
+        console.log('[MODEL] Error saving checksums:', error.message);
+        return false;
+    }
+}
+
+// Calculate file checksum (SHA256)
+function calculateChecksum(filePath) {
+    return new Promise((resolve, reject) => {
+        try {
+            const hash = crypto.createHash('sha256');
+            const stream = fs.createReadStream(filePath);
+
+            stream.on('data', (data) => hash.update(data));
+            stream.on('end', () => resolve(hash.digest('hex')));
+            stream.on('error', reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+// Verify a single model file
+async function verifyModel(modelName) {
+    const filePath = join(MODELS_PATH, modelName);
+    const placeholderPath = join(MODELS_PATH, modelName + '.placeholder');
+    const registry = modelRegistry[modelName] || {};
+
+    const result = {
+        model: modelName,
+        type: registry.type || 'unknown',
+        description: registry.description || 'Unknown model',
+        required: registry.required || false,
+        status: 'unknown',
+        file_exists: false,
+        is_placeholder: false,
+        size_bytes: 0,
+        size_mb: 0,
+        checksum: null,
+        checksum_valid: null,
+        error: null
+    };
+
+    // Check if real file exists
+    if (fs.existsSync(filePath)) {
+        result.file_exists = true;
+        result.is_placeholder = false;
+
+        try {
+            const stats = fs.statSync(filePath);
+            result.size_bytes = stats.size;
+            result.size_mb = Math.round(stats.size / (1024 * 1024) * 10) / 10;
+
+            // Calculate checksum
+            result.checksum = await calculateChecksum(filePath);
+
+            // Verify against stored checksum
+            if (storedChecksums[modelName]) {
+                result.checksum_valid = result.checksum === storedChecksums[modelName];
+                result.status = result.checksum_valid ? 'verified' : 'corrupted';
+
+                if (!result.checksum_valid) {
+                    result.error = 'Checksum mismatch - file may be corrupted';
+                }
+            } else {
+                // No stored checksum - save current one
+                storedChecksums[modelName] = result.checksum;
+                result.status = 'new';
+                saveChecksums();
+            }
+        } catch (error) {
+            result.status = 'error';
+            result.error = error.message;
+        }
+    } else if (fs.existsSync(placeholderPath)) {
+        // Placeholder exists
+        result.file_exists = false;
+        result.is_placeholder = true;
+        result.status = 'placeholder';
+        result.error = 'Model file not installed (placeholder present)';
+    } else {
+        // No file at all
+        result.file_exists = false;
+        result.status = 'missing';
+        result.error = 'Model file not found';
+    }
+
+    return result;
+}
+
+// Verify all models
+async function verifyAllModels() {
+    const results = {
+        verified: 0,
+        corrupted: 0,
+        missing: 0,
+        placeholders: 0,
+        errors: 0,
+        models: {}
+    };
+
+    for (const modelName of Object.keys(modelRegistry)) {
+        const result = await verifyModel(modelName);
+        results.models[modelName] = result;
+
+        switch (result.status) {
+            case 'verified':
+            case 'new':
+                results.verified++;
+                break;
+            case 'corrupted':
+                results.corrupted++;
+                break;
+            case 'missing':
+                results.missing++;
+                break;
+            case 'placeholder':
+                results.placeholders++;
+                break;
+            case 'error':
+                results.errors++;
+                break;
+        }
+    }
+
+    return results;
+}
+
+// Load checksums on startup
+loadChecksums();
+
+// Get model verification status
+app.get('/api/models/status', async (req, res) => {
+    try {
+        const results = await verifyAllModels();
+
+        const allValid = results.corrupted === 0 && results.errors === 0;
+        const requiredMissing = Object.entries(results.models)
+            .filter(([name, info]) => modelRegistry[name]?.required && !info.file_exists)
+            .map(([name]) => name);
+
+        res.json({
+            success: true,
+            timestamp: new Date().toISOString(),
+            overall_status: allValid ? (results.placeholders === Object.keys(modelRegistry).length ? 'development' : 'healthy') : 'issues_detected',
+            summary: {
+                total: Object.keys(modelRegistry).length,
+                verified: results.verified,
+                corrupted: results.corrupted,
+                missing: results.missing,
+                placeholders: results.placeholders,
+                errors: results.errors
+            },
+            required_models_missing: requiredMissing,
+            models: results.models
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Verify specific model
+app.get('/api/models/verify/:modelName', async (req, res) => {
+    const modelName = req.params.modelName;
+
+    if (!modelRegistry[modelName]) {
+        return res.status(404).json({
+            success: false,
+            error: 'Unknown model',
+            available: Object.keys(modelRegistry)
+        });
+    }
+
+    try {
+        const result = await verifyModel(modelName);
+        res.json({
+            success: true,
+            verification: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Simulate model corruption (for testing)
+app.post('/api/models/simulate-corruption', (req, res) => {
+    const { model } = req.body;
+
+    if (!model || !modelRegistry[model]) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid model name required',
+            available: Object.keys(modelRegistry)
+        });
+    }
+
+    // Corrupt the stored checksum
+    const previousChecksum = storedChecksums[model];
+    storedChecksums[model] = 'corrupted_' + Date.now();
+    saveChecksums();
+
+    res.json({
+        success: true,
+        message: `Simulated corruption for ${model}`,
+        previous_checksum: previousChecksum,
+        corrupted_checksum: storedChecksums[model]
+    });
+});
+
+// Fix simulated corruption (restore correct checksum)
+app.post('/api/models/fix-corruption', async (req, res) => {
+    const { model } = req.body;
+
+    if (!model || !modelRegistry[model]) {
+        return res.status(400).json({
+            success: false,
+            error: 'Valid model name required'
+        });
+    }
+
+    const filePath = join(MODELS_PATH, model);
+
+    if (fs.existsSync(filePath)) {
+        try {
+            const newChecksum = await calculateChecksum(filePath);
+            storedChecksums[model] = newChecksum;
+            saveChecksums();
+
+            res.json({
+                success: true,
+                message: `Checksum recalculated for ${model}`,
+                new_checksum: newChecksum
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    } else {
+        // Remove stored checksum for missing file
+        delete storedChecksums[model];
+        saveChecksums();
+
+        res.json({
+            success: true,
+            message: `Checksum cleared for missing model ${model}`
+        });
+    }
+});
+
+// Get model registry (list of expected models)
+app.get('/api/models/registry', (req, res) => {
+    res.json({
+        success: true,
+        models_path: MODELS_PATH,
+        registry: modelRegistry
+    });
 });
 
 // ==============================================================================
