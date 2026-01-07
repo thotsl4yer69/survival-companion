@@ -1,6 +1,6 @@
 {
-  "name": "John Doe",
-  "blood_type": "A-",
+  "name": "Alice Survivor",
+  "blood_type": "O+",
   "allergies": [
     "penicillin"
   ],
@@ -13,11 +13,19 @@
   ],
   "emergency_contacts": [
     {
-      "name": "Jane Doe",
-      "phone": "+1-555-123-4567",
-      "relationship": "Spouse"
+      "name": "CONTACT_TEST_001",
+      "phone": "+1-555-987-6543",
+      "relationship": "Friend"
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-07T11:58:58.738Z"
+  "updated_at": "2026-01-07T21:16:25.444Z",
+  "baseline_vitals": {
+    "heart_rate": 72,
+    "spo2": 98,
+    "temperature": 36.7,
+    "blood_pressure_systolic": null,
+    "blood_pressure_diastolic": null,
+    "recorded_at": "2026-01-07T21:16:25.443Z"
+  }
 }

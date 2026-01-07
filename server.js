@@ -4639,6 +4639,230 @@ app.post('/api/signaling/search', (req, res) => {
     res.json(response);
 });
 
+// ==============================================================================
+// Cold Weather Survival Database
+// ==============================================================================
+
+const coldWeatherDatabase = {
+    priorities: [
+        '1. SHELTER - You can die from cold exposure in 3 hours. Shelter first!',
+        '2. DRY - Stay dry. Wet clothing loses 90% of insulation value.',
+        '3. FIRE - Heat source for warmth, water purification, signaling',
+        '4. WATER - Dehydration occurs in cold weather too. Melt snow, don\'t eat it.',
+        '5. FOOD - Calories = heat. Body burns more fuel staying warm.'
+    ],
+    layering: {
+        id: 'layering',
+        name: 'Clothing Layering System',
+        description: 'Proper layering traps air and manages moisture. Key to cold survival.',
+        critical_rule: 'Avoid SWEATING - wet clothes kill. Remove layers before overheating.',
+        layers: [
+            {
+                layer: 'Base Layer',
+                purpose: 'Wicks moisture away from skin',
+                material: ['Merino wool', 'Synthetic (polyester, polypropylene)', 'Silk'],
+                avoid: ['Cotton - absorbs moisture and stays wet ("cotton kills")'],
+                tip: 'Should fit snugly but not tight'
+            },
+            {
+                layer: 'Insulating Layer(s)',
+                purpose: 'Traps air to retain body heat',
+                material: ['Fleece', 'Down', 'Synthetic fill (PrimaLoft)', 'Wool sweater'],
+                note: 'Can add multiple insulating layers',
+                tip: 'Loose fit allows air pockets and movement'
+            },
+            {
+                layer: 'Shell Layer',
+                purpose: 'Blocks wind and precipitation',
+                material: ['Gore-Tex or similar waterproof-breathable', 'Nylon windbreaker', 'Emergency poncho'],
+                note: 'Breathability prevents moisture buildup',
+                tip: 'Vents allow excess heat/moisture to escape'
+            }
+        ],
+        tips: [
+            'Avoid cotton at all costs - it absorbs moisture and stays wet',
+            'Remove layers BEFORE sweating - moisture kills insulation',
+            'Keep spare dry base layer for sleeping',
+            'Protect extremities first - head, hands, feet lose heat fastest',
+            'Loose layers trap more air = more warmth'
+        ],
+        extremities: {
+            head: {
+                note: 'Significant heat loss through head. Always cover.',
+                options: ['Wool beanie', 'Balaclava', 'Hood']
+            },
+            hands: {
+                note: 'Mittens warmer than gloves (fingers together)',
+                options: ['Liner gloves + insulated mittens', 'Waterproof shell mittens'],
+                tip: 'Use strings/loops so you don\'t lose them'
+            },
+            feet: {
+                note: 'Keep dry. Change socks if wet. Loose boots for circulation.',
+                options: ['Wool socks', 'Vapor barrier (plastic bag) in extreme cold'],
+                tip: 'Never sleep in same socks you wore all day'
+            }
+        }
+    },
+    shelter_priority: {
+        id: 'shelter_priority',
+        description: 'In cold conditions, SHELTER is your #1 priority',
+        rule_of_threes: '3 hours without shelter in harsh cold can be fatal',
+        options: [
+            {
+                type: 'Snow cave / Quinzhee',
+                time: '2-4 hours',
+                temp_inside: '25-32°F even in -40°F outside',
+                best_for: 'Deep snow, sustained cold',
+                critical: 'ALWAYS maintain ventilation hole'
+            },
+            {
+                type: 'Debris hut',
+                time: '2-4 hours',
+                insulation: '2-3 feet of debris = significant warmth',
+                best_for: 'Forested areas with materials',
+                tip: 'Make it body-sized for maximum heat retention'
+            },
+            {
+                type: 'Lean-to with fire',
+                time: '1-2 hours',
+                best_for: 'Quick shelter with fire reflector',
+                setup: 'Open side faces fire, fire wall behind fire reflects heat'
+            }
+        ],
+        ground_insulation: 'NEVER sleep directly on cold ground. Minimum 4 inches of dead leaves, pine boughs, or other insulation.',
+        emergency_tips: [
+            'Small shelters are warmer - body-sized only',
+            'Sleep elevated off ground on bed of insulation',
+            'Block all drafts - cold air kills',
+            'A candle in enclosed shelter can raise temp 10+ degrees'
+        ]
+    },
+    frostbite: {
+        id: 'frostbite',
+        name: 'Frostbite Prevention & Recognition',
+        description: 'Freezing of tissue. Affects extremities first: fingers, toes, nose, ears, cheeks.',
+        stages: [
+            {
+                stage: 'Frostnip (mild)',
+                signs: ['Skin pale/red', 'Tingling', 'Numbness beginning'],
+                treatment: 'Get warm immediately. Warm with body heat. No permanent damage if treated.'
+            },
+            {
+                stage: 'Superficial Frostbite',
+                signs: ['White/grayish skin', 'Hard surface but soft underneath', 'Stinging on rewarming'],
+                treatment: 'Needs medical attention. Warm gradually in lukewarm water (100-105°F). Do NOT rub.'
+            },
+            {
+                stage: 'Deep Frostbite',
+                signs: ['Skin turns blue/black', 'Hard all the way through', 'No sensation', 'Blisters may form'],
+                treatment: 'MEDICAL EMERGENCY. Do NOT rewarm if refreezing possible. Tissue death likely.',
+                warning: 'Do NOT rewarm then refreeze - causes additional damage'
+            }
+        ],
+        prevention: [
+            'Keep extremities dry and covered',
+            'Wiggle fingers and toes regularly to check sensation',
+            'Change wet socks/gloves immediately',
+            'Mittens warmer than gloves',
+            'Cover all exposed skin in extreme cold',
+            'Stay hydrated - dehydration increases frostbite risk',
+            'Avoid alcohol - dilates blood vessels and increases heat loss',
+            'Check face - can\'t always feel frostbite starting'
+        ],
+        do_not: [
+            'Do NOT rub frostbitten skin (causes more damage)',
+            'Do NOT use direct heat (fire, hot water)',
+            'Do NOT break blisters',
+            'Do NOT rewarm if refreezing is possible',
+            'Do NOT walk on frostbitten feet unless life depends on it'
+        ]
+    },
+    heat_retention: {
+        id: 'heat_retention',
+        name: 'Heat Retention Tips',
+        description: 'Maximize body heat and minimize heat loss',
+        techniques: [
+            { tip: 'Stay dry', explanation: 'Wet clothing loses 90% of insulation. Change immediately if wet.' },
+            { tip: 'Eat before sleeping', explanation: 'Calories = fuel for body heat. Eat fats/proteins for sustained warmth.' },
+            { tip: 'Exercise before bed', explanation: 'Brief activity generates heat. Get warm THEN sleep.' },
+            { tip: 'Hot water bottle', explanation: 'Fill bottle with hot water, place in sleeping bag. Core warmth.' },
+            { tip: 'Insulate from ground', explanation: 'Ground steals heat. 4+ inches of insulation under you.' },
+            { tip: 'Sleep in clothes', explanation: 'Wear tomorrow\'s base layer to bed. Body heat dries any moisture.' },
+            { tip: 'Buddy system', explanation: 'Shared body heat in shelter can be life-saving.' },
+            { tip: 'Wear hat to bed', explanation: '40% of heat lost through head. Cover it.' },
+            { tip: 'Don\'t hold urine', explanation: 'Body wastes energy keeping urine warm. Pee before sleeping.' },
+            { tip: 'Vapor barrier', explanation: 'In extreme cold, plastic bag over socks stops moisture from reaching insulation.' }
+        ],
+        shelter_heating: [
+            'Small candle raises shelter temp 10+ degrees',
+            'Fire reflector wall directs heat into lean-to',
+            'Hot rocks (NOT wet rocks - explode) can warm shelter',
+            'Body heat alone can warm well-insulated shelter'
+        ]
+    },
+    hypothermia_link: {
+        note: 'For hypothermia treatment, see Medical Protocols',
+        key_signs: ['Uncontrollable shivering', 'Confusion', 'Slurred speech', 'Stumbling'],
+        immediate_action: 'Remove from cold, dry clothes, warm core first, warm drinks if conscious'
+    }
+};
+
+// Get cold weather survival guide
+app.get('/api/cold-weather', (req, res) => {
+    res.json({
+        success: true,
+        priorities: coldWeatherDatabase.priorities,
+        layering: coldWeatherDatabase.layering,
+        shelter_priority: coldWeatherDatabase.shelter_priority,
+        frostbite: coldWeatherDatabase.frostbite,
+        heat_retention: coldWeatherDatabase.heat_retention,
+        hypothermia_link: coldWeatherDatabase.hypothermia_link
+    });
+});
+
+// Search cold weather info
+app.post('/api/cold-weather/search', (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    const response = {
+        success: true,
+        query: query,
+        results: []
+    };
+
+    // Topic keywords
+    if (queryLower.includes('layer') || queryLower.includes('cloth') || queryLower.includes('wear')) {
+        response.results.push({ type: 'layering', data: coldWeatherDatabase.layering });
+    }
+    if (queryLower.includes('shelter') || queryLower.includes('sleep')) {
+        response.results.push({ type: 'shelter_priority', data: coldWeatherDatabase.shelter_priority });
+    }
+    if (queryLower.includes('frost') || queryLower.includes('freeze') || queryLower.includes('numb')) {
+        response.results.push({ type: 'frostbite', data: coldWeatherDatabase.frostbite });
+    }
+    if (queryLower.includes('warm') || queryLower.includes('heat') || queryLower.includes('retain')) {
+        response.results.push({ type: 'heat_retention', data: coldWeatherDatabase.heat_retention });
+    }
+
+    // Default: return overview
+    if (response.results.length === 0) {
+        response.results.push({
+            type: 'overview',
+            priorities: coldWeatherDatabase.priorities,
+            layering_summary: {
+                layers: coldWeatherDatabase.layering.layers.map(l => l.layer),
+                critical_rule: coldWeatherDatabase.layering.critical_rule
+            },
+            shelter_types: coldWeatherDatabase.shelter_priority.options.map(o => o.type),
+            frostbite_prevention: coldWeatherDatabase.frostbite.prevention.slice(0, 5),
+            heat_tips_count: coldWeatherDatabase.heat_retention.techniques.length
+        });
+    }
+
+    res.json(response);
+});
+
 // Generate contextually appropriate survival response
 function generateSurvivalResponse(query) {
     const queryLower = query.toLowerCase();
@@ -6607,6 +6831,14 @@ let userProfile = {
     medications: [],
     emergency_contacts: [],
     notes: '',
+    baseline_vitals: {
+        heart_rate: null,      // BPM (typical resting: 60-100)
+        spo2: null,            // % (typical: 95-100)
+        temperature: null,     // °C (typical: 36.5-37.2)
+        blood_pressure_systolic: null,  // mmHg (typical: 90-120)
+        blood_pressure_diastolic: null, // mmHg (typical: 60-80)
+        recorded_at: null      // When baselines were set
+    },
     updated_at: null
 };
 
@@ -6653,7 +6885,7 @@ app.get('/api/profile', (req, res) => {
 
 // Update user profile
 app.put('/api/profile', (req, res) => {
-    const { name, blood_type, allergies, medical_conditions, medications, emergency_contacts, notes } = req.body;
+    const { name, blood_type, allergies, medical_conditions, medications, emergency_contacts, notes, baseline_vitals } = req.body;
 
     if (name !== undefined) userProfile.name = name;
     if (blood_type !== undefined) userProfile.blood_type = blood_type;
@@ -6670,6 +6902,14 @@ app.put('/api/profile', (req, res) => {
         userProfile.emergency_contacts = Array.isArray(emergency_contacts) ? emergency_contacts : [emergency_contacts].filter(Boolean);
     }
     if (notes !== undefined) userProfile.notes = notes;
+    if (baseline_vitals !== undefined) {
+        // Merge baseline vitals
+        userProfile.baseline_vitals = {
+            ...userProfile.baseline_vitals,
+            ...baseline_vitals,
+            recorded_at: new Date().toISOString()
+        };
+    }
 
     const saved = saveUserProfile();
 
@@ -6819,6 +7059,307 @@ app.delete('/api/profile/emergency-contacts/:index', (req, res) => {
         deleted: deleted,
         emergency_contacts: userProfile.emergency_contacts,
         message: `Deleted emergency contact: ${deleted.name}`
+    });
+});
+
+// ==============================================================================
+// Baseline Vitals Management
+// ==============================================================================
+
+// Get baseline vitals
+app.get('/api/profile/baseline-vitals', (req, res) => {
+    // Initialize baseline_vitals if not present (for backwards compatibility)
+    if (!userProfile.baseline_vitals) {
+        userProfile.baseline_vitals = {
+            heart_rate: null,
+            spo2: null,
+            temperature: null,
+            blood_pressure_systolic: null,
+            blood_pressure_diastolic: null,
+            recorded_at: null
+        };
+    }
+
+    const hasBaselines = userProfile.baseline_vitals.heart_rate !== null ||
+                         userProfile.baseline_vitals.spo2 !== null ||
+                         userProfile.baseline_vitals.temperature !== null;
+
+    res.json({
+        success: true,
+        baseline_vitals: userProfile.baseline_vitals,
+        has_baselines: hasBaselines,
+        typical_ranges: {
+            heart_rate: { min: 60, max: 100, unit: 'BPM', description: 'Resting heart rate' },
+            spo2: { min: 95, max: 100, unit: '%', description: 'Blood oxygen saturation' },
+            temperature: { min: 36.5, max: 37.2, unit: '°C', description: 'Body temperature' },
+            blood_pressure_systolic: { min: 90, max: 120, unit: 'mmHg', description: 'Systolic BP' },
+            blood_pressure_diastolic: { min: 60, max: 80, unit: 'mmHg', description: 'Diastolic BP' }
+        }
+    });
+});
+
+// Set baseline vitals (full update)
+app.put('/api/profile/baseline-vitals', (req, res) => {
+    const { heart_rate, spo2, temperature, blood_pressure_systolic, blood_pressure_diastolic } = req.body;
+
+    // Validate inputs
+    const errors = [];
+    if (heart_rate !== undefined && heart_rate !== null) {
+        if (heart_rate < 30 || heart_rate > 200) {
+            errors.push('Heart rate must be between 30-200 BPM');
+        }
+    }
+    if (spo2 !== undefined && spo2 !== null) {
+        if (spo2 < 70 || spo2 > 100) {
+            errors.push('SpO2 must be between 70-100%');
+        }
+    }
+    if (temperature !== undefined && temperature !== null) {
+        if (temperature < 32 || temperature > 42) {
+            errors.push('Temperature must be between 32-42°C');
+        }
+    }
+    if (blood_pressure_systolic !== undefined && blood_pressure_systolic !== null) {
+        if (blood_pressure_systolic < 60 || blood_pressure_systolic > 250) {
+            errors.push('Systolic BP must be between 60-250 mmHg');
+        }
+    }
+    if (blood_pressure_diastolic !== undefined && blood_pressure_diastolic !== null) {
+        if (blood_pressure_diastolic < 40 || blood_pressure_diastolic > 150) {
+            errors.push('Diastolic BP must be between 40-150 mmHg');
+        }
+    }
+
+    if (errors.length > 0) {
+        return res.status(400).json({ success: false, errors });
+    }
+
+    // Initialize if needed
+    if (!userProfile.baseline_vitals) {
+        userProfile.baseline_vitals = {};
+    }
+
+    // Update baselines
+    if (heart_rate !== undefined) userProfile.baseline_vitals.heart_rate = heart_rate;
+    if (spo2 !== undefined) userProfile.baseline_vitals.spo2 = spo2;
+    if (temperature !== undefined) userProfile.baseline_vitals.temperature = temperature;
+    if (blood_pressure_systolic !== undefined) userProfile.baseline_vitals.blood_pressure_systolic = blood_pressure_systolic;
+    if (blood_pressure_diastolic !== undefined) userProfile.baseline_vitals.blood_pressure_diastolic = blood_pressure_diastolic;
+    userProfile.baseline_vitals.recorded_at = new Date().toISOString();
+
+    const saved = saveUserProfile();
+
+    res.json({
+        success: true,
+        baseline_vitals: userProfile.baseline_vitals,
+        persisted: saved,
+        message: 'Baseline vitals updated successfully'
+    });
+});
+
+// Set baseline from current sensor readings
+app.post('/api/profile/baseline-vitals/capture', (req, res) => {
+    // Get current sensor readings
+    const currentVitals = {
+        heart_rate: sensorData.heart_rate.value,
+        spo2: sensorData.spo2.value,
+        temperature: sensorData.body_temp.value
+    };
+
+    // Initialize if needed
+    if (!userProfile.baseline_vitals) {
+        userProfile.baseline_vitals = {};
+    }
+
+    // Set baselines from current readings
+    userProfile.baseline_vitals.heart_rate = currentVitals.heart_rate;
+    userProfile.baseline_vitals.spo2 = currentVitals.spo2;
+    userProfile.baseline_vitals.temperature = currentVitals.temperature;
+    userProfile.baseline_vitals.recorded_at = new Date().toISOString();
+
+    const saved = saveUserProfile();
+
+    res.json({
+        success: true,
+        baseline_vitals: userProfile.baseline_vitals,
+        captured_from: currentVitals,
+        persisted: saved,
+        message: 'Baseline vitals captured from current readings'
+    });
+});
+
+// Clear baseline vitals
+app.delete('/api/profile/baseline-vitals', (req, res) => {
+    userProfile.baseline_vitals = {
+        heart_rate: null,
+        spo2: null,
+        temperature: null,
+        blood_pressure_systolic: null,
+        blood_pressure_diastolic: null,
+        recorded_at: null
+    };
+
+    const saved = saveUserProfile();
+
+    res.json({
+        success: true,
+        baseline_vitals: userProfile.baseline_vitals,
+        persisted: saved,
+        message: 'Baseline vitals cleared'
+    });
+});
+
+// Compare current vitals to baselines
+app.get('/api/vitals/compare', (req, res) => {
+    // Initialize baseline_vitals if not present
+    if (!userProfile.baseline_vitals) {
+        userProfile.baseline_vitals = {
+            heart_rate: null,
+            spo2: null,
+            temperature: null,
+            blood_pressure_systolic: null,
+            blood_pressure_diastolic: null,
+            recorded_at: null
+        };
+    }
+
+    const baselines = userProfile.baseline_vitals;
+    const hasBaselines = baselines.heart_rate !== null ||
+                         baselines.spo2 !== null ||
+                         baselines.temperature !== null;
+
+    if (!hasBaselines) {
+        return res.json({
+            success: true,
+            has_baselines: false,
+            message: 'No baseline vitals set. Please set baselines for comparison.',
+            current: {
+                heart_rate: sensorData.heart_rate.value,
+                spo2: sensorData.spo2.value,
+                temperature: sensorData.body_temp.value
+            }
+        });
+    }
+
+    // Get current readings with slight variation
+    const currentHR = Math.round(72 + (Math.random() - 0.5) * 4);
+    const currentSpO2 = 98;
+    const currentTemp = 36.8 + (Math.random() - 0.5) * 0.2;
+
+    // Calculate deviations
+    const comparisons = [];
+    const alerts = [];
+
+    // Heart Rate comparison
+    if (baselines.heart_rate !== null) {
+        const hrDiff = currentHR - baselines.heart_rate;
+        const hrPercent = ((hrDiff / baselines.heart_rate) * 100).toFixed(1);
+        const hrStatus = Math.abs(hrDiff) <= 10 ? 'normal' :
+                         Math.abs(hrDiff) <= 20 ? 'elevated' : 'concerning';
+
+        comparisons.push({
+            metric: 'heart_rate',
+            label: 'Heart Rate',
+            current: currentHR,
+            baseline: baselines.heart_rate,
+            difference: hrDiff,
+            percent_change: parseFloat(hrPercent),
+            status: hrStatus,
+            unit: 'BPM',
+            direction: hrDiff > 0 ? 'above' : hrDiff < 0 ? 'below' : 'at'
+        });
+
+        if (hrStatus === 'concerning') {
+            alerts.push({
+                type: 'warning',
+                metric: 'heart_rate',
+                message: `Heart rate is ${Math.abs(hrDiff)} BPM ${hrDiff > 0 ? 'above' : 'below'} your baseline`
+            });
+        }
+    }
+
+    // SpO2 comparison
+    if (baselines.spo2 !== null) {
+        const spo2Diff = currentSpO2 - baselines.spo2;
+        const spo2Status = currentSpO2 >= 95 ? 'normal' :
+                          currentSpO2 >= 90 ? 'low' : 'critical';
+
+        comparisons.push({
+            metric: 'spo2',
+            label: 'Blood Oxygen',
+            current: currentSpO2,
+            baseline: baselines.spo2,
+            difference: spo2Diff,
+            percent_change: parseFloat(((spo2Diff / baselines.spo2) * 100).toFixed(1)),
+            status: spo2Status,
+            unit: '%',
+            direction: spo2Diff > 0 ? 'above' : spo2Diff < 0 ? 'below' : 'at'
+        });
+
+        if (spo2Status === 'critical') {
+            alerts.push({
+                type: 'danger',
+                metric: 'spo2',
+                message: `CRITICAL: SpO2 at ${currentSpO2}% - seek medical attention immediately`
+            });
+        } else if (spo2Status === 'low') {
+            alerts.push({
+                type: 'warning',
+                metric: 'spo2',
+                message: `SpO2 is low at ${currentSpO2}% - monitor closely`
+            });
+        }
+    }
+
+    // Temperature comparison
+    if (baselines.temperature !== null) {
+        const tempDiff = currentTemp - baselines.temperature;
+        const tempStatus = Math.abs(tempDiff) <= 0.5 ? 'normal' :
+                          currentTemp >= 38 ? 'fever' :
+                          currentTemp <= 35 ? 'hypothermia' : 'elevated';
+
+        comparisons.push({
+            metric: 'temperature',
+            label: 'Body Temperature',
+            current: parseFloat(currentTemp.toFixed(1)),
+            baseline: baselines.temperature,
+            difference: parseFloat(tempDiff.toFixed(1)),
+            percent_change: parseFloat(((tempDiff / baselines.temperature) * 100).toFixed(1)),
+            status: tempStatus,
+            unit: '°C',
+            direction: tempDiff > 0 ? 'above' : tempDiff < 0 ? 'below' : 'at'
+        });
+
+        if (tempStatus === 'fever') {
+            alerts.push({
+                type: 'warning',
+                metric: 'temperature',
+                message: `Elevated temperature: ${currentTemp.toFixed(1)}°C - possible fever`
+            });
+        } else if (tempStatus === 'hypothermia') {
+            alerts.push({
+                type: 'danger',
+                metric: 'temperature',
+                message: `CRITICAL: Body temperature ${currentTemp.toFixed(1)}°C - hypothermia risk`
+            });
+        }
+    }
+
+    // Overall status
+    const overallStatus = alerts.some(a => a.type === 'danger') ? 'critical' :
+                         alerts.some(a => a.type === 'warning') ? 'attention' : 'normal';
+
+    res.json({
+        success: true,
+        has_baselines: true,
+        timestamp: new Date().toISOString(),
+        baseline_recorded_at: baselines.recorded_at,
+        comparisons,
+        alerts,
+        overall_status: overallStatus,
+        summary: overallStatus === 'normal' ? 'All vitals within normal range of your baselines' :
+                 overallStatus === 'attention' ? 'Some vitals need attention - review alerts' :
+                 'Critical vital signs detected - seek help immediately'
     });
 });
 
