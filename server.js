@@ -3225,6 +3225,237 @@ app.post('/api/llm/smart-query', async (req, res) => {
 });
 
 // ==============================================================================
+// User Profile API (Medical Info for Rescuers)
+// ==============================================================================
+
+// User profile file path
+const userProfileFile = join(__dirname, 'data', 'user_profile.json');
+
+// Default user profile structure
+let userProfile = {
+    name: '',
+    blood_type: '',
+    allergies: [],
+    medical_conditions: [],
+    medications: [],
+    emergency_contacts: [],
+    notes: '',
+    updated_at: null
+};
+
+// Load user profile from file
+function loadUserProfile() {
+    try {
+        if (fs.existsSync(userProfileFile)) {
+            userProfile = JSON.parse(fs.readFileSync(userProfileFile, 'utf8'));
+            console.log('User profile loaded');
+            return true;
+        }
+    } catch (e) {
+        console.log('No user profile found, using defaults');
+    }
+    return false;
+}
+
+// Save user profile to file
+function saveUserProfile() {
+    try {
+        const dir = dirname(userProfileFile);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        userProfile.updated_at = new Date().toISOString();
+        fs.writeFileSync(userProfileFile, JSON.stringify(userProfile, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error saving user profile:', e);
+        return false;
+    }
+}
+
+// Load profile on startup
+loadUserProfile();
+
+// Get user profile
+app.get('/api/profile', (req, res) => {
+    res.json({
+        success: true,
+        profile: userProfile
+    });
+});
+
+// Update user profile
+app.put('/api/profile', (req, res) => {
+    const { name, blood_type, allergies, medical_conditions, medications, emergency_contacts, notes } = req.body;
+
+    if (name !== undefined) userProfile.name = name;
+    if (blood_type !== undefined) userProfile.blood_type = blood_type;
+    if (allergies !== undefined) {
+        userProfile.allergies = Array.isArray(allergies) ? allergies : [allergies].filter(Boolean);
+    }
+    if (medical_conditions !== undefined) {
+        userProfile.medical_conditions = Array.isArray(medical_conditions) ? medical_conditions : [medical_conditions].filter(Boolean);
+    }
+    if (medications !== undefined) {
+        userProfile.medications = Array.isArray(medications) ? medications : [medications].filter(Boolean);
+    }
+    if (emergency_contacts !== undefined) {
+        userProfile.emergency_contacts = Array.isArray(emergency_contacts) ? emergency_contacts : [emergency_contacts].filter(Boolean);
+    }
+    if (notes !== undefined) userProfile.notes = notes;
+
+    const saved = saveUserProfile();
+
+    res.json({
+        success: true,
+        profile: userProfile,
+        persisted: saved,
+        message: 'Profile updated successfully'
+    });
+});
+
+// Get emergency medical info (formatted for rescuers - high contrast display)
+app.get('/api/profile/emergency-info', (req, res) => {
+    const hasAllergies = userProfile.allergies && userProfile.allergies.length > 0;
+    const hasMedicalConditions = userProfile.medical_conditions && userProfile.medical_conditions.length > 0;
+    const hasMedications = userProfile.medications && userProfile.medications.length > 0;
+    const hasEmergencyContacts = userProfile.emergency_contacts && userProfile.emergency_contacts.length > 0;
+
+    // Format critical allergies as URGENT
+    const criticalAllergies = userProfile.allergies.filter(a =>
+        a.toLowerCase().includes('severe') ||
+        a.toLowerCase().includes('anaphyl') ||
+        a.toLowerCase().includes('penicillin') ||
+        a.toLowerCase().includes('bee') ||
+        a.toLowerCase().includes('nut')
+    );
+
+    res.json({
+        success: true,
+        emergency_info: {
+            name: userProfile.name || 'Unknown',
+            blood_type: userProfile.blood_type || 'Unknown',
+            blood_type_formatted: userProfile.blood_type ?
+                `BLOOD TYPE: ${userProfile.blood_type.toUpperCase()}` : 'BLOOD TYPE: UNKNOWN',
+
+            // Allergies section
+            has_allergies: hasAllergies,
+            allergies: userProfile.allergies,
+            allergies_formatted: hasAllergies ?
+                `ALLERGIES: ${userProfile.allergies.join(', ').toUpperCase()}` : 'NO KNOWN ALLERGIES',
+            critical_allergies: criticalAllergies,
+            has_critical_allergies: criticalAllergies.length > 0,
+
+            // Medical conditions section
+            has_medical_conditions: hasMedicalConditions,
+            medical_conditions: userProfile.medical_conditions,
+            medical_conditions_formatted: hasMedicalConditions ?
+                `CONDITIONS: ${userProfile.medical_conditions.join(', ')}` : 'NO KNOWN CONDITIONS',
+
+            // Medications section
+            has_medications: hasMedications,
+            medications: userProfile.medications,
+            medications_formatted: hasMedications ?
+                `MEDICATIONS: ${userProfile.medications.join(', ')}` : 'NO CURRENT MEDICATIONS',
+
+            // Emergency contacts
+            has_emergency_contacts: hasEmergencyContacts,
+            emergency_contacts: userProfile.emergency_contacts,
+
+            // Notes
+            notes: userProfile.notes || '',
+
+            // Meta info
+            last_updated: userProfile.updated_at,
+            data_available: userProfile.name || hasAllergies || hasMedicalConditions || hasMedications || hasEmergencyContacts
+        }
+    });
+});
+
+// Add a single allergy
+app.post('/api/profile/allergies', (req, res) => {
+    const { allergy } = req.body;
+
+    if (!allergy) {
+        return res.status(400).json({ success: false, error: 'Allergy is required' });
+    }
+
+    if (!userProfile.allergies.includes(allergy)) {
+        userProfile.allergies.push(allergy);
+        saveUserProfile();
+    }
+
+    res.json({
+        success: true,
+        allergies: userProfile.allergies,
+        message: `Added allergy: ${allergy}`
+    });
+});
+
+// Add a single medication
+app.post('/api/profile/medications', (req, res) => {
+    const { medication } = req.body;
+
+    if (!medication) {
+        return res.status(400).json({ success: false, error: 'Medication is required' });
+    }
+
+    if (!userProfile.medications.includes(medication)) {
+        userProfile.medications.push(medication);
+        saveUserProfile();
+    }
+
+    res.json({
+        success: true,
+        medications: userProfile.medications,
+        message: `Added medication: ${medication}`
+    });
+});
+
+// Add an emergency contact
+app.post('/api/profile/emergency-contacts', (req, res) => {
+    const { name, phone, relationship } = req.body;
+
+    if (!name || !phone) {
+        return res.status(400).json({ success: false, error: 'Name and phone are required' });
+    }
+
+    const contact = {
+        name,
+        phone,
+        relationship: relationship || 'Emergency Contact'
+    };
+
+    userProfile.emergency_contacts.push(contact);
+    saveUserProfile();
+
+    res.json({
+        success: true,
+        emergency_contacts: userProfile.emergency_contacts,
+        message: `Added emergency contact: ${name}`
+    });
+});
+
+// Delete an emergency contact by index
+app.delete('/api/profile/emergency-contacts/:index', (req, res) => {
+    const index = parseInt(req.params.index);
+
+    if (index < 0 || index >= userProfile.emergency_contacts.length) {
+        return res.status(404).json({ success: false, error: 'Contact not found' });
+    }
+
+    const deleted = userProfile.emergency_contacts.splice(index, 1)[0];
+    saveUserProfile();
+
+    res.json({
+        success: true,
+        deleted: deleted,
+        emergency_contacts: userProfile.emergency_contacts,
+        message: `Deleted emergency contact: ${deleted.name}`
+    });
+});
+
+// ==============================================================================
 // Boot Sequence Logic
 // ==============================================================================
 async function runBootSequence() {
