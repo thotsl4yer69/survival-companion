@@ -94,6 +94,56 @@
             <button id="stop-navigation" class="btn btn-danger">Stop Navigation</button>
         </div>
 
+        <!-- I'm Lost Emergency Panel (hidden by default) -->
+        <div id="lost-mode-panel" class="lost-mode-panel hidden">
+            <div class="lost-mode-header">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="lost-icon">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <h3>I'M LOST - STAY CALM</h3>
+            </div>
+
+            <div class="lost-mode-message">
+                <p id="lost-ack-message">Acknowledged. The system is analyzing your situation...</p>
+            </div>
+
+            <div class="lost-mode-guidance">
+                <h4>Guidance Steps</h4>
+                <div id="lost-guidance-steps" class="guidance-steps">
+                    <!-- Steps will be populated dynamically -->
+                </div>
+            </div>
+
+            <div class="lost-mode-waypoints">
+                <h4>Nearest Waypoints</h4>
+                <div id="lost-waypoints-list" class="lost-waypoints-list">
+                    <p class="no-waypoints">No waypoints saved</p>
+                </div>
+            </div>
+
+            <div class="lost-mode-backtrack">
+                <h4>Backtrack Route</h4>
+                <div id="lost-backtrack-info" class="backtrack-info">
+                    <p>Checking for breadcrumb trail...</p>
+                </div>
+                <button id="start-backtrack" class="btn btn-primary hidden">Start Backtracking</button>
+            </div>
+
+            <div class="lost-mode-tips">
+                <h4>Survival Tips</h4>
+                <ul id="lost-tips-list">
+                    <li>Stay hydrated</li>
+                    <li>Stay in shade during hot hours</li>
+                    <li>Do not wander aimlessly</li>
+                </ul>
+            </div>
+
+            <div class="lost-mode-actions">
+                <button id="exit-lost-mode" class="btn btn-secondary">I'm Safe - Exit Mode</button>
+                <button id="activate-sos" class="btn btn-danger">Activate SOS Beacon</button>
+            </div>
+        </div>
+
         <!-- Waypoints List -->
         <div class="waypoints-card">
             <h3>Saved Waypoints <span id="waypoint-count" class="waypoint-count">(0)</span></h3>
@@ -627,6 +677,242 @@
     .waypoint-navigate:hover {
         opacity: 0.9;
     }
+
+    /* I'm Lost Emergency Mode Panel */
+    .lost-mode-panel {
+        background: linear-gradient(135deg, var(--bg-card), rgba(255, 0, 0, 0.15));
+        border: 3px solid var(--accent-danger, #ff0000);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-md);
+        animation: pulse-border 2s infinite;
+    }
+
+    .lost-mode-panel.hidden {
+        display: none;
+    }
+
+    @keyframes pulse-border {
+        0%, 100% {
+            border-color: var(--accent-danger, #ff0000);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+        50% {
+            border-color: rgba(255, 0, 0, 0.6);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+    }
+
+    .lost-mode-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 2px solid var(--accent-danger, #ff0000);
+    }
+
+    .lost-icon {
+        width: 32px;
+        height: 32px;
+        color: var(--accent-danger, #ff0000);
+        animation: pulse-icon 1.5s infinite;
+    }
+
+    @keyframes pulse-icon {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.1); }
+    }
+
+    .lost-mode-header h3 {
+        color: var(--accent-danger, #ff0000);
+        font-size: var(--font-size-lg);
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: 1px;
+    }
+
+    .lost-mode-message {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm) var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .lost-mode-message p {
+        color: var(--text-primary);
+        font-size: var(--font-size-base);
+        margin: 0;
+    }
+
+    .lost-mode-guidance,
+    .lost-mode-waypoints,
+    .lost-mode-backtrack,
+    .lost-mode-tips {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .lost-mode-guidance h4,
+    .lost-mode-waypoints h4,
+    .lost-mode-backtrack h4,
+    .lost-mode-tips h4 {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .guidance-steps {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .guidance-step {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+    }
+
+    .guidance-step-number {
+        background: var(--accent-primary);
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: var(--font-size-sm);
+        flex-shrink: 0;
+    }
+
+    .guidance-step-content {
+        flex: 1;
+    }
+
+    .guidance-step-action {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: var(--font-size-sm);
+        margin-bottom: 2px;
+    }
+
+    .guidance-step-detail {
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+    }
+
+    .lost-waypoints-list {
+        max-height: 120px;
+        overflow-y: auto;
+    }
+
+    .lost-waypoint-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-sm);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .lost-waypoint-name {
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+        color: var(--text-primary);
+    }
+
+    .lost-waypoint-distance {
+        font-family: monospace;
+        font-size: var(--font-size-sm);
+        color: var(--accent-secondary);
+    }
+
+    .lost-waypoint-direction {
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+    }
+
+    .backtrack-info {
+        background: rgba(0, 100, 200, 0.15);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+    }
+
+    .backtrack-info p {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--text-primary);
+    }
+
+    .backtrack-available {
+        border-color: var(--success, #00ff00);
+        background: rgba(0, 255, 0, 0.1);
+    }
+
+    .backtrack-unavailable {
+        border-color: var(--warning, #ffa500);
+        background: rgba(255, 165, 0, 0.1);
+    }
+
+    .backtrack-trail-name {
+        font-weight: 600;
+        color: var(--accent-primary);
+    }
+
+    .backtrack-stats {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-xs);
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+    }
+
+    .lost-mode-tips ul {
+        margin: 0;
+        padding-left: var(--spacing-md);
+    }
+
+    .lost-mode-tips li {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .lost-mode-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .lost-mode-actions .btn {
+        flex: 1;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: none;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        min-height: var(--touch-preferred);
+    }
+
+    #activate-sos {
+        animation: sos-pulse 1s infinite;
+    }
+
+    @keyframes sos-pulse {
+        0%, 100% { background: var(--accent-danger, #ff0000); }
+        50% { background: rgba(255, 0, 0, 0.7); }
+    }
 </style>
 {% endblock %}
 
@@ -990,11 +1276,269 @@
         this.style.background = 'var(--accent-primary)';
     });
 
+    // ==============================================================================
+    // I'm Lost Emergency Mode
+    // ==============================================================================
+
+    let lostModePollingInterval = null;
+
     document.getElementById('im-lost').addEventListener('click', function() {
-        if (confirm('Activate "I\'m Lost" mode? This will display your last known position and provide guidance.')) {
-            alert('I\'m Lost mode activated. Follow breadcrumbs to return to your last waypoint.');
+        activateLostMode();
+    });
+
+    // Activate I'm Lost mode
+    async function activateLostMode() {
+        try {
+            const response = await fetch('/api/lost-mode/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Show the lost mode panel
+                document.getElementById('lost-mode-panel').classList.remove('hidden');
+
+                // Update the UI with the response data
+                updateLostModeUI(result.data);
+
+                // Update button state
+                const imLostBtn = document.getElementById('im-lost');
+                imLostBtn.textContent = 'Mode Active';
+                imLostBtn.style.background = 'var(--accent-danger)';
+                imLostBtn.style.color = 'white';
+                imLostBtn.disabled = true;
+
+                // Start polling for updates
+                startLostModePolling();
+
+                console.log('I\'m Lost mode activated:', result.message);
+            } else {
+                alert('Failed to activate I\'m Lost mode: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error activating I\'m Lost mode:', error);
+            alert('Failed to activate I\'m Lost mode');
+        }
+    }
+
+    // Update the Lost Mode UI with data from API
+    function updateLostModeUI(data) {
+        // Update acknowledgment message
+        document.getElementById('lost-ack-message').textContent =
+            'Acknowledged. Stay calm. The system is here to help you find your way back.';
+
+        // Update guidance steps
+        if (data.guidance && data.guidance.steps) {
+            const stepsContainer = document.getElementById('lost-guidance-steps');
+            stepsContainer.innerHTML = data.guidance.steps.map((step, index) => `
+                <div class="guidance-step">
+                    <div class="guidance-step-number">${index + 1}</div>
+                    <div class="guidance-step-content">
+                        <div class="guidance-step-action">${escapeHtml(step.action)}</div>
+                        <div class="guidance-step-detail">${escapeHtml(step.detail)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update nearby waypoints
+        if (data.nearby_waypoints && data.nearby_waypoints.length > 0) {
+            const waypointsContainer = document.getElementById('lost-waypoints-list');
+            waypointsContainer.innerHTML = data.nearby_waypoints.map(wp => `
+                <div class="lost-waypoint-item" onclick="startNavigation(${wp.id})">
+                    <div class="lost-waypoint-name">${escapeHtml(wp.name)}</div>
+                    <div class="lost-waypoint-distance">${wp.distance.display}</div>
+                    <div class="lost-waypoint-direction">${wp.bearing}° ${wp.bearing_direction}</div>
+                </div>
+            `).join('');
+        } else {
+            document.getElementById('lost-waypoints-list').innerHTML =
+                '<p class="no-waypoints">No waypoints saved. Consider marking your current position.</p>';
+        }
+
+        // Update backtrack info
+        const backtrackInfo = document.getElementById('lost-backtrack-info');
+        const backtrackBtn = document.getElementById('start-backtrack');
+
+        if (data.backtrack_route && data.backtrack_route.available) {
+            backtrackInfo.className = 'backtrack-info backtrack-available';
+            backtrackInfo.innerHTML = `
+                <p><strong>Trail Available:</strong> <span class="backtrack-trail-name">${escapeHtml(data.backtrack_route.trail_name)}</span></p>
+                <div class="backtrack-stats">
+                    <span>${data.backtrack_route.points_count} points</span>
+                    <span>${data.backtrack_route.total_distance.display}</span>
+                </div>
+            `;
+            backtrackBtn.classList.remove('hidden');
+            backtrackBtn.onclick = () => showBacktrackRoute(data.backtrack_route.trail_id);
+        } else {
+            backtrackInfo.className = 'backtrack-info backtrack-unavailable';
+            backtrackInfo.innerHTML = `
+                <p>No breadcrumb trail available. If you recorded a trail while hiking, it would appear here.</p>
+            `;
+            backtrackBtn.classList.add('hidden');
+        }
+
+        // Update tips
+        if (data.guidance && data.guidance.tips) {
+            const tipsList = document.getElementById('lost-tips-list');
+            tipsList.innerHTML = data.guidance.tips.map(tip => `
+                <li>${escapeHtml(tip)}</li>
+            `).join('');
+        }
+    }
+
+    // Poll for lost mode status updates
+    function startLostModePolling() {
+        if (lostModePollingInterval) {
+            clearInterval(lostModePollingInterval);
+        }
+
+        lostModePollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/lost-mode/status');
+                const status = await response.json();
+
+                if (status.active) {
+                    // Update waypoint distances (they change as GPS position changes)
+                    if (status.nearby_waypoints && status.nearby_waypoints.length > 0) {
+                        const waypointsContainer = document.getElementById('lost-waypoints-list');
+                        waypointsContainer.innerHTML = status.nearby_waypoints.map(wp => `
+                            <div class="lost-waypoint-item" onclick="startNavigation(${wp.id})">
+                                <div class="lost-waypoint-name">${escapeHtml(wp.name)}</div>
+                                <div class="lost-waypoint-distance">${wp.distance.display}</div>
+                                <div class="lost-waypoint-direction">${wp.bearing}° ${wp.bearing_direction}</div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    // Mode was deactivated externally
+                    stopLostModePolling();
+                    hideLostModePanel();
+                }
+            } catch (error) {
+                console.error('Error polling lost mode status:', error);
+            }
+        }, 2000); // Update every 2 seconds
+    }
+
+    // Stop polling
+    function stopLostModePolling() {
+        if (lostModePollingInterval) {
+            clearInterval(lostModePollingInterval);
+            lostModePollingInterval = null;
+        }
+    }
+
+    // Hide lost mode panel and reset button
+    function hideLostModePanel() {
+        document.getElementById('lost-mode-panel').classList.add('hidden');
+
+        // Reset button state
+        const imLostBtn = document.getElementById('im-lost');
+        imLostBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            I'm Lost
+        `;
+        imLostBtn.style.background = '';
+        imLostBtn.style.color = '';
+        imLostBtn.disabled = false;
+    }
+
+    // Exit lost mode handler
+    document.getElementById('exit-lost-mode').addEventListener('click', async function() {
+        try {
+            const response = await fetch('/api/lost-mode/deactivate', {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                stopLostModePolling();
+                hideLostModePanel();
+                console.log('I\'m Lost mode deactivated');
+            }
+        } catch (error) {
+            console.error('Error deactivating lost mode:', error);
         }
     });
+
+    // SOS button handler
+    document.getElementById('activate-sos').addEventListener('click', function() {
+        if (confirm('Activate SOS Emergency Beacon? This will emit an audio and visual distress signal.')) {
+            // Navigate to emergency page
+            window.location.href = '/emergency';
+        }
+    });
+
+    // Show backtrack route details
+    async function showBacktrackRoute(trailId) {
+        try {
+            const response = await fetch('/api/lost-mode/backtrack');
+            const result = await response.json();
+
+            if (result.success) {
+                // For now, show an alert with backtrack info
+                // In a full implementation, this would show a map or step-by-step directions
+                const hint = result.navigation_hint;
+                const nearestPoint = result.points.find(p => p.is_nearest);
+
+                let message = `Backtrack Route: ${result.trail_name}\n\n`;
+                message += `Total Distance: ${result.total_distance.display}\n`;
+                message += `Total Points: ${result.total_points}\n\n`;
+                message += `${hint}\n`;
+
+                if (nearestPoint) {
+                    message += `\nNearest trail point is ${nearestPoint.distance_from_current.display} to the ${nearestPoint.direction_from_current}`;
+                }
+
+                alert(message);
+            } else {
+                alert('Could not load backtrack route: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error loading backtrack route:', error);
+            alert('Failed to load backtrack route');
+        }
+    }
+
+    // Check for active lost mode on page load
+    async function checkActiveLostMode() {
+        try {
+            const response = await fetch('/api/lost-mode/status');
+            const status = await response.json();
+
+            if (status.active) {
+                // Restore the lost mode UI
+                document.getElementById('lost-mode-panel').classList.remove('hidden');
+                updateLostModeUI({
+                    guidance: status.guidance,
+                    nearby_waypoints: status.nearby_waypoints,
+                    backtrack_route: status.backtrack_route
+                });
+
+                // Update button state
+                const imLostBtn = document.getElementById('im-lost');
+                imLostBtn.textContent = 'Mode Active';
+                imLostBtn.style.background = 'var(--accent-danger)';
+                imLostBtn.style.color = 'white';
+                imLostBtn.disabled = true;
+
+                // Start polling
+                startLostModePolling();
+            }
+        } catch (error) {
+            console.error('Error checking lost mode status:', error);
+        }
+    }
+
+    // Check for active lost mode on page load
+    checkActiveLostMode();
 
     // Cleanup when leaving the page
     window.addEventListener('beforeunload', function() {

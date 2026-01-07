@@ -2717,6 +2717,419 @@ async function bootDashboard() {
 }
 
 // ==============================================================================
+// I'm Lost Emergency Mode API
+// ==============================================================================
+
+// State for I'm Lost mode
+let imLostModeActive = false;
+let imLostModeData = null;
+
+// Activate "I'm Lost" mode
+app.post('/api/lost-mode/activate', (req, res) => {
+    // Capture current position and state
+    const currentPosition = {
+        latitude: gpsState.latitude,
+        longitude: gpsState.longitude,
+        altitude: gpsState.altitude,
+        accuracy: gpsState.accuracy,
+        timestamp: new Date().toISOString()
+    };
+
+    // Get most recent breadcrumb trail for backtrack guidance
+    const recentTrail = activeBreadcrumbTrail ||
+        (breadcrumbTrails.length > 0 ? breadcrumbTrails[breadcrumbTrails.length - 1] : null);
+
+    // Get nearby waypoints sorted by distance
+    const nearbyWaypoints = waypoints.map(wp => {
+        const distance = haversineDistance(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+        const bearing = calculateBearing(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+        return {
+            ...wp,
+            distance: formatDistance(distance),
+            distance_meters: distance,
+            bearing: Math.round(bearing),
+            bearing_direction: bearingToDirection(bearing)
+        };
+    }).sort((a, b) => a.distance_meters - b.distance_meters).slice(0, 5); // Top 5 nearest
+
+    // Prepare backtrack route from breadcrumb trail
+    let backtrackRoute = null;
+    if (recentTrail && recentTrail.points && recentTrail.points.length > 0) {
+        // Reverse the trail points for backtracking
+        const reversedPoints = [...recentTrail.points].reverse();
+        const startPoint = reversedPoints[0];
+        const endPoint = reversedPoints[reversedPoints.length - 1];
+
+        backtrackRoute = {
+            available: true,
+            trail_id: recentTrail.id,
+            trail_name: recentTrail.name,
+            points_count: reversedPoints.length,
+            total_distance: formatDistance(recentTrail.total_distance_meters || 0),
+            start: {
+                latitude: startPoint.latitude,
+                longitude: startPoint.longitude,
+                timestamp: startPoint.timestamp
+            },
+            end: {
+                latitude: endPoint.latitude,
+                longitude: endPoint.longitude,
+                timestamp: endPoint.timestamp
+            },
+            // First step guidance
+            next_point: reversedPoints.length > 1 ? {
+                latitude: reversedPoints[1].latitude,
+                longitude: reversedPoints[1].longitude,
+                distance: formatDistance(haversineDistance(
+                    gpsState.latitude, gpsState.longitude,
+                    reversedPoints[1].latitude, reversedPoints[1].longitude
+                )),
+                bearing: Math.round(calculateBearing(
+                    gpsState.latitude, gpsState.longitude,
+                    reversedPoints[1].latitude, reversedPoints[1].longitude
+                )),
+                bearing_direction: bearingToDirection(calculateBearing(
+                    gpsState.latitude, gpsState.longitude,
+                    reversedPoints[1].latitude, reversedPoints[1].longitude
+                ))
+            } : null
+        };
+    } else {
+        backtrackRoute = {
+            available: false,
+            message: 'No breadcrumb trail available. Consider marking your current position as a waypoint.'
+        };
+    }
+
+    // Store mode data
+    imLostModeData = {
+        activated_at: new Date().toISOString(),
+        current_position: currentPosition,
+        nearby_waypoints: nearbyWaypoints,
+        backtrack_route: backtrackRoute,
+        guidance: generateCalmGuidance(nearbyWaypoints, backtrackRoute)
+    };
+
+    imLostModeActive = true;
+
+    res.json({
+        success: true,
+        mode: 'activated',
+        message: 'I\'m Lost mode activated. Stay calm - help is on the way.',
+        data: imLostModeData
+    });
+});
+
+// Generate calm, helpful guidance based on available data
+function generateCalmGuidance(nearbyWaypoints, backtrackRoute) {
+    const guidance = {
+        steps: [],
+        tips: []
+    };
+
+    // Step 1: Stay calm
+    guidance.steps.push({
+        priority: 1,
+        action: 'STOP - Stay where you are',
+        detail: 'Take a deep breath. You are safe. The system is here to help you.'
+    });
+
+    // Step 2: Assess situation
+    guidance.steps.push({
+        priority: 2,
+        action: 'Look around and observe your surroundings',
+        detail: 'Note any landmarks, water sources, or shelter nearby.'
+    });
+
+    // Step 3: Backtrack if available
+    if (backtrackRoute && backtrackRoute.available) {
+        guidance.steps.push({
+            priority: 3,
+            action: `Follow your breadcrumb trail back (${backtrackRoute.total_distance.display})`,
+            detail: `Your trail "${backtrackRoute.trail_name}" has ${backtrackRoute.points_count} recorded points.`
+        });
+    } else if (nearbyWaypoints.length > 0) {
+        const nearest = nearbyWaypoints[0];
+        guidance.steps.push({
+            priority: 3,
+            action: `Head towards "${nearest.name}" - ${nearest.distance.display} ${nearest.bearing_direction}`,
+            detail: `This is your nearest saved waypoint at bearing ${nearest.bearing}°.`
+        });
+    } else {
+        guidance.steps.push({
+            priority: 3,
+            action: 'Mark your current position',
+            detail: 'Create a waypoint at your current location so you can navigate back here if needed.'
+        });
+    }
+
+    // Step 4: Make yourself visible
+    guidance.steps.push({
+        priority: 4,
+        action: 'Make yourself visible',
+        detail: 'Use bright clothing, a signal mirror, or create ground signals if rescue might be needed.'
+    });
+
+    // Tips
+    guidance.tips = [
+        'Stay hydrated - conserve water if limited',
+        'Stay in shade during hot hours, seek shelter in cold',
+        'Do not wander aimlessly - move with purpose or stay put',
+        'If you have a whistle, use 3 blasts to signal for help',
+        'Trust the compass - it will guide you'
+    ];
+
+    return guidance;
+}
+
+// Get I'm Lost mode status
+app.get('/api/lost-mode/status', (req, res) => {
+    if (!imLostModeActive) {
+        return res.json({
+            active: false,
+            message: 'I\'m Lost mode is not active'
+        });
+    }
+
+    // Update current position and recalculate distances
+    const currentPosition = {
+        latitude: gpsState.latitude,
+        longitude: gpsState.longitude,
+        altitude: gpsState.altitude,
+        accuracy: gpsState.accuracy,
+        timestamp: new Date().toISOString()
+    };
+
+    // Recalculate distances to waypoints
+    const updatedWaypoints = imLostModeData.nearby_waypoints.map(wp => {
+        const distance = haversineDistance(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+        const bearing = calculateBearing(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+        return {
+            ...wp,
+            distance: formatDistance(distance),
+            distance_meters: distance,
+            bearing: Math.round(bearing),
+            bearing_direction: bearingToDirection(bearing)
+        };
+    }).sort((a, b) => a.distance_meters - b.distance_meters);
+
+    res.json({
+        active: true,
+        activated_at: imLostModeData.activated_at,
+        current_position: currentPosition,
+        nearby_waypoints: updatedWaypoints,
+        backtrack_route: imLostModeData.backtrack_route,
+        guidance: imLostModeData.guidance
+    });
+});
+
+// Get backtrack route points
+app.get('/api/lost-mode/backtrack', (req, res) => {
+    if (!imLostModeActive) {
+        return res.status(400).json({
+            success: false,
+            error: 'I\'m Lost mode is not active'
+        });
+    }
+
+    // Get the trail for backtracking
+    const recentTrail = activeBreadcrumbTrail ||
+        (breadcrumbTrails.length > 0 ? breadcrumbTrails[breadcrumbTrails.length - 1] : null);
+
+    if (!recentTrail || !recentTrail.points || recentTrail.points.length === 0) {
+        return res.json({
+            success: false,
+            error: 'No breadcrumb trail available for backtracking'
+        });
+    }
+
+    // Reverse points for backtrack direction
+    const backtrackPoints = [...recentTrail.points].reverse().map((point, index, arr) => {
+        // Calculate distance from current position
+        const distFromCurrent = haversineDistance(
+            gpsState.latitude, gpsState.longitude,
+            point.latitude, point.longitude
+        );
+
+        // Calculate bearing from current position
+        const bearingFromCurrent = calculateBearing(
+            gpsState.latitude, gpsState.longitude,
+            point.latitude, point.longitude
+        );
+
+        return {
+            index: index,
+            latitude: point.latitude,
+            longitude: point.longitude,
+            altitude: point.altitude,
+            timestamp: point.timestamp,
+            distance_from_current: formatDistance(distFromCurrent),
+            bearing_from_current: Math.round(bearingFromCurrent),
+            direction_from_current: bearingToDirection(bearingFromCurrent),
+            is_nearest: false
+        };
+    });
+
+    // Mark the nearest point
+    const nearestIndex = backtrackPoints.reduce((minIdx, point, idx, arr) => {
+        const currentDist = parseFloat(point.distance_from_current.value);
+        const minDist = parseFloat(arr[minIdx].distance_from_current.value);
+        return currentDist < minDist ? idx : minIdx;
+    }, 0);
+
+    if (backtrackPoints[nearestIndex]) {
+        backtrackPoints[nearestIndex].is_nearest = true;
+    }
+
+    res.json({
+        success: true,
+        trail_name: recentTrail.name,
+        trail_id: recentTrail.id,
+        total_points: backtrackPoints.length,
+        total_distance: formatDistance(recentTrail.total_distance_meters || 0),
+        points: backtrackPoints,
+        current_position: {
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude
+        },
+        navigation_hint: nearestIndex > 0 ?
+            `Head ${backtrackPoints[nearestIndex].direction_from_current} to reach your trail` :
+            'You are at or near the start of your backtrack route'
+    });
+});
+
+// Deactivate "I'm Lost" mode
+app.post('/api/lost-mode/deactivate', (req, res) => {
+    if (!imLostModeActive) {
+        return res.json({
+            success: false,
+            message: 'I\'m Lost mode was not active'
+        });
+    }
+
+    const duration = new Date() - new Date(imLostModeData.activated_at);
+    const durationSeconds = Math.floor(duration / 1000);
+
+    imLostModeActive = false;
+    imLostModeData = null;
+
+    res.json({
+        success: true,
+        message: 'I\'m Lost mode deactivated. Stay safe!',
+        duration_seconds: durationSeconds
+    });
+});
+
+// Voice activation for I'm Lost mode
+app.post('/api/voice/im-lost', (req, res) => {
+    // Simulate voice activation - same as button activation
+    // This endpoint can be called when "I'm lost" or "help" is detected via voice
+
+    // Forward to the activate endpoint internally
+    const currentPosition = {
+        latitude: gpsState.latitude,
+        longitude: gpsState.longitude,
+        altitude: gpsState.altitude,
+        accuracy: gpsState.accuracy,
+        timestamp: new Date().toISOString()
+    };
+
+    const recentTrail = activeBreadcrumbTrail ||
+        (breadcrumbTrails.length > 0 ? breadcrumbTrails[breadcrumbTrails.length - 1] : null);
+
+    const nearbyWaypoints = waypoints.map(wp => {
+        const distance = haversineDistance(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+        const bearing = calculateBearing(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+        return {
+            ...wp,
+            distance: formatDistance(distance),
+            distance_meters: distance,
+            bearing: Math.round(bearing),
+            bearing_direction: bearingToDirection(bearing)
+        };
+    }).sort((a, b) => a.distance_meters - b.distance_meters).slice(0, 5);
+
+    let backtrackRoute = null;
+    if (recentTrail && recentTrail.points && recentTrail.points.length > 0) {
+        const reversedPoints = [...recentTrail.points].reverse();
+        const startPoint = reversedPoints[0];
+        const endPoint = reversedPoints[reversedPoints.length - 1];
+
+        backtrackRoute = {
+            available: true,
+            trail_id: recentTrail.id,
+            trail_name: recentTrail.name,
+            points_count: reversedPoints.length,
+            total_distance: formatDistance(recentTrail.total_distance_meters || 0),
+            start: { latitude: startPoint.latitude, longitude: startPoint.longitude },
+            end: { latitude: endPoint.latitude, longitude: endPoint.longitude }
+        };
+    } else {
+        backtrackRoute = { available: false };
+    }
+
+    imLostModeData = {
+        activated_at: new Date().toISOString(),
+        current_position: currentPosition,
+        nearby_waypoints: nearbyWaypoints,
+        backtrack_route: backtrackRoute,
+        guidance: generateCalmGuidance(nearbyWaypoints, backtrackRoute)
+    };
+
+    imLostModeActive = true;
+
+    // Also generate voice response
+    const voiceResponse = generateLostModeVoiceResponse(nearbyWaypoints, backtrackRoute);
+
+    res.json({
+        success: true,
+        mode: 'activated',
+        message: 'I\'m Lost mode activated via voice command.',
+        voice_response: voiceResponse,
+        data: imLostModeData
+    });
+});
+
+// Generate voice response for I'm Lost mode
+function generateLostModeVoiceResponse(nearbyWaypoints, backtrackRoute) {
+    let response = "I'm Lost mode activated. Stay calm. ";
+
+    if (backtrackRoute && backtrackRoute.available) {
+        response += `You have a breadcrumb trail available with ${backtrackRoute.points_count} points. `;
+        response += `You can backtrack ${backtrackRoute.total_distance.display}. `;
+    }
+
+    if (nearbyWaypoints.length > 0) {
+        const nearest = nearbyWaypoints[0];
+        response += `Your nearest waypoint is "${nearest.name}", ${nearest.distance.display} to the ${nearest.bearing_direction}. `;
+    } else {
+        response += "You have no saved waypoints nearby. Consider marking your current position. ";
+    }
+
+    response += "Follow the guidance on screen to find your way back safely.";
+
+    return response;
+}
+
+// ==============================================================================
 // Start Server
 // ==============================================================================
 app.listen(PORT, '0.0.0.0', () => {
