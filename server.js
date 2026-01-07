@@ -1187,26 +1187,49 @@ const firstAidProtocolDatabase = [
         category: 'cardiac',
         name: 'CPR - Adult',
         severity: 'critical',
-        keywords: ['cpr', 'cardiac', 'arrest', 'heart', 'not breathing', 'unconscious', 'pulse'],
+        keywords: ['cpr', 'cardiac', 'arrest', 'heart', 'not breathing', 'unconscious', 'pulse', 'aed', 'defibrillator'],
         summary: 'Cardiopulmonary resuscitation for unresponsive adults',
         steps: [
             { step: 1, summary: 'Check responsiveness', detail: 'Tap shoulders and shout "Are you okay?" Look for movement or response for 5-10 seconds.' },
-            { step: 2, summary: 'Activate emergency', detail: 'Shout for help. Activate SOS beacon. If alone with phone, put on speaker.' },
+            { step: 2, summary: 'Call for help', detail: 'Shout for help. Activate SOS beacon. If alone with phone, put on speaker. Send someone for an AED if available.' },
             { step: 3, summary: 'Check breathing', detail: 'Look for chest movement, listen for breathing, feel for breath on cheek. No more than 10 seconds.' },
-            { step: 4, summary: 'Start compressions', detail: 'Place heel of hand on center of chest. Other hand on top. Arms straight. Push hard and fast.' },
-            { step: 5, summary: 'Compression technique', detail: 'Push at least 2 inches (5cm) deep. Rate: 100-120 per minute. Allow full chest recoil.' },
-            { step: 6, summary: 'Give breaths', detail: 'After 30 compressions: tilt head back, lift chin, pinch nose, give 2 breaths (1 second each). Watch chest rise.' },
-            { step: 7, summary: 'Continue CPR', detail: 'Repeat 30 compressions, 2 breaths. Do NOT stop until: help arrives, person responds, or you are too exhausted.' }
+            { step: 4, summary: 'Begin compressions', detail: 'Place heel of hand on center of chest (on breastbone, between nipples). Other hand on top, fingers interlaced. Keep arms straight.' },
+            { step: 5, summary: 'Push hard and fast', detail: 'Push at least 2 inches (5cm) deep. Rate: 100-120 compressions per minute (rhythm of "Stayin\' Alive" by Bee Gees). Allow full chest recoil between compressions.' },
+            { step: 6, summary: 'Give rescue breaths', detail: 'After 30 compressions: tilt head back, lift chin, pinch nose, give 2 breaths (1 second each). Watch for chest rise. Resume compressions immediately.' },
+            { step: 7, summary: 'Continue 30:2 cycles', detail: 'Continue cycles of 30 compressions and 2 breaths. Switch with another person every 2 minutes if possible. Do NOT stop.' },
+            { step: 8, summary: 'Use AED if available', detail: 'When AED arrives: Turn it ON, follow voice prompts, attach pads to bare chest (one upper right, one lower left). Stand clear when analyzing/shocking. Resume CPR immediately after shock.' }
         ],
         warnings: [
-            'High quality compressions are critical - push hard and fast',
-            'Minimize interruptions to compressions',
+            'High quality compressions are critical - push HARD and FAST',
+            'Minimize ALL interruptions to chest compressions',
             'If unwilling/unable to give breaths, compression-only CPR is better than nothing',
-            'CPR is exhausting - switch with another person every 2 minutes if possible',
-            'Do NOT give up - continue until help arrives'
+            'CPR is exhausting - switch with another rescuer every 2 minutes if possible',
+            'Do NOT give up - continue until professional help takes over',
+            'For drowning victims: give 5 rescue breaths FIRST, then start compressions'
         ],
+        aed_guidance: {
+            title: 'AED (Automated External Defibrillator) Instructions',
+            steps: [
+                'Turn ON the AED - it will give voice instructions',
+                'Expose the chest - remove clothing, dry if wet, shave chest hair if needed',
+                'Attach pads - place one on upper right chest (below collarbone), one on lower left side',
+                'Plug in connector if not pre-connected',
+                'Stand clear during analysis - do not touch the person',
+                'If shock advised: ensure NO ONE is touching the person, press shock button',
+                'Immediately resume CPR for 2 minutes after shock',
+                'AED will prompt you to stop for re-analysis - follow all voice prompts'
+            ],
+            warnings: [
+                'Remove any medication patches before applying pads',
+                'If person has implanted pacemaker (bump under skin), place pad below it',
+                'For children 1-8 years: use pediatric pads if available',
+                'Dry the chest if wet - water can interfere with shock delivery'
+            ]
+        },
+        metronome_available: true,
+        compression_rate: { min: 100, max: 120, recommended: 110 },
         contraindications: [],
-        when_to_seek_help: 'This IS the emergency. SOS should already be activated. Continue CPR until professional help takes over, an AED is available, or person recovers.'
+        when_to_seek_help: 'This IS the emergency. SOS should already be activated. Continue CPR until: professional help takes over, an AED delivers a shock and person recovers, or the person starts breathing normally.'
     }
 ];
 
@@ -1459,6 +1482,152 @@ app.post('/api/voice/protocol', (req, res) => {
         },
         current_step: 0,
         total_steps: bestMatch.steps.length
+    });
+});
+
+// ==============================================================================
+// CPR Audio Metronome System
+// ==============================================================================
+
+let cprMetronomeState = {
+    active: false,
+    started_at: null,
+    bpm: 110, // Default: middle of 100-120 range
+    compression_count: 0,
+    cycle_count: 0 // 30 compressions = 1 cycle
+};
+
+// Get CPR metronome status
+app.get('/api/cpr/metronome/status', (req, res) => {
+    res.json({
+        success: true,
+        active: cprMetronomeState.active,
+        bpm: cprMetronomeState.bpm,
+        compression_count: cprMetronomeState.compression_count,
+        cycle_count: cprMetronomeState.cycle_count,
+        started_at: cprMetronomeState.started_at,
+        guidance: {
+            target_rate: '100-120 compressions per minute',
+            current_rate: cprMetronomeState.bpm,
+            depth: 'At least 2 inches (5cm)',
+            song_reference: '"Stayin\' Alive" by Bee Gees (110 BPM)'
+        }
+    });
+});
+
+// Start CPR metronome
+app.post('/api/cpr/metronome/start', (req, res) => {
+    const { bpm } = req.body;
+
+    // Validate BPM is in correct range
+    let targetBpm = bpm || 110;
+    if (targetBpm < 100) targetBpm = 100;
+    if (targetBpm > 120) targetBpm = 120;
+
+    cprMetronomeState = {
+        active: true,
+        started_at: new Date().toISOString(),
+        bpm: targetBpm,
+        compression_count: 0,
+        cycle_count: 0
+    };
+
+    console.log(`CPR Metronome started at ${targetBpm} BPM`);
+
+    res.json({
+        success: true,
+        message: `CPR metronome started at ${targetBpm} beats per minute`,
+        bpm: targetBpm,
+        interval_ms: Math.round(60000 / targetBpm), // Milliseconds between beats
+        audio_frequency: 440, // Hz for the beep (A4 note)
+        guidance: 'Push on each beat. After 30 compressions, pause for 2 rescue breaths.'
+    });
+});
+
+// Stop CPR metronome
+app.post('/api/cpr/metronome/stop', (req, res) => {
+    const duration = cprMetronomeState.started_at
+        ? Math.round((Date.now() - new Date(cprMetronomeState.started_at).getTime()) / 1000)
+        : 0;
+
+    const result = {
+        success: true,
+        message: 'CPR metronome stopped',
+        summary: {
+            duration_seconds: duration,
+            total_compressions: cprMetronomeState.compression_count,
+            total_cycles: cprMetronomeState.cycle_count,
+            bpm_used: cprMetronomeState.bpm
+        }
+    };
+
+    cprMetronomeState = {
+        active: false,
+        started_at: null,
+        bpm: 110,
+        compression_count: 0,
+        cycle_count: 0
+    };
+
+    console.log(`CPR Metronome stopped after ${duration} seconds`);
+
+    res.json(result);
+});
+
+// Count compression (called by frontend on each metronome beat)
+app.post('/api/cpr/metronome/compression', (req, res) => {
+    if (!cprMetronomeState.active) {
+        return res.json({
+            success: false,
+            message: 'Metronome not active'
+        });
+    }
+
+    cprMetronomeState.compression_count++;
+
+    // Check if we've completed a cycle of 30
+    let breathReminder = false;
+    if (cprMetronomeState.compression_count % 30 === 0) {
+        cprMetronomeState.cycle_count++;
+        breathReminder = true;
+    }
+
+    res.json({
+        success: true,
+        compression_count: cprMetronomeState.compression_count,
+        cycle_count: cprMetronomeState.cycle_count,
+        breath_reminder: breathReminder,
+        message: breathReminder
+            ? 'PAUSE - Give 2 rescue breaths now, then resume compressions'
+            : null
+    });
+});
+
+// Get CPR protocol with metronome info
+app.get('/api/cpr/guide', (req, res) => {
+    const cprProtocol = firstAidProtocolDatabase.find(p => p.id === 12);
+
+    if (!cprProtocol) {
+        return res.status(404).json({ success: false, error: 'CPR protocol not found' });
+    }
+
+    res.json({
+        success: true,
+        protocol: cprProtocol,
+        metronome: {
+            available: true,
+            recommended_bpm: 110,
+            range: { min: 100, max: 120 },
+            audio_frequency: 440,
+            beat_pattern: '30 compressions, then pause for 2 breaths'
+        },
+        quick_reference: {
+            rate: '100-120/min',
+            depth: '2+ inches (5cm)',
+            ratio: '30:2 (compressions:breaths)',
+            song: '"Stayin\' Alive" (110 BPM)',
+            switch: 'Every 2 minutes if possible'
+        }
     });
 });
 
