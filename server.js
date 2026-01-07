@@ -4348,6 +4348,297 @@ app.post('/api/knots/search', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Rescue Signaling Database
+// ==============================================================================
+
+const signalingDatabase = {
+    methods: {
+        mirror: {
+            id: 'mirror',
+            name: 'Signal Mirror / Heliograph',
+            category: 'visual',
+            range: '10+ miles in clear conditions',
+            effectiveness: 'Highly effective in daylight with direct sunlight',
+            description: 'Reflects sunlight to create visible flash that can be seen for miles by aircraft and ground searchers.',
+            materials: ['Commercial signal mirror', 'Any reflective surface (phone screen, CD, metal)', 'Polished metal', 'Car mirror'],
+            steps: [
+                { step: 1, instruction: 'Hold mirror close to eye, arm extended toward target' },
+                { step: 2, instruction: 'Look THROUGH the sighting hole (if available) at target' },
+                { step: 3, instruction: 'Extend other hand toward target, fingers spread as V' },
+                { step: 4, instruction: 'Angle mirror to catch sun, see bright spot on your fingers' },
+                { step: 5, instruction: 'Adjust angle until bright spot hits your fingers AND target' },
+                { step: 6, instruction: 'Wiggle mirror slightly to flash signal at target' },
+                { step: 7, instruction: 'Flash in bursts of 3 for distress signal' }
+            ],
+            tips: [
+                'Sweep horizon regularly even without seeing aircraft',
+                'Aircraft can see mirror flash before you hear them',
+                'Any shiny object works - practice with different materials',
+                'Works even with overcast - aim at lighter sky areas'
+            ],
+            improvised_mirror: {
+                materials: ['Flat metal can lid', 'Phone screen (bright setting)', 'CD/DVD', 'Aluminum foil on cardboard', 'Watch face'],
+                method: 'Polish surface, create small sighting hole in center, practice catching light'
+            }
+        },
+        fire_smoke: {
+            id: 'fire_smoke',
+            name: 'Fire and Smoke Signals',
+            category: 'visual',
+            range: '5-20 miles depending on conditions',
+            effectiveness: 'Very effective, visible day and night',
+            description: 'Fire visible at night, smoke visible during day. International distress signal.',
+            day_signals: {
+                description: 'During daylight, use SMOKE for visibility',
+                smoke_types: [
+                    { color: 'White smoke', method: 'Add green leaves, grass, or moss to hot fire', visibility: 'Best against dark backgrounds' },
+                    { color: 'Black smoke', method: 'Add rubber, oil, plastics (if available)', visibility: 'Best against light sky or snow' }
+                ],
+                tips: ['Build large fire first, then add smoke-producing materials', 'Create smoke puffs by smothering and releasing fire']
+            },
+            night_signals: {
+                description: 'At night, bright flames are more visible than smoke',
+                tips: ['Dry wood burns brightest', 'Birch bark produces bright flame', 'Use fire reflector to increase visibility', 'Feed fire steadily for consistent light']
+            },
+            three_fires_pattern: {
+                description: 'INTERNATIONAL DISTRESS SIGNAL',
+                arrangement: 'Three fires in triangle pattern, 100 feet apart',
+                meaning: 'Recognized worldwide as distress signal',
+                tip: 'Prepare three fire locations but keep two unlit until signaling'
+            },
+            steps: [
+                { step: 1, instruction: 'Build fire in open, visible location' },
+                { step: 2, instruction: 'Choose high ground or clearing if possible' },
+                { step: 3, instruction: 'Prepare smoke-producing materials (green vegetation)' },
+                { step: 4, instruction: 'When aircraft/searchers spotted, add materials for smoke' },
+                { step: 5, instruction: 'For triangle pattern, light all three fires' },
+                { step: 6, instruction: 'Feed fires continuously to maintain signal' }
+            ]
+        },
+        ground_signals: {
+            id: 'ground_signals',
+            name: 'Ground-to-Air Signals',
+            category: 'visual',
+            range: 'Visible from aircraft at several thousand feet',
+            effectiveness: 'Very effective when aircraft searching overhead',
+            description: 'Large symbols created on ground visible to aircraft. Use contrasting materials.',
+            international_symbols: [
+                { symbol: 'X', meaning: 'Need medical help', note: 'Universal distress' },
+                { symbol: 'I', meaning: 'Need medical supplies', note: 'Single line' },
+                { symbol: 'V', meaning: 'Need assistance', note: 'General help needed' },
+                { symbol: 'N', meaning: 'No / Negative', note: 'For yes/no communication' },
+                { symbol: 'Y', meaning: 'Yes / Affirmative', note: 'For yes/no communication' },
+                { symbol: 'F', meaning: 'Need food and water', note: null },
+                { symbol: 'LL', meaning: 'All is well', note: 'Two parallel lines' },
+                { symbol: 'Arrow', meaning: 'Traveling in this direction', note: 'Point toward travel' }
+            ],
+            sos_pattern: {
+                symbol: 'SOS',
+                description: 'Universal distress signal recognized worldwide',
+                size: 'Make letters at least 10 feet tall, 3 feet wide lines',
+                materials: 'Rocks, logs, clothing, trampled snow, trenches'
+            },
+            construction_tips: [
+                'Make symbols at least 10 feet tall (larger is better)',
+                'Use contrasting colors against ground (dark on snow, light on dirt)',
+                'Create shadows by building up edges in snow or sand',
+                'Stamp out patterns in snow or tall grass',
+                'Dig trenches for permanent signals',
+                'Position on flat, open ground visible from above'
+            ],
+            materials: ['Rocks', 'Logs', 'Branches', 'Bright clothing', 'Survival blanket', 'Parachute fabric', 'Trampled vegetation', 'Dug trenches']
+        },
+        whistle: {
+            id: 'whistle',
+            name: 'Whistle Signals',
+            category: 'audio',
+            range: '0.5-1 mile depending on terrain and conditions',
+            effectiveness: 'Good for close-range signaling, especially in dense terrain',
+            description: 'Sound signals that carry farther than voice and require less energy.',
+            international_pattern: {
+                distress: {
+                    pattern: '3 blasts',
+                    timing: 'Three short blasts, pause, repeat',
+                    meaning: 'Universal distress signal',
+                    note: 'Any signal of THREE indicates emergency'
+                },
+                response: {
+                    pattern: '2 blasts',
+                    meaning: 'I hear you / acknowledgment',
+                    note: 'Response from searchers'
+                },
+                recall: {
+                    pattern: '1 long blast',
+                    meaning: 'Come back / return to camp',
+                    note: 'Group signaling'
+                }
+            },
+            tips: [
+                'Survival whistle carries farther than shouting',
+                'Requires less energy than yelling',
+                'Works in fog, darkness, dense vegetation',
+                'Sound travels better in cold air',
+                'Pause between signals to listen for response',
+                'Alternate direction of blasts to cover more area'
+            ],
+            improvised_whistle: [
+                'Fingers (learn two-finger whistle technique)',
+                'Bottle tops (blow across edge)',
+                'Hollow reeds or bamboo',
+                'Pounded can (creates resonating chamber)'
+            ]
+        },
+        audio_beacon: {
+            id: 'audio_beacon',
+            name: 'Audio Beacons & Emergency Transmitters',
+            category: 'electronic',
+            range: 'Varies by device - PLB can reach satellites globally',
+            effectiveness: 'Most effective rescue device - direct contact with rescue services',
+            description: 'Electronic devices that transmit location to rescue services or create audible signals.',
+            device_types: [
+                {
+                    name: 'PLB (Personal Locator Beacon)',
+                    range: 'Global satellite coverage',
+                    description: 'Sends GPS coordinates to SARSAT rescue satellite system',
+                    activation: 'Requires manual activation, transmits for 24+ hours',
+                    cost: '$200-400, no subscription',
+                    note: 'MOST EFFECTIVE rescue device available'
+                },
+                {
+                    name: 'Satellite Messenger (SPOT, inReach)',
+                    range: 'Global satellite coverage',
+                    description: 'Send SOS, tracking, and text messages via satellite',
+                    activation: 'SOS button triggers rescue, can communicate with contacts',
+                    cost: 'Device + subscription required',
+                    note: 'Allows two-way communication'
+                },
+                {
+                    name: 'Emergency Radio Beacon',
+                    range: 'VHF/UHF range, line of sight',
+                    description: 'Transmits distress on emergency frequencies',
+                    frequencies: ['406 MHz (SARSAT)', '121.5 MHz (aircraft guard)', '156.8 MHz Ch 16 (marine)'],
+                    note: 'Most aircraft and ships monitor these frequencies'
+                },
+                {
+                    name: 'Electronic Whistle/Personal Alarm',
+                    range: '0.25-0.5 miles',
+                    description: 'Battery-powered loud tone, 100+ decibels',
+                    advantage: 'Louder than voice, works when you cannot',
+                    note: 'Useful if injured or unconscious (auto-trigger models available)'
+                }
+            ],
+            sos_beacon_instructions: [
+                'When in distress, activate PLB/beacon in open sky view',
+                'Keep antenna vertical and pointed at sky',
+                'Do NOT move once activated if possible',
+                'Beacon sends GPS coordinates - stay at that location',
+                'Signal will be received within minutes, rescue dispatched within hours',
+                'Keep beacon powered on until rescued'
+            ]
+        }
+    },
+    priorities: [
+        '1. Activate PLB/emergency beacon if available - MOST EFFECTIVE',
+        '2. Create ground signals (X or SOS) - works while doing other tasks',
+        '3. Prepare signal fire - ready to ignite when aircraft heard',
+        '4. Keep signal mirror accessible - use whenever aircraft visible',
+        '5. Use whistle at regular intervals - conserves voice'
+    ],
+    general_tips: [
+        'ANY signal in groups of 3 indicates distress (3 fires, 3 blasts, 3 flashes)',
+        'Signal from highest, most visible point possible',
+        'Create contrast - dark signals on light backgrounds, light on dark',
+        'Conserve energy - use passive signals (ground, beacon) over active (shouting)',
+        'Stay near your signal location - rescuers will search where signal originated',
+        'Signal continuously when you hear/see aircraft - they may not see you first time'
+    ]
+};
+
+// Get all signaling methods
+app.get('/api/signaling', (req, res) => {
+    res.json({
+        success: true,
+        methods: Object.values(signalingDatabase.methods).map(m => ({
+            id: m.id,
+            name: m.name,
+            category: m.category,
+            range: m.range,
+            effectiveness: m.effectiveness,
+            description: m.description
+        })),
+        priorities: signalingDatabase.priorities,
+        general_tips: signalingDatabase.general_tips
+    });
+});
+
+// Get specific signaling method
+app.get('/api/signaling/:method', (req, res) => {
+    const method = req.params.method.toLowerCase().replace(/-/g, '_');
+    const methodData = signalingDatabase.methods[method];
+
+    if (!methodData) {
+        return res.status(404).json({
+            success: false,
+            error: `Method '${method}' not found`,
+            available_methods: Object.keys(signalingDatabase.methods)
+        });
+    }
+
+    res.json({
+        success: true,
+        method: methodData
+    });
+});
+
+// Search signaling info
+app.post('/api/signaling/search', (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    const response = {
+        success: true,
+        query: query,
+        results: []
+    };
+
+    // Method keywords
+    const methodKeywords = {
+        mirror: ['mirror', 'heliograph', 'flash', 'reflect', 'sun'],
+        fire_smoke: ['fire', 'smoke', 'signal fire', 'three fires'],
+        ground_signals: ['ground', 'symbol', 'sos', 'x', 'pattern', 'aerial'],
+        whistle: ['whistle', 'blow', 'sound', 'audio', 'blast'],
+        audio_beacon: ['beacon', 'plb', 'spot', 'inreach', 'satellite', 'electronic', 'transmit']
+    };
+
+    for (const [method, keywords] of Object.entries(methodKeywords)) {
+        if (keywords.some(k => queryLower.includes(k))) {
+            response.results.push({
+                type: 'method',
+                data: signalingDatabase.methods[method]
+            });
+        }
+    }
+
+    // Default: return overview
+    if (response.results.length === 0 || queryLower.includes('help') || queryLower.includes('signal')) {
+        response.results.unshift({
+            type: 'overview',
+            methods: Object.values(signalingDatabase.methods).map(m => ({
+                id: m.id,
+                name: m.name,
+                category: m.category,
+                range: m.range,
+                description: m.description
+            })),
+            priorities: signalingDatabase.priorities,
+            tips: signalingDatabase.general_tips
+        });
+    }
+
+    res.json(response);
+});
+
 // Generate contextually appropriate survival response
 function generateSurvivalResponse(query) {
     const queryLower = query.toLowerCase();
