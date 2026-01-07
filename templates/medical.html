@@ -5,65 +5,22 @@
 {% block content %}
 <div class="medical-container">
     <div class="search-box">
-        <input type="text" id="medical-search" placeholder="Search conditions or injuries..." autocomplete="off">
+        <input type="text" id="medical-search" placeholder="Search conditions or injuries... (e.g., bee sting)" autocomplete="off">
+        <div id="search-results" class="search-results hidden"></div>
     </div>
 
     <div class="medical-categories">
         <button class="category-btn active" data-category="all">All</button>
         <button class="category-btn" data-category="wound">Wounds</button>
         <button class="category-btn" data-category="cardiac">Cardiac</button>
-        <button class="category-btn" data-category="env">Environmental</button>
-        <button class="category-btn" data-category="poison">Poison</button>
+        <button class="category-btn" data-category="environmental">Environmental</button>
+        <button class="category-btn" data-category="poison">Poison/Stings</button>
     </div>
 
     <div id="protocols-list" class="protocols-list">
-        <!-- Protocols loaded dynamically -->
-        <div class="protocol-card" data-category="wound">
-            <div class="protocol-header">
-                <span class="severity minor">Minor</span>
-                <h3>Minor Cut Treatment</h3>
-            </div>
-            <p class="protocol-summary">Clean and bandage minor cuts to prevent infection</p>
-        </div>
-
-        <div class="protocol-card" data-category="cardiac">
-            <div class="protocol-header">
-                <span class="severity critical">Critical</span>
-                <h3>CPR - Adult</h3>
-            </div>
-            <p class="protocol-summary">Cardiopulmonary resuscitation for unresponsive adults</p>
-        </div>
-
-        <div class="protocol-card" data-category="env">
-            <div class="protocol-header">
-                <span class="severity moderate">Moderate</span>
-                <h3>Hypothermia Treatment</h3>
-            </div>
-            <p class="protocol-summary">Recognition and treatment of cold exposure</p>
-        </div>
-
-        <div class="protocol-card" data-category="env">
-            <div class="protocol-header">
-                <span class="severity moderate">Moderate</span>
-                <h3>Heat Stroke</h3>
-            </div>
-            <p class="protocol-summary">Emergency cooling for heat-related illness</p>
-        </div>
-
-        <div class="protocol-card" data-category="poison">
-            <div class="protocol-header">
-                <span class="severity critical">Critical</span>
-                <h3>Snake Bite Protocol</h3>
-            </div>
-            <p class="protocol-summary">Immediate response to venomous snake bites</p>
-        </div>
-
-        <div class="protocol-card" data-category="wound">
-            <div class="protocol-header">
-                <span class="severity moderate">Moderate</span>
-                <h3>Burns Treatment</h3>
-            </div>
-            <p class="protocol-summary">First, second, and third degree burn care</p>
+        <!-- Protocols loaded dynamically from API -->
+        <div class="loading-indicator" id="protocols-loading">
+            <span>Loading protocols...</span>
         </div>
     </div>
 
@@ -71,16 +28,35 @@
     <div id="protocol-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
+                <span id="modal-severity" class="severity">Severity</span>
                 <h2 id="modal-title">Protocol Title</h2>
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Anaphylaxis Warning (if applicable) -->
+                <div class="anaphylaxis-warning hidden" id="modal-anaphylaxis">
+                    <h4>⚠️ ANAPHYLAXIS WARNING</h4>
+                    <div class="anaphylaxis-symptoms" id="anaphylaxis-symptoms"></div>
+                    <div class="anaphylaxis-actions" id="anaphylaxis-actions"></div>
+                </div>
+
+                <div class="protocol-summary-box" id="modal-summary">
+                    <!-- Summary displayed here -->
+                </div>
+
+                <h3>Steps</h3>
                 <div class="protocol-steps" id="modal-steps">
                     <!-- Steps loaded dynamically -->
                 </div>
+
                 <div class="protocol-warnings" id="modal-warnings">
                     <!-- Warnings loaded dynamically -->
                 </div>
+
+                <div class="protocol-contraindications hidden" id="modal-contraindications">
+                    <!-- Contraindications -->
+                </div>
+
                 <div class="protocol-seek-help" id="modal-seek-help">
                     <!-- When to seek help -->
                 </div>
@@ -121,6 +97,12 @@
     .search-box input:focus {
         outline: none;
         border-color: var(--accent-secondary);
+    }
+
+    .loading-indicator {
+        text-align: center;
+        padding: var(--spacing-lg);
+        color: var(--text-muted);
     }
 
     .medical-categories {
@@ -226,7 +208,7 @@
     .modal-content {
         background: var(--bg-secondary);
         width: 100%;
-        max-height: 80vh;
+        max-height: 85vh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         overflow: hidden;
         display: flex;
@@ -239,10 +221,13 @@
         align-items: center;
         padding: var(--spacing-md);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
     }
 
     .modal-header h2 {
         font-size: var(--font-size-lg);
+        flex: 1;
     }
 
     .modal-close {
@@ -261,13 +246,81 @@
         flex: 1;
     }
 
+    .modal-body h3 {
+        margin-top: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        font-size: var(--font-size-base);
+        color: var(--text-secondary);
+    }
+
+    .protocol-summary-box {
+        background: rgba(59, 130, 246, 0.1);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-sm);
+        margin-bottom: var(--spacing-md);
+        color: var(--text-primary);
+    }
+
     .protocol-steps ol {
         padding-left: var(--spacing-lg);
+        margin: 0;
     }
 
     .protocol-steps li {
-        margin-bottom: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
         line-height: 1.5;
+    }
+
+    .protocol-steps li strong {
+        display: block;
+        color: var(--accent-primary);
+        margin-bottom: 4px;
+    }
+
+    .protocol-steps li .step-detail {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+    }
+
+    /* Anaphylaxis Warning */
+    .anaphylaxis-warning {
+        background: rgba(239, 68, 68, 0.2);
+        border: 2px solid var(--accent-danger);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .anaphylaxis-warning h4 {
+        color: var(--accent-danger);
+        margin-bottom: var(--spacing-sm);
+        font-size: var(--font-size-base);
+    }
+
+    .anaphylaxis-symptoms h5,
+    .anaphylaxis-actions h5 {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .anaphylaxis-symptoms ul,
+    .anaphylaxis-actions ul {
+        padding-left: var(--spacing-md);
+        margin: 0 0 var(--spacing-sm) 0;
+    }
+
+    .anaphylaxis-symptoms li,
+    .anaphylaxis-actions li {
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+        margin-bottom: 4px;
+    }
+
+    .anaphylaxis-actions {
+        background: rgba(239, 68, 68, 0.3);
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-sm);
     }
 
     .protocol-warnings {
@@ -280,6 +333,31 @@
 
     .protocol-warnings h4 {
         color: var(--accent-danger);
+        margin-bottom: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+
+    .protocol-warnings ul {
+        padding-left: var(--spacing-md);
+        margin: 0;
+    }
+
+    .protocol-warnings li {
+        font-size: var(--font-size-sm);
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+
+    .protocol-contraindications {
+        background: rgba(245, 158, 11, 0.1);
+        border-left: 3px solid var(--accent-warning);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-md);
+        border-radius: var(--radius-sm);
+    }
+
+    .protocol-contraindications h4 {
+        color: var(--accent-warning);
         margin-bottom: var(--spacing-sm);
         font-size: var(--font-size-sm);
     }
@@ -297,55 +375,42 @@
         margin-bottom: var(--spacing-sm);
         font-size: var(--font-size-sm);
     }
+
+    .protocol-seek-help p {
+        font-size: var(--font-size-sm);
+        line-height: 1.5;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    let allProtocols = [];
+    let currentCategory = 'all';
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Load protocols from API on page load
+        loadProtocols();
+
         // Category filtering
         const categoryBtns = document.querySelectorAll('.category-btn');
-        const protocolCards = document.querySelectorAll('.protocol-card');
-
         categoryBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 categoryBtns.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-
-                const category = this.dataset.category;
-
-                protocolCards.forEach(card => {
-                    if (category === 'all' || card.dataset.category === category) {
-                        card.classList.remove('hidden');
-                    } else {
-                        card.classList.add('hidden');
-                    }
-                });
+                currentCategory = this.dataset.category;
+                filterAndRenderProtocols();
             });
         });
 
         // Search filtering
         const searchInput = document.getElementById('medical-search');
+        let searchTimeout;
         searchInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-
-            protocolCards.forEach(card => {
-                const title = card.querySelector('h3').textContent.toLowerCase();
-                const summary = card.querySelector('.protocol-summary').textContent.toLowerCase();
-
-                if (title.includes(query) || summary.includes(query)) {
-                    card.classList.remove('hidden');
-                } else {
-                    card.classList.add('hidden');
-                }
-            });
-        });
-
-        // Protocol card click - show modal
-        protocolCards.forEach(card => {
-            card.addEventListener('click', function() {
-                showProtocolModal(this);
-            });
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterAndRenderProtocols();
+            }, 200);
         });
 
         // Modal close
@@ -355,78 +420,147 @@
         });
     });
 
-    const protocolData = {
-        'Minor Cut Treatment': {
-            steps: [
-                'Wash hands thoroughly with soap and water',
-                'Apply gentle pressure with a clean cloth to stop bleeding',
-                'Clean the wound with clean water',
-                'Apply antibiotic ointment if available',
-                'Cover with a sterile bandage',
-                'Change bandage daily and monitor for infection'
-            ],
-            warnings: ['Do not use dirty water', 'Watch for signs of infection (redness, swelling, pus)'],
-            seekHelp: 'Seek help if bleeding does not stop after 10 minutes of pressure, wound is deep, or signs of infection appear'
-        },
-        'CPR - Adult': {
-            steps: [
-                'Check for responsiveness - tap shoulders and shout "Are you okay?"',
-                'Call for help or activate emergency beacon',
-                'Check for normal breathing for no more than 10 seconds',
-                'If not breathing normally, begin chest compressions',
-                'Place the heel of one hand on the center of the chest',
-                'Place your other hand on top, interlace fingers',
-                'Push hard and fast - 100-120 compressions per minute',
-                'Push down at least 2 inches (5 cm)',
-                'Allow full chest recoil between compressions',
-                'After 30 compressions, give 2 rescue breaths',
-                'Continue 30:2 ratio until help arrives or person recovers'
-            ],
-            warnings: ['Do not stop CPR unless the person recovers or you are physically exhausted', 'Minimize interruptions to chest compressions'],
-            seekHelp: 'This is a medical emergency - activate SOS beacon immediately'
-        },
-        'Hypothermia Treatment': {
-            steps: [
-                'Move the person to a warm, dry location',
-                'Remove any wet clothing',
-                'Cover with dry blankets or sleeping bags',
-                'Apply warm compresses to neck, armpits, and groin',
-                'Give warm (not hot) drinks if conscious',
-                'Do not rub or massage the skin',
-                'Monitor breathing and pulse'
-            ],
-            warnings: ['Do not apply direct heat to skin', 'Do not give alcohol', 'Handle gently - sudden movements can cause heart problems'],
-            seekHelp: 'Seek medical help for severe hypothermia (confusion, slurred speech, loss of consciousness)'
+    async function loadProtocols() {
+        try {
+            const response = await fetch('/api/protocols');
+            const data = await response.json();
+            if (data.success) {
+                allProtocols = data.protocols;
+                filterAndRenderProtocols();
+            }
+        } catch (error) {
+            console.error('Failed to load protocols:', error);
+            document.getElementById('protocols-loading').textContent = 'Failed to load protocols';
         }
-    };
+    }
 
-    function showProtocolModal(card) {
-        const title = card.querySelector('h3').textContent;
+    function filterAndRenderProtocols() {
+        const searchInput = document.getElementById('medical-search');
+        const query = searchInput.value.toLowerCase();
+
+        let filtered = allProtocols;
+
+        // Filter by category
+        if (currentCategory !== 'all') {
+            filtered = filtered.filter(p => p.category === currentCategory);
+        }
+
+        // Filter by search query
+        if (query) {
+            filtered = filtered.filter(p => {
+                const nameMatch = p.name.toLowerCase().includes(query);
+                const summaryMatch = p.summary.toLowerCase().includes(query);
+                const keywordMatch = p.keywords && p.keywords.some(k => k.toLowerCase().includes(query));
+                return nameMatch || summaryMatch || keywordMatch;
+            });
+        }
+
+        renderProtocols(filtered);
+    }
+
+    function renderProtocols(protocols) {
+        const container = document.getElementById('protocols-list');
+
+        if (protocols.length === 0) {
+            container.innerHTML = '<div class="loading-indicator">No protocols found</div>';
+            return;
+        }
+
+        container.innerHTML = protocols.map(p => `
+            <div class="protocol-card" data-id="${p.id}" data-category="${p.category}">
+                <div class="protocol-header">
+                    <span class="severity ${p.severity}">${p.severity}</span>
+                    <h3>${p.name}</h3>
+                </div>
+                <p class="protocol-summary">${p.summary}</p>
+            </div>
+        `).join('');
+
+        // Add click handlers
+        container.querySelectorAll('.protocol-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const id = parseInt(this.dataset.id);
+                showProtocolModalById(id);
+            });
+        });
+    }
+
+    async function showProtocolModalById(id) {
+        try {
+            const response = await fetch(`/api/protocols/${id}`);
+            const data = await response.json();
+
+            if (!data.success) {
+                alert('Protocol not found');
+                return;
+            }
+
+            showProtocolModal(data.protocol);
+        } catch (error) {
+            console.error('Failed to load protocol details:', error);
+        }
+    }
+
+    function showProtocolModal(protocol) {
         const modal = document.getElementById('protocol-modal');
 
-        document.getElementById('modal-title').textContent = title;
+        // Set title and severity
+        document.getElementById('modal-title').textContent = protocol.name;
+        const severityEl = document.getElementById('modal-severity');
+        severityEl.textContent = protocol.severity;
+        severityEl.className = `severity ${protocol.severity}`;
 
-        const data = protocolData[title] || {
-            steps: ['Protocol details loading...'],
-            warnings: [],
-            seekHelp: 'Consult a medical professional if symptoms persist'
-        };
+        // Set summary
+        document.getElementById('modal-summary').textContent = protocol.summary;
+
+        // Handle anaphylaxis warning (for bee stings, allergic reactions)
+        const anaphylaxisEl = document.getElementById('modal-anaphylaxis');
+        if (protocol.anaphylaxis_escalation) {
+            const escalation = protocol.anaphylaxis_escalation;
+            document.getElementById('anaphylaxis-symptoms').innerHTML = `
+                <h5>Watch for these symptoms:</h5>
+                <ul>${escalation.symptoms.map(s => `<li>${s}</li>`).join('')}</ul>
+            `;
+            document.getElementById('anaphylaxis-actions').innerHTML = `
+                <h5>IMMEDIATE ACTIONS:</h5>
+                <ul>${escalation.immediate_actions.map(a => `<li>${a}</li>`).join('')}</ul>
+            `;
+            anaphylaxisEl.classList.remove('hidden');
+        } else {
+            anaphylaxisEl.classList.add('hidden');
+        }
 
         // Render steps
-        const stepsHtml = '<ol>' + data.steps.map(step => `<li>${step}</li>`).join('') + '</ol>';
+        const stepsHtml = '<ol>' + protocol.steps.map(step => `
+            <li>
+                <strong>${step.summary}</strong>
+                <span class="step-detail">${step.detail}</span>
+            </li>
+        `).join('') + '</ol>';
         document.getElementById('modal-steps').innerHTML = stepsHtml;
 
         // Render warnings
-        if (data.warnings.length > 0) {
-            const warningsHtml = '<h4>Warnings</h4><ul>' + data.warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
-            document.getElementById('modal-warnings').innerHTML = warningsHtml;
-            document.getElementById('modal-warnings').style.display = 'block';
+        const warningsEl = document.getElementById('modal-warnings');
+        if (protocol.warnings && protocol.warnings.length > 0) {
+            const warningsHtml = '<h4>⚠️ Warnings</h4><ul>' + protocol.warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
+            warningsEl.innerHTML = warningsHtml;
+            warningsEl.style.display = 'block';
         } else {
-            document.getElementById('modal-warnings').style.display = 'none';
+            warningsEl.style.display = 'none';
+        }
+
+        // Render contraindications
+        const contraindicationsEl = document.getElementById('modal-contraindications');
+        if (protocol.contraindications && protocol.contraindications.length > 0) {
+            const contraHtml = '<h4>❌ Do NOT:</h4><ul>' + protocol.contraindications.map(c => `<li>${c}</li>`).join('') + '</ul>';
+            contraindicationsEl.innerHTML = contraHtml;
+            contraindicationsEl.classList.remove('hidden');
+        } else {
+            contraindicationsEl.classList.add('hidden');
         }
 
         // Render seek help
-        document.getElementById('modal-seek-help').innerHTML = '<h4>When to Seek Help</h4><p>' + data.seekHelp + '</p>';
+        document.getElementById('modal-seek-help').innerHTML = '<h4>🏥 When to Seek Help</h4><p>' + protocol.when_to_seek_help + '</p>';
 
         modal.classList.remove('hidden');
     }

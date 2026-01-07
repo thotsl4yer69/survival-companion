@@ -850,6 +850,618 @@ const medicalProtocols = {
     }
 };
 
+// ==============================================================================
+// Medical First Aid Protocol Database
+// ==============================================================================
+
+const firstAidProtocolDatabase = [
+    // BEE STING - with anaphylaxis warnings
+    {
+        id: 1,
+        category: 'poison',
+        name: 'Bee Sting Treatment',
+        severity: 'moderate',
+        keywords: ['bee', 'sting', 'bee sting', 'wasp', 'hornet', 'insect sting', 'swelling', 'allergic'],
+        summary: 'First aid for bee, wasp, and insect stings including anaphylaxis recognition',
+        steps: [
+            { step: 1, summary: 'Remove the stinger', detail: 'If stinger is visible, scrape it out horizontally using a flat object like a credit card or fingernail. Do NOT squeeze or use tweezers as this can inject more venom.' },
+            { step: 2, summary: 'Clean the area', detail: 'Wash the sting site with soap and clean water to prevent infection.' },
+            { step: 3, summary: 'Apply cold compress', detail: 'Apply a cold pack or cloth with ice wrapped in fabric for 10-20 minutes. This reduces pain and swelling.' },
+            { step: 4, summary: 'Reduce swelling', detail: 'If stung on arm or leg, keep limb elevated. Consider antihistamine if available (follow package directions).' },
+            { step: 5, summary: 'Monitor for allergic reaction', detail: 'Watch for signs of anaphylaxis: difficulty breathing, swelling of face/throat, dizziness, rapid heartbeat, hives spreading beyond sting site.' },
+            { step: 6, summary: 'Pain management', detail: 'Over-the-counter pain relievers may help. Apply hydrocortisone cream or calamine lotion if available.' }
+        ],
+        warnings: [
+            'CRITICAL: If person has known bee allergy, has an EpiPen, USE IT IMMEDIATELY and activate emergency SOS',
+            'Watch closely for anaphylaxis signs for at least 30 minutes after sting',
+            'Multiple stings (10+) can be dangerous even without allergy - seek help',
+            'Stings inside mouth or throat are medical emergencies - swelling can block airway',
+            'Do NOT squeeze the stinger - this injects more venom'
+        ],
+        anaphylaxis_escalation: {
+            title: 'ANAPHYLAXIS - LIFE-THREATENING EMERGENCY',
+            symptoms: [
+                'Difficulty breathing or wheezing',
+                'Swelling of face, lips, tongue, or throat',
+                'Rapid or weak pulse',
+                'Skin rash, hives spreading over body',
+                'Dizziness or fainting',
+                'Nausea, vomiting, or diarrhea',
+                'Feeling of impending doom'
+            ],
+            immediate_actions: [
+                'Use epinephrine auto-injector (EpiPen) if available - inject into outer thigh',
+                'ACTIVATE EMERGENCY SOS IMMEDIATELY',
+                'Have person lie flat with legs elevated (unless difficulty breathing)',
+                'If not breathing, begin CPR',
+                'Keep person calm and still',
+                'Note time of sting and symptoms for rescuers'
+            ]
+        },
+        contraindications: ['Do not apply heat', 'Do not apply mud or other folk remedies', 'Do not squeeze stinger'],
+        when_to_seek_help: 'Seek immediate medical help if: any signs of anaphylaxis appear, person has known severe allergy, multiple stings (10+), sting in mouth/throat, symptoms worsen after 24 hours, or signs of infection develop'
+    },
+    // SNAKE BITE
+    {
+        id: 2,
+        category: 'poison',
+        name: 'Snake Bite Protocol',
+        severity: 'critical',
+        keywords: ['snake', 'bite', 'snake bite', 'venom', 'venomous', 'serpent'],
+        summary: 'Emergency response for venomous and non-venomous snake bites',
+        steps: [
+            { step: 1, summary: 'Move away from snake', detail: 'Get the person and yourself to a safe distance. Do not try to capture or kill the snake - note its appearance if possible.' },
+            { step: 2, summary: 'Keep calm and still', detail: 'Have the person lie down and remain as still as possible. Movement spreads venom faster through the body.' },
+            { step: 3, summary: 'Remove constricting items', detail: 'Remove jewelry, watches, and tight clothing near the bite before swelling starts.' },
+            { step: 4, summary: 'Position the limb', detail: 'Keep the bitten area below heart level if possible. Do NOT elevate.' },
+            { step: 5, summary: 'Clean the wound gently', detail: 'If available, gently clean around the bite with water. Do not scrub or apply pressure.' },
+            { step: 6, summary: 'Immobilize the limb', detail: 'Splint the limb to prevent movement. Use bandages, sticks, or clothing to keep it still.' },
+            { step: 7, summary: 'Activate emergency', detail: 'ACTIVATE SOS BEACON. Time is critical - antivenom may be needed within hours.' },
+            { step: 8, summary: 'Monitor vital signs', detail: 'Watch for breathing difficulties, changes in consciousness, or severe swelling. Note the time of bite.' }
+        ],
+        warnings: [
+            'ASSUME ALL SNAKE BITES ARE VENOMOUS until proven otherwise',
+            'Do NOT cut the wound or try to suck out venom',
+            'Do NOT apply tourniquet - this can cause tissue death',
+            'Do NOT apply ice or immerse in cold water',
+            'Do NOT give alcohol or caffeine',
+            'Do NOT apply electric shock',
+            'Time is critical - evacuate to medical care ASAP'
+        ],
+        contraindications: ['No cutting the wound', 'No suction devices', 'No tourniquets', 'No ice/cold', 'No alcohol'],
+        when_to_seek_help: 'ALL snake bites require professional medical evaluation. Activate SOS immediately and evacuate to hospital. Antivenom is time-sensitive.'
+    },
+    // HYPOTHERMIA
+    {
+        id: 3,
+        category: 'environmental',
+        name: 'Hypothermia Treatment',
+        severity: 'critical',
+        keywords: ['cold', 'hypothermia', 'freezing', 'shivering', 'cold exposure', 'frostbite'],
+        summary: 'Recognition and treatment of cold-related emergencies',
+        steps: [
+            { step: 1, summary: 'Move to shelter', detail: 'Get the person out of the cold and wind into a dry, warm shelter if possible.' },
+            { step: 2, summary: 'Remove wet clothing', detail: 'Gently remove any wet clothing and replace with dry layers or blankets.' },
+            { step: 3, summary: 'Insulate from ground', detail: 'Place insulating material (foam pad, branches, dry leaves) between person and ground.' },
+            { step: 4, summary: 'Warm the core first', detail: 'Apply warm (not hot) compresses to neck, armpits, and groin. Use body heat from another person if needed.' },
+            { step: 5, summary: 'Give warm fluids', detail: 'If person is conscious and can swallow, give warm, sweet liquids. NOT alcohol.' },
+            { step: 6, summary: 'Handle gently', detail: 'Move the person very gently - rough handling can cause cardiac arrest in severe hypothermia.' },
+            { step: 7, summary: 'Monitor continuously', detail: 'Watch breathing and pulse. Be prepared for CPR. Hypothermic hearts are fragile.' }
+        ],
+        warnings: [
+            'Do NOT apply direct heat to skin (heating pads, hot water bottles directly on skin)',
+            'Do NOT give alcohol - it causes more heat loss',
+            'Do NOT rub or massage limbs - this can cause cardiac arrest',
+            'Handle very gently - sudden movements can trigger heart problems',
+            'In severe hypothermia, person may appear dead - continue warming and seek help'
+        ],
+        contraindications: ['No alcohol', 'No direct heat application', 'No massage', 'No rough handling'],
+        when_to_seek_help: 'Seek help immediately for severe hypothermia (confusion, slurred speech, loss of consciousness, very slow breathing). Mild hypothermia (shivering, alert) can be treated in field if shelter is available.'
+    },
+    // HEAT STROKE
+    {
+        id: 4,
+        category: 'environmental',
+        name: 'Heat Stroke Emergency',
+        severity: 'critical',
+        keywords: ['heat', 'stroke', 'heat stroke', 'hot', 'overheating', 'heat exhaustion', 'sun'],
+        summary: 'Emergency cooling for life-threatening heat illness',
+        steps: [
+            { step: 1, summary: 'Move to shade/cool', detail: 'Get the person to shade or a cooler area immediately.' },
+            { step: 2, summary: 'Remove excess clothing', detail: 'Remove unnecessary clothing to help cooling.' },
+            { step: 3, summary: 'Cool rapidly', detail: 'Apply cold water to skin, especially neck, armpits, and groin. Use wet cloths, pour water, or immerse if possible.' },
+            { step: 4, summary: 'Fan the person', detail: 'Create air movement across wet skin to maximize evaporative cooling.' },
+            { step: 5, summary: 'Apply ice packs', detail: 'If available, apply ice packs to neck, armpits, and groin (major blood vessels).' },
+            { step: 6, summary: 'Monitor temperature', detail: 'Continue cooling until body feels cooler. Target is to get below 39°C (102°F).' },
+            { step: 7, summary: 'Hydrate if conscious', detail: 'If person is conscious and can swallow, give cool water in small sips.' }
+        ],
+        warnings: [
+            'Heat stroke is a MEDICAL EMERGENCY - can be fatal within hours',
+            'Do NOT give fluids if person is unconscious or confused',
+            'Do NOT use ice water bath if person is confused - hypothermia risk',
+            'Confusion, seizures, or unconsciousness indicate severe heat stroke',
+            'Cool first, transport second - every minute counts'
+        ],
+        contraindications: ['No fluids if unconscious', 'No fever-reducing medications'],
+        when_to_seek_help: 'Heat stroke requires emergency medical care. Activate SOS. Signs: body temp above 40°C (104°F), confusion, loss of consciousness, hot dry skin, seizures.'
+    },
+    // BURNS
+    {
+        id: 5,
+        category: 'wound',
+        name: 'Burns Treatment',
+        severity: 'moderate',
+        keywords: ['burn', 'burns', 'fire', 'scald', 'hot', 'blister', 'thermal'],
+        summary: 'First aid for first, second, and third degree burns',
+        steps: [
+            { step: 1, summary: 'Stop the burning', detail: 'Remove person from heat source. If clothing is on fire: Stop, Drop, Roll. Remove smoldering clothing unless stuck to skin.' },
+            { step: 2, summary: 'Cool the burn', detail: 'Run cool (not cold) water over burn for 10-20 minutes. This is the most important step.' },
+            { step: 3, summary: 'Remove constrictive items', detail: 'Remove jewelry, belts, tight clothing from burned area before swelling starts.' },
+            { step: 4, summary: 'Assess burn severity', detail: '1st degree: red, painful. 2nd degree: blisters. 3rd degree: white/charred, may not hurt (nerves damaged).' },
+            { step: 5, summary: 'Cover the burn', detail: 'Cover loosely with clean, dry bandage or cloth. Do not wrap tightly.' },
+            { step: 6, summary: 'Prevent shock', detail: 'Keep person warm (cover unburned areas), elevate burned limbs if possible.' }
+        ],
+        warnings: [
+            'Do NOT apply ice - can cause frostbite on damaged tissue',
+            'Do NOT apply butter, oil, or toothpaste',
+            'Do NOT break blisters - increases infection risk',
+            'Do NOT remove clothing stuck to burn',
+            'Chemical burns: brush off dry chemicals, then flush with water for 20+ minutes'
+        ],
+        contraindications: ['No ice', 'No butter/oils', 'No breaking blisters', 'No tight bandages'],
+        when_to_seek_help: 'Seek help for: burns larger than palm of hand, burns on face/hands/feet/genitals/joints, all 3rd degree burns, electrical or chemical burns, burns with difficulty breathing, burns in children or elderly.'
+    },
+    // FRACTURE
+    {
+        id: 6,
+        category: 'wound',
+        name: 'Fracture Immobilization',
+        severity: 'moderate',
+        keywords: ['fracture', 'broken', 'bone', 'break', 'crack', 'dislocation', 'sprain'],
+        summary: 'Stabilization of suspected fractures and dislocations',
+        steps: [
+            { step: 1, summary: 'Assess the injury', detail: 'Look for deformity, swelling, bruising, inability to move. Check circulation below injury (pulse, color, sensation).' },
+            { step: 2, summary: 'Control bleeding', detail: 'If open fracture (bone visible), cover wound with clean dressing. Apply gentle pressure if bleeding.' },
+            { step: 3, summary: 'Do not realign', detail: 'Do NOT attempt to push bone back in or straighten the limb unless no pulse below injury.' },
+            { step: 4, summary: 'Immobilize', detail: 'Splint the injury in the position found. Include joints above and below the fracture.' },
+            { step: 5, summary: 'Pad the splint', detail: 'Use soft padding between splint and skin. Splint materials: sticks, boards, rolled clothing, foam pad.' },
+            { step: 6, summary: 'Check circulation', detail: 'After splinting, check pulse, color, and feeling below injury. Loosen if circulation compromised.' },
+            { step: 7, summary: 'Treat for shock', detail: 'Keep person warm and calm. Elevate legs if no leg injury. Give fluids if conscious.' }
+        ],
+        warnings: [
+            'Spinal injury: do NOT move unless in immediate danger',
+            'If no pulse below injury, gentle realignment may be needed',
+            'Splint should be firm but not cut off circulation',
+            'Open fractures have high infection risk - keep wound clean'
+        ],
+        contraindications: ['No forced realignment', 'No movement with suspected spinal injury'],
+        when_to_seek_help: 'All fractures need medical evaluation. Emergencies: open fractures, no pulse below injury, severe deformity, suspected spinal injury, fractures with numbness or tingling.'
+    },
+    // DEHYDRATION
+    {
+        id: 7,
+        category: 'environmental',
+        name: 'Dehydration Treatment',
+        severity: 'moderate',
+        keywords: ['dehydration', 'thirst', 'water', 'fluid', 'dry', 'electrolyte'],
+        summary: 'Recognition and treatment of dehydration in wilderness settings',
+        steps: [
+            { step: 1, summary: 'Recognize symptoms', detail: 'Signs: thirst, dark urine, headache, dizziness, fatigue, dry mouth, decreased urination.' },
+            { step: 2, summary: 'Rest in shade', detail: 'Stop activity and rest in cool, shaded area to prevent further fluid loss.' },
+            { step: 3, summary: 'Drink fluids slowly', detail: 'Sip water slowly - drinking too fast can cause vomiting. Small amounts frequently.' },
+            { step: 4, summary: 'Replace electrolytes', detail: 'If available, add electrolyte powder to water, or improvise with small amount of salt and sugar.' },
+            { step: 5, summary: 'Monitor urine', detail: 'Adequate hydration = light yellow urine. Dark urine = still dehydrated.' },
+            { step: 6, summary: 'Address cause', detail: 'Treat underlying cause: heat exposure, vomiting, diarrhea, etc.' }
+        ],
+        warnings: [
+            'Severe dehydration can be life-threatening',
+            'Do NOT give fluids if person is unconscious',
+            'Children and elderly dehydrate faster',
+            'High altitude increases dehydration risk'
+        ],
+        contraindications: ['No fluids if unconscious', 'No caffeine or alcohol'],
+        when_to_seek_help: 'Seek help for: confusion or altered consciousness, inability to keep fluids down, no urination for 8+ hours, rapid heartbeat, sunken eyes, severe weakness.'
+    },
+    // MINOR CUT
+    {
+        id: 8,
+        category: 'wound',
+        name: 'Minor Cut Treatment',
+        severity: 'minor',
+        keywords: ['cut', 'wound', 'bleeding', 'laceration', 'scrape', 'abrasion'],
+        summary: 'Cleaning and bandaging minor wounds to prevent infection',
+        steps: [
+            { step: 1, summary: 'Wash your hands', detail: 'Clean your hands thoroughly before treating wound to prevent infection.' },
+            { step: 2, summary: 'Stop bleeding', detail: 'Apply gentle pressure with clean cloth for 5-10 minutes. Most minor cuts stop bleeding on their own.' },
+            { step: 3, summary: 'Clean the wound', detail: 'Rinse with clean water. Remove any debris gently. Do not use hydrogen peroxide or iodine on open wounds.' },
+            { step: 4, summary: 'Apply antibiotic', detail: 'If available, apply thin layer of antibiotic ointment to prevent infection.' },
+            { step: 5, summary: 'Cover wound', detail: 'Apply clean bandage. Change daily or when wet/dirty.' },
+            { step: 6, summary: 'Monitor for infection', detail: 'Watch for: increasing pain, redness spreading, swelling, pus, fever, red streaks from wound.' }
+        ],
+        warnings: [
+            'Deep cuts may need stitches - seek help if edges gap',
+            'Animal bites always need medical evaluation - high infection risk',
+            'Puncture wounds are prone to infection',
+            'Watch for tetanus risk with dirty wounds'
+        ],
+        contraindications: ['No hydrogen peroxide on open wounds', 'No iodine directly in wound'],
+        when_to_seek_help: 'Seek help if: bleeding does not stop after 10 minutes of pressure, wound is deep or gaping, caused by dirty/rusty object, animal bite, signs of infection appear.'
+    },
+    // ALLERGIC REACTION
+    {
+        id: 9,
+        category: 'poison',
+        name: 'Allergic Reaction Response',
+        severity: 'critical',
+        keywords: ['allergy', 'allergic', 'reaction', 'anaphylaxis', 'hives', 'swelling', 'epipen'],
+        summary: 'Recognition and treatment of allergic reactions including anaphylaxis',
+        steps: [
+            { step: 1, summary: 'Identify the reaction', detail: 'Mild: localized hives, itching, mild swelling. Severe: throat tightness, breathing difficulty, widespread hives, dizziness.' },
+            { step: 2, summary: 'Remove the allergen', detail: 'If known trigger (food, sting, plant), remove contact if possible.' },
+            { step: 3, summary: 'Check for EpiPen', detail: 'If person has prescribed epinephrine auto-injector and showing severe symptoms, USE IT NOW in outer thigh.' },
+            { step: 4, summary: 'Position the person', detail: 'If breathing difficulty: sit upright. If feeling faint: lie flat with legs raised. If vomiting: recovery position.' },
+            { step: 5, summary: 'Give antihistamine', detail: 'If available and person can swallow, give oral antihistamine for mild reactions.' },
+            { step: 6, summary: 'Monitor closely', detail: 'Symptoms can worsen rapidly. Stay with person. Be prepared for CPR.' }
+        ],
+        warnings: [
+            'Anaphylaxis can kill within minutes - act FAST',
+            'After using EpiPen, person still needs emergency medical care',
+            'Biphasic reactions: symptoms may return hours later',
+            'Do NOT hesitate to use EpiPen if severe symptoms present'
+        ],
+        anaphylaxis_escalation: {
+            title: 'ANAPHYLAXIS - LIFE-THREATENING',
+            symptoms: [
+                'Difficulty breathing, wheezing, stridor',
+                'Swelling of tongue, throat, or lips',
+                'Rapid or weak pulse',
+                'Widespread hives or flushing',
+                'Severe dizziness or loss of consciousness',
+                'Sense of doom'
+            ],
+            immediate_actions: [
+                'Give epinephrine (EpiPen) immediately - inject into outer thigh, through clothing if needed',
+                'ACTIVATE EMERGENCY SOS',
+                'Call for help - shout for assistance',
+                'If no breathing, begin CPR',
+                'A second dose of epinephrine may be given after 5-15 minutes if no improvement'
+            ]
+        },
+        contraindications: [],
+        when_to_seek_help: 'ANY signs of severe allergic reaction require emergency medical care. Activate SOS immediately for: breathing difficulty, throat swelling, confusion, fainting, or if EpiPen was used.'
+    },
+    // SPRAIN/STRAIN
+    {
+        id: 10,
+        category: 'wound',
+        name: 'Sprain and Strain Treatment',
+        severity: 'minor',
+        keywords: ['sprain', 'strain', 'ankle', 'twisted', 'muscle', 'ligament', 'swelling'],
+        summary: 'RICE protocol for muscle and ligament injuries',
+        steps: [
+            { step: 1, summary: 'Rest', detail: 'Stop using the injured area. Avoid putting weight on injured limb.' },
+            { step: 2, summary: 'Ice', detail: 'Apply cold pack wrapped in cloth for 15-20 minutes every 2-3 hours for first 48 hours.' },
+            { step: 3, summary: 'Compress', detail: 'Wrap with elastic bandage - snug but not tight. Check circulation (numbness, color, pulse).' },
+            { step: 4, summary: 'Elevate', detail: 'Keep injured area above heart level when possible to reduce swelling.' },
+            { step: 5, summary: 'Protect', detail: 'Use splint or support to prevent further injury. May need improvised crutch for ankle.' },
+            { step: 6, summary: 'Pain management', detail: 'Over-the-counter pain relievers if available. Avoid ibuprofen first 48 hours if significant bruising.' }
+        ],
+        warnings: [
+            'Severe pain or inability to bear any weight may indicate fracture',
+            'Do NOT apply ice directly to skin',
+            'Bandage should not cut off circulation',
+            'If no improvement in 48 hours, may be more serious'
+        ],
+        contraindications: ['No heat for first 48 hours', 'No ice directly on skin'],
+        when_to_seek_help: 'Seek help if: cannot bear any weight, obvious deformity, severe pain, numbness or tingling, no improvement after 48 hours, significant bruising.'
+    },
+    // CHOKING
+    {
+        id: 11,
+        category: 'cardiac',
+        name: 'Choking Response',
+        severity: 'critical',
+        keywords: ['choking', 'heimlich', 'airway', 'obstruction', 'cant breathe', 'throat'],
+        summary: 'Clearing airway obstruction in conscious and unconscious victims',
+        steps: [
+            { step: 1, summary: 'Recognize choking', detail: 'Signs: hands at throat, unable to speak or cough, blue lips/face, high-pitched sounds or silence.' },
+            { step: 2, summary: 'Ask if choking', detail: 'Ask "Are you choking?" If they can cough or speak, encourage coughing. Only intervene if they cannot breathe.' },
+            { step: 3, summary: 'Call for help', detail: 'Have someone call emergency services or activate beacon while you help.' },
+            { step: 4, summary: 'Give back blows', detail: 'Stand behind person. Give 5 sharp back blows between shoulder blades with heel of hand.' },
+            { step: 5, summary: 'Abdominal thrusts', detail: 'Stand behind, wrap arms around waist. Fist above navel, grasp with other hand. Give 5 quick upward thrusts.' },
+            { step: 6, summary: 'Repeat cycle', detail: 'Alternate 5 back blows and 5 abdominal thrusts until object expelled or person unconscious.' },
+            { step: 7, summary: 'If unconscious', detail: 'Lower to ground, begin CPR. Before each breath, look in mouth and remove visible object.' }
+        ],
+        warnings: [
+            'For pregnant or obese persons: use chest thrusts instead of abdominal thrusts',
+            'For infants: use back blows and chest thrusts (NOT abdominal)',
+            'If alone and choking: perform self-Heimlich using chair back',
+            'After choking episode, seek medical evaluation'
+        ],
+        contraindications: ['No abdominal thrusts on infants', 'No abdominal thrusts if pregnant - use chest thrusts'],
+        when_to_seek_help: 'After any choking incident, medical evaluation is recommended. Activate SOS if: person becomes unconscious, object cannot be removed, or breathing does not return to normal.'
+    },
+    // CPR
+    {
+        id: 12,
+        category: 'cardiac',
+        name: 'CPR - Adult',
+        severity: 'critical',
+        keywords: ['cpr', 'cardiac', 'arrest', 'heart', 'not breathing', 'unconscious', 'pulse'],
+        summary: 'Cardiopulmonary resuscitation for unresponsive adults',
+        steps: [
+            { step: 1, summary: 'Check responsiveness', detail: 'Tap shoulders and shout "Are you okay?" Look for movement or response for 5-10 seconds.' },
+            { step: 2, summary: 'Activate emergency', detail: 'Shout for help. Activate SOS beacon. If alone with phone, put on speaker.' },
+            { step: 3, summary: 'Check breathing', detail: 'Look for chest movement, listen for breathing, feel for breath on cheek. No more than 10 seconds.' },
+            { step: 4, summary: 'Start compressions', detail: 'Place heel of hand on center of chest. Other hand on top. Arms straight. Push hard and fast.' },
+            { step: 5, summary: 'Compression technique', detail: 'Push at least 2 inches (5cm) deep. Rate: 100-120 per minute. Allow full chest recoil.' },
+            { step: 6, summary: 'Give breaths', detail: 'After 30 compressions: tilt head back, lift chin, pinch nose, give 2 breaths (1 second each). Watch chest rise.' },
+            { step: 7, summary: 'Continue CPR', detail: 'Repeat 30 compressions, 2 breaths. Do NOT stop until: help arrives, person responds, or you are too exhausted.' }
+        ],
+        warnings: [
+            'High quality compressions are critical - push hard and fast',
+            'Minimize interruptions to compressions',
+            'If unwilling/unable to give breaths, compression-only CPR is better than nothing',
+            'CPR is exhausting - switch with another person every 2 minutes if possible',
+            'Do NOT give up - continue until help arrives'
+        ],
+        contraindications: [],
+        when_to_seek_help: 'This IS the emergency. SOS should already be activated. Continue CPR until professional help takes over, an AED is available, or person recovers.'
+    }
+];
+
+// ==============================================================================
+// Medical Protocol Search and Retrieval API
+// ==============================================================================
+
+// Search protocols by query
+app.get('/api/protocols', (req, res) => {
+    const { query, category, severity } = req.query;
+
+    let results = [...firstAidProtocolDatabase];
+
+    // Filter by category
+    if (category && category !== 'all') {
+        results = results.filter(p => p.category === category);
+    }
+
+    // Filter by severity
+    if (severity) {
+        results = results.filter(p => p.severity === severity);
+    }
+
+    // Search by query
+    if (query) {
+        const searchLower = query.toLowerCase();
+        results = results.filter(p => {
+            const nameMatch = p.name.toLowerCase().includes(searchLower);
+            const summaryMatch = p.summary.toLowerCase().includes(searchLower);
+            const keywordMatch = p.keywords.some(k => k.toLowerCase().includes(searchLower));
+            return nameMatch || summaryMatch || keywordMatch;
+        });
+    }
+
+    // Return simplified list for browsing
+    const simplified = results.map(p => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        severity: p.severity,
+        summary: p.summary,
+        keywords: p.keywords
+    }));
+
+    res.json({
+        success: true,
+        count: simplified.length,
+        protocols: simplified
+    });
+});
+
+// Get full protocol details by ID
+app.get('/api/protocols/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const protocol = firstAidProtocolDatabase.find(p => p.id === id);
+
+    if (!protocol) {
+        return res.status(404).json({
+            success: false,
+            error: 'Protocol not found'
+        });
+    }
+
+    res.json({
+        success: true,
+        protocol: protocol
+    });
+});
+
+// Natural language protocol lookup (for voice queries like "what do I do for a bee sting")
+app.post('/api/protocols/lookup', (req, res) => {
+    const { query } = req.body;
+
+    if (!query) {
+        return res.status(400).json({
+            success: false,
+            error: 'Query required'
+        });
+    }
+
+    const queryLower = query.toLowerCase();
+
+    // Score each protocol based on keyword matches
+    const scored = firstAidProtocolDatabase.map(protocol => {
+        let score = 0;
+
+        // Check name match (highest weight)
+        if (protocol.name.toLowerCase().includes(queryLower)) {
+            score += 100;
+        }
+
+        // Check keyword matches
+        protocol.keywords.forEach(keyword => {
+            if (queryLower.includes(keyword.toLowerCase())) {
+                score += 50;
+            }
+            if (keyword.toLowerCase().includes(queryLower)) {
+                score += 25;
+            }
+        });
+
+        // Check summary match
+        if (protocol.summary.toLowerCase().includes(queryLower)) {
+            score += 20;
+        }
+
+        return { protocol, score };
+    });
+
+    // Sort by score and filter to those with any match
+    const matches = scored
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+    if (matches.length === 0) {
+        return res.json({
+            success: true,
+            found: false,
+            message: 'No matching protocol found. Try describing the injury or condition differently.',
+            suggestions: ['bee sting', 'snake bite', 'bleeding', 'burn', 'broken bone', 'choking', 'CPR', 'dehydration']
+        });
+    }
+
+    const bestMatch = matches[0].protocol;
+
+    // Format response for display/voice
+    const formattedSteps = bestMatch.steps.map(s => `Step ${s.step}: ${s.summary} - ${s.detail}`);
+
+    res.json({
+        success: true,
+        found: true,
+        protocol: {
+            id: bestMatch.id,
+            name: bestMatch.name,
+            category: bestMatch.category,
+            severity: bestMatch.severity,
+            summary: bestMatch.summary,
+            steps: bestMatch.steps,
+            formatted_steps: formattedSteps,
+            warnings: bestMatch.warnings,
+            anaphylaxis_escalation: bestMatch.anaphylaxis_escalation || null,
+            contraindications: bestMatch.contraindications,
+            when_to_seek_help: bestMatch.when_to_seek_help
+        },
+        other_matches: matches.slice(1, 4).map(m => ({
+            id: m.protocol.id,
+            name: m.protocol.name,
+            score: m.score
+        }))
+    });
+});
+
+// Voice command handler for protocol lookup
+app.post('/api/voice/protocol', (req, res) => {
+    const { command } = req.body;
+
+    if (!command) {
+        return res.status(400).json({
+            success: false,
+            error: 'Command required'
+        });
+    }
+
+    const commandLower = command.toLowerCase();
+
+    // Extract the condition/injury from the command
+    // Examples: "what do I do for a bee sting", "how to treat a burn", "help with snake bite"
+    let searchQuery = commandLower
+        .replace(/what do i do for/gi, '')
+        .replace(/how to treat/gi, '')
+        .replace(/how do i treat/gi, '')
+        .replace(/help with/gi, '')
+        .replace(/first aid for/gi, '')
+        .replace(/treatment for/gi, '')
+        .replace(/^a\s+/gi, '')
+        .replace(/^an\s+/gi, '')
+        .trim();
+
+    // Score protocols
+    const scored = firstAidProtocolDatabase.map(protocol => {
+        let score = 0;
+
+        protocol.keywords.forEach(keyword => {
+            if (searchQuery.includes(keyword.toLowerCase())) {
+                score += 50;
+            }
+            if (keyword.toLowerCase().includes(searchQuery)) {
+                score += 25;
+            }
+        });
+
+        if (protocol.name.toLowerCase().includes(searchQuery)) {
+            score += 100;
+        }
+
+        return { protocol, score };
+    });
+
+    const matches = scored
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+    if (matches.length === 0) {
+        return res.json({
+            success: true,
+            found: false,
+            response: `I couldn't find a specific protocol for "${searchQuery}". Try asking about bee stings, snake bites, burns, bleeding, broken bones, or other common injuries.`,
+            action: 'no_match'
+        });
+    }
+
+    const bestMatch = matches[0].protocol;
+
+    // Generate voice-friendly response
+    let voiceResponse = `Found protocol for ${bestMatch.name}. ${bestMatch.summary}. `;
+    voiceResponse += `This is a ${bestMatch.severity} severity condition. `;
+    voiceResponse += `There are ${bestMatch.steps.length} steps. `;
+    voiceResponse += `Step 1: ${bestMatch.steps[0].summary}. `;
+    voiceResponse += `Say "next" to continue, or "more detail" for detailed instructions.`;
+
+    // Check for critical warnings (like anaphylaxis)
+    let criticalWarning = null;
+    if (bestMatch.anaphylaxis_escalation) {
+        criticalWarning = `WARNING: Watch for signs of anaphylaxis - ${bestMatch.anaphylaxis_escalation.symptoms.slice(0, 3).join(', ')}. If any occur, use EpiPen immediately and activate SOS.`;
+    }
+
+    // Set up navigation state for step-through
+    navigationState.currentProtocol = bestMatch.id;
+    navigationState.currentPage = 'medical';
+    navigationState.protocolSteps = bestMatch.steps;
+    navigationState.currentStep = 0;
+    navigationState.totalSteps = bestMatch.steps.length;
+
+    res.json({
+        success: true,
+        found: true,
+        response: voiceResponse,
+        critical_warning: criticalWarning,
+        action: 'start_protocol',
+        protocol: {
+            id: bestMatch.id,
+            name: bestMatch.name,
+            severity: bestMatch.severity,
+            category: bestMatch.category,
+            summary: bestMatch.summary,
+            steps: bestMatch.steps,
+            warnings: bestMatch.warnings,
+            anaphylaxis_escalation: bestMatch.anaphylaxis_escalation,
+            when_to_seek_help: bestMatch.when_to_seek_help
+        },
+        current_step: 0,
+        total_steps: bestMatch.steps.length
+    });
+});
+
 // Request confirmation for critical action
 app.post('/api/confirm/request', (req, res) => {
     const { action, description } = req.body;
