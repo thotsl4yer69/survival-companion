@@ -796,13 +796,50 @@ body.low-power-mode-active #nav-bar {
 /* ==============================================================================
    Night Mode (Red light for dark adaptation)
 ============================================================================== */
+/* Night Mode - Red light for dark adaptation preservation */
 body.night-mode {
     --bg-primary: #0a0000;
     --bg-secondary: #140000;
     --bg-card: #1a0000;
+    --bg-hover: #220000;
     --text-primary: #ff3333;
     --text-secondary: #cc2222;
     --text-muted: #881111;
     --accent-primary: #ff0000;
     --accent-secondary: #cc0000;
+    --accent-warning: #ff4400;
+    --accent-danger: #ff0000;
+}
+
+/* Override specific colors in night mode */
+body.night-mode .action-btn.medical svg,
+body.night-mode .action-btn.navigation svg,
+body.night-mode .action-btn.survival svg,
+body.night-mode .action-btn.weather svg,
+body.night-mode .action-btn.emergency svg {
+    color: #cc0000;
+}
+
+body.night-mode .vital-icon.heart,
+body.night-mode .vital-icon.oxygen,
+body.night-mode .vital-icon.temp {
+    color: #ff3333;
+}
+
+body.night-mode .gps-status.gps-fixed {
+    color: #ff0000;
+}
+
+body.night-mode .btn-primary {
+    background: #660000;
+    color: #ff3333;
+}
+
+body.night-mode .btn-primary:hover {
+    background: #880000;
+}
+
+body.night-mode .status-indicator.ready {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff3333;
 }
