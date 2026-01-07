@@ -3375,6 +3375,340 @@ app.post('/api/shelters/search', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Fire Starting Database
+// ==============================================================================
+
+const fireDatabase = {
+    methods: {
+        friction: {
+            id: 'friction',
+            name: 'Friction Methods',
+            category: 'primitive',
+            difficulty: 'advanced',
+            description: 'Creating fire through friction-generated heat. Requires skill and practice.',
+            techniques: [
+                {
+                    name: 'Bow Drill',
+                    difficulty: 'intermediate',
+                    description: 'Most reliable friction method. Uses a bow to spin a spindle against a fireboard.',
+                    materials: ['Fireboard (dry, soft wood like cedar, willow)', 'Spindle (straight, dry stick ~8 inches)', 'Bow (curved branch with cordage)', 'Handhold (hard wood or rock with depression)', 'Tinder bundle'],
+                    steps: [
+                        'Carve notch in fireboard to collect ember dust',
+                        'Place tinder under notch to catch ember',
+                        'Wrap bow string around spindle once',
+                        'Hold handhold on top of spindle, fireboard steady with foot',
+                        'Bow back and forth with increasing speed and pressure',
+                        'Continue until ember forms in notch',
+                        'Transfer ember to tinder bundle, blow gently into flame'
+                    ],
+                    tips: ['Keep everything DRY', 'Apply downward pressure', 'Long smooth strokes work best', 'Practice before you need it']
+                },
+                {
+                    name: 'Hand Drill',
+                    difficulty: 'advanced',
+                    description: 'Simplest friction method but requires most skill and callused hands.',
+                    materials: ['Spindle (straight, dry, ~18 inches)', 'Fireboard (soft dry wood)', 'Tinder bundle'],
+                    steps: [
+                        'Carve notch in fireboard',
+                        'Place spindle in depression in fireboard',
+                        'Spin spindle between palms while pressing down',
+                        'Hands will naturally move down - quickly reset to top',
+                        'Maintain consistent pressure and speed',
+                        'Continue until ember forms'
+                    ],
+                    tips: ['Requires lots of practice', 'Works best in dry conditions', 'Can cause blisters - build calluses']
+                },
+                {
+                    name: 'Fire Plough',
+                    difficulty: 'advanced',
+                    description: 'Rubbing a stick back and forth in a groove.',
+                    materials: ['Fireboard with groove', 'Hardwood plough stick', 'Tinder'],
+                    steps: [
+                        'Carve groove in soft wood fireboard',
+                        'Rub hard stick back and forth in groove quickly',
+                        'Push dust to end of groove',
+                        'Continue until dust ignites'
+                    ]
+                }
+            ]
+        },
+        spark: {
+            id: 'spark',
+            name: 'Spark Methods',
+            category: 'modern',
+            difficulty: 'beginner',
+            description: 'Creating sparks to ignite tinder. More reliable than friction.',
+            techniques: [
+                {
+                    name: 'Ferro Rod / Fire Steel',
+                    difficulty: 'beginner',
+                    description: 'Scraping ferrocerium rod creates hot sparks (~3000°F).',
+                    materials: ['Ferro rod', 'Striker or knife spine', 'Dry tinder'],
+                    steps: [
+                        'Prepare tinder bundle or char cloth',
+                        'Hold ferro rod close to tinder',
+                        'Scrape striker DOWN the rod (not up) to throw sparks into tinder',
+                        'Use firm, fast strokes',
+                        'Once tinder catches, blow gently to flame'
+                    ],
+                    tips: ['Works when wet - dry rod before use', 'Char cloth catches sparks easiest', 'Practice in controlled setting']
+                },
+                {
+                    name: 'Flint and Steel',
+                    difficulty: 'intermediate',
+                    description: 'Traditional method striking steel against flint.',
+                    materials: ['Hard flint or quartz', 'High-carbon steel', 'Char cloth', 'Tinder bundle'],
+                    steps: [
+                        'Hold char cloth against flint',
+                        'Strike steel DOWN along flint edge',
+                        'Sparks should land on char cloth',
+                        'Once char cloth catches, transfer to tinder',
+                        'Blow into flame'
+                    ]
+                },
+                {
+                    name: 'Battery and Steel Wool',
+                    difficulty: 'beginner',
+                    description: 'Electrical method using battery to ignite steel wool.',
+                    materials: ['9V battery (or 2 AA)', 'Fine steel wool (#0000)', 'Tinder'],
+                    steps: [
+                        'Stretch steel wool into a loose bundle',
+                        'Touch both battery terminals to steel wool',
+                        'Steel wool will glow and ignite',
+                        'Quickly add to tinder bundle',
+                        'Blow into flame'
+                    ],
+                    tips: ['Works with wet steel wool', 'Fine grade steel wool works best', 'Keep battery away from steel wool until ready']
+                }
+            ]
+        },
+        solar: {
+            id: 'solar',
+            name: 'Solar Methods',
+            category: 'environmental',
+            difficulty: 'intermediate',
+            description: 'Using sunlight focused through a lens to ignite tinder.',
+            techniques: [
+                {
+                    name: 'Magnifying Lens',
+                    difficulty: 'beginner',
+                    description: 'Focusing sunlight through magnifying glass, eyeglasses, or clear container.',
+                    materials: ['Magnifying glass, binocular lens, or reading glasses', 'Dark-colored tinder (charred material works best)', 'Bright sunlight'],
+                    steps: [
+                        'Wait for bright, direct sunlight',
+                        'Place dark tinder on stable surface',
+                        'Hold lens between sun and tinder',
+                        'Adjust distance to create smallest, brightest point of light',
+                        'Keep focal point steady on tinder',
+                        'Continue until smoke appears, then flame'
+                    ],
+                    tips: ['Black/charred materials ignite fastest', 'Steady hands essential', 'Only works with direct sunlight']
+                },
+                {
+                    name: 'Water-Filled Container',
+                    difficulty: 'intermediate',
+                    description: 'Clear bottle or balloon filled with water acts as lens.',
+                    materials: ['Clear plastic bottle or balloon', 'Clean water', 'Dark tinder', 'Bright sunlight'],
+                    steps: [
+                        'Fill clear container with water',
+                        'Shape spherical (balloon) or use curved bottle bottom',
+                        'Hold container to focus sunlight to a point',
+                        'Direct focal point onto dark tinder'
+                    ]
+                },
+                {
+                    name: 'Ice Lens',
+                    difficulty: 'advanced',
+                    description: 'Shaping clear ice into a lens to focus sunlight.',
+                    materials: ['Clear ice (2-3 inches thick)', 'Knife or warmth to shape', 'Dark tinder'],
+                    steps: [
+                        'Find or make clear ice (freeze clean water slowly)',
+                        'Shape ice into lens using knife or body heat',
+                        'Polish surfaces smooth',
+                        'Use like magnifying glass to focus sunlight'
+                    ]
+                }
+            ]
+        },
+        chemical: {
+            id: 'chemical',
+            name: 'Chemical Methods',
+            category: 'survival_kit',
+            difficulty: 'beginner',
+            description: 'Using chemical reactions to create fire.',
+            techniques: [
+                {
+                    name: 'Waterproof Matches',
+                    difficulty: 'beginner',
+                    description: 'Standard matches treated to resist moisture.',
+                    tips: ['Strike on dry surface', 'Shield from wind', 'Keep in waterproof container']
+                },
+                {
+                    name: 'Lighter',
+                    difficulty: 'beginner',
+                    description: 'Most reliable modern fire method.',
+                    tips: ['Keep dry', 'Store multiple', 'Works at altitude', 'Butane doesn\'t work well in extreme cold']
+                },
+                {
+                    name: 'Potassium Permanganate + Glycerin',
+                    difficulty: 'intermediate',
+                    description: 'Chemical reaction produces fire after 30-60 seconds.',
+                    materials: ['Potassium permanganate crystals', 'Glycerin'],
+                    steps: [
+                        'Create small pile of potassium permanganate',
+                        'Add drops of glycerin to center',
+                        'Stand back - reaction takes 30-60 seconds',
+                        'Flames appear when chemicals react'
+                    ],
+                    warnings: ['Chemical reaction - keep face away', 'Do not inhale fumes']
+                }
+            ]
+        }
+    },
+    materials: {
+        tinder: {
+            description: 'Fine, dry materials that catch spark or ember. Must be bone dry.',
+            natural: ['Dry grass', 'Cattail fluff', 'Birch bark', 'Cedar bark (shredded)', 'Dry leaves', 'Pine needles', 'Dandelion fluff', 'Milkweed fluff', 'Bird down/feathers'],
+            processed: ['Char cloth', 'Dryer lint', 'Cotton balls (with petroleum jelly)', 'Fine steel wool', 'Newspaper (shredded)'],
+            tips: ['Tinder must be BONE DRY', 'Collect more than you think you need', 'Process materials into fine fibers', 'Keep tinder in waterproof container']
+        },
+        kindling: {
+            description: 'Small sticks that catch fire from tinder flame. Builds heat for larger fuel.',
+            sizes: ['Pencil-thin twigs (first stage)', 'Finger-thick sticks (second stage)', 'Thumb-thick sticks (third stage)'],
+            sources: ['Dead standing branches', 'Inside bark of dead trees', 'Resinous (pitch) wood'],
+            tips: ['Dead branches attached to tree are drier than ground wood', 'Sort by size before starting fire', 'Split wood burns easier than round']
+        },
+        fuel: {
+            description: 'Larger wood that sustains the fire once established.',
+            types: ['Hardwood (oak, maple) - burns longer, hotter', 'Softwood (pine, cedar) - ignites easier, burns faster', 'Resinous wood - very hot but smoky'],
+            tips: ['Have wood supply ready before starting', 'Keep fuel dry (stack off ground, cover)', 'Split large pieces for better burning']
+        }
+    },
+    safety: [
+        'Clear 10-foot diameter area of leaves, grass, and debris',
+        'Check overhead for low branches, hanging materials',
+        'Never leave fire unattended',
+        'Have water, dirt, or sand ready to extinguish',
+        'Build fire away from shelters, tents, trees',
+        'Never burn in enclosed space - carbon monoxide kills',
+        'Create fire ring with rocks if possible',
+        'Fully extinguish before sleeping or leaving - drown, stir, drown again',
+        'In windy conditions, dig fire pit or build wind break'
+    ],
+    fire_lays: [
+        { name: 'Teepee', description: 'Kindling arranged in cone shape over tinder. Good for quick hot fire.', best_for: 'Quick fire, boiling water' },
+        { name: 'Log Cabin', description: 'Stacked square with tinder in center. Burns longer, good base for cooking.', best_for: 'Cooking, long-lasting fire' },
+        { name: 'Lean-To', description: 'Kindling leaned against support with tinder underneath. Good in wind.', best_for: 'Windy conditions' },
+        { name: 'Star/Radial', description: 'Logs arranged like wheel spokes, pushed in as they burn. Fuel efficient.', best_for: 'Long fires, overnight' },
+        { name: 'Platform', description: 'Fire built on platform of green logs. Use when ground is wet or snowy.', best_for: 'Wet/snowy conditions' }
+    ]
+};
+
+// Get fire starting guide
+app.get('/api/fire', (req, res) => {
+    res.json({
+        success: true,
+        guide: fireDatabase
+    });
+});
+
+// Get specific fire method
+app.get('/api/fire/method/:method', (req, res) => {
+    const method = req.params.method.toLowerCase();
+    const methodData = fireDatabase.methods[method];
+
+    if (!methodData) {
+        return res.status(404).json({
+            success: false,
+            error: `Method '${method}' not found`,
+            available_methods: Object.keys(fireDatabase.methods)
+        });
+    }
+
+    res.json({
+        success: true,
+        method: methodData
+    });
+});
+
+// Search fire starting info
+app.post('/api/fire/search', (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    // Determine what kind of info they want
+    const response = {
+        success: true,
+        query: query,
+        results: []
+    };
+
+    // Check for method keywords
+    const methodKeywords = {
+        friction: ['friction', 'bow drill', 'hand drill', 'rub', 'primitive'],
+        spark: ['spark', 'ferro', 'flint', 'steel', 'battery', 'steel wool'],
+        solar: ['solar', 'magnif', 'lens', 'sun', 'glass'],
+        chemical: ['match', 'lighter', 'potassium', 'chemical']
+    };
+
+    for (const [method, keywords] of Object.entries(methodKeywords)) {
+        if (keywords.some(k => queryLower.includes(k))) {
+            response.results.push({
+                type: 'method',
+                data: fireDatabase.methods[method]
+            });
+        }
+    }
+
+    // Check for material keywords
+    if (queryLower.includes('tinder') || queryLower.includes('material') || queryLower.includes('what to burn')) {
+        response.results.push({
+            type: 'materials',
+            data: fireDatabase.materials
+        });
+    }
+
+    // Check for safety
+    if (queryLower.includes('safe') || queryLower.includes('danger')) {
+        response.results.push({
+            type: 'safety',
+            data: fireDatabase.safety
+        });
+    }
+
+    // Check for fire lay
+    if (queryLower.includes('lay') || queryLower.includes('arrange') || queryLower.includes('stack')) {
+        response.results.push({
+            type: 'fire_lays',
+            data: fireDatabase.fire_lays
+        });
+    }
+
+    // Default: return overview of all methods
+    if (response.results.length === 0) {
+        response.results.push({
+            type: 'overview',
+            methods: Object.values(fireDatabase.methods).map(m => ({
+                id: m.id,
+                name: m.name,
+                difficulty: m.difficulty,
+                description: m.description,
+                techniques_count: m.techniques.length
+            })),
+            safety_tips: fireDatabase.safety,
+            materials_summary: {
+                tinder: fireDatabase.materials.tinder.natural.slice(0, 5),
+                kindling: fireDatabase.materials.kindling.sizes,
+                fuel: fireDatabase.materials.fuel.types
+            },
+            fire_lays: fireDatabase.fire_lays
+        });
+    }
+
+    res.json(response);
+});
+
 // Generate contextually appropriate survival response
 function generateSurvivalResponse(query) {
     const queryLower = query.toLowerCase();
