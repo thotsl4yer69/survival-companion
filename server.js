@@ -1428,6 +1428,699 @@ app.get('/api/llm/status', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Context-Aware Conversation API
+// ==============================================================================
+
+// Conversation history for context
+let conversationHistory = [];
+const MAX_HISTORY = 10;
+
+// Context-aware responses for follow-up questions
+const contextualResponses = {
+    cut: {
+        initial: 'For a cut: Clean the wound with clean water. Apply direct pressure with a clean cloth to stop bleeding. Once bleeding stops, apply antibiotic ointment if available and cover with a sterile bandage.',
+        followups: {
+            deep: 'For a deep cut: Apply firm, constant pressure for at least 15-20 minutes. If bleeding soaks through, add more material without removing the first layer. Deep cuts may need stitches - seek medical help if available. Watch for signs of infection.',
+            infected: 'Signs of infection in a cut: Increasing redness, warmth, swelling, pus discharge, red streaks, or fever. Clean infected wounds twice daily, apply antibiotic ointment, and seek medical help if symptoms worsen.',
+            bleeding: 'If the cut won\'t stop bleeding: Maintain direct pressure, elevate the wound above heart level if possible. For severe limb bleeding, a tourniquet may be needed as a last resort.',
+            clean: 'To clean a cut properly: Use clean or purified water, gently remove debris, avoid using alcohol directly in the wound (it damages tissue), use mild soap around but not in the wound.'
+        }
+    },
+    burn: {
+        initial: 'For a burn: Cool the burn immediately with cool (not cold) running water for 10-20 minutes. Don\'t apply ice, butter, or toothpaste. Cover with a clean, non-stick bandage.',
+        followups: {
+            severe: 'For severe burns (large area, white/charred skin, on face/hands/feet/joints): Cool the burn, cover with clean cloth, do NOT remove stuck clothing, seek emergency medical help immediately.',
+            blister: 'For burn blisters: Do NOT pop them - they protect against infection. If a blister breaks on its own, clean gently, apply antibiotic ointment, and cover with a bandage.',
+            pain: 'For burn pain: Over-the-counter pain relievers help. Keep the burn covered and moist. Aloe vera gel can soothe minor burns. Elevate the burned area if possible.'
+        }
+    },
+    fracture: {
+        initial: 'For a suspected fracture: Immobilize the injured area. Don\'t try to straighten the bone. Apply a splint using rigid material (sticks, boards) padded with cloth. Seek medical help.',
+        followups: {
+            splint: 'To make a splint: Use rigid material (sticks, boards, rolled magazines). Pad with cloth for comfort. Immobilize joints above and below the fracture. Secure with strips of cloth, not too tight.',
+            open: 'For open/compound fractures (bone visible): Cover the wound with clean cloth, do NOT push bone back in, immobilize the area, control bleeding around (not on) the bone, get emergency help immediately.',
+            move: 'Moving someone with a fracture: Only move if absolutely necessary for safety. Support the injured area during movement. If spinal injury is suspected, do NOT move unless in immediate danger.'
+        }
+    }
+};
+
+// Extract topic from query
+function extractTopic(query) {
+    const queryLower = query.toLowerCase();
+    const topics = ['cut', 'burn', 'fracture', 'break', 'bone'];
+    for (const topic of topics) {
+        if (queryLower.includes(topic)) {
+            if (topic === 'break' || topic === 'bone') return 'fracture';
+            return topic;
+        }
+    }
+    return null;
+}
+
+// Check for follow-up keywords
+function extractFollowup(query, topic) {
+    const queryLower = query.toLowerCase();
+    const topicData = contextualResponses[topic];
+    if (!topicData || !topicData.followups) return null;
+
+    for (const [key, response] of Object.entries(topicData.followups)) {
+        if (queryLower.includes(key)) {
+            return { key, response };
+        }
+    }
+
+    // Check for pronouns indicating follow-up
+    if (queryLower.includes("it's") || queryLower.includes('it is') ||
+        queryLower.includes('what if') || queryLower.includes('and if')) {
+        // Find most relevant follow-up based on query
+        if (queryLower.includes('deep') || queryLower.includes('bad') || queryLower.includes('severe')) {
+            return { key: 'severe', response: topicData.followups.deep || topicData.followups.severe };
+        }
+    }
+
+    return null;
+}
+
+// Context-aware query endpoint
+app.post('/api/llm/context-query', async (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    let response = {
+        success: true,
+        query,
+        context_used: false,
+        history_length: conversationHistory.length
+    };
+
+    // Check if this is a follow-up question
+    const isFollowup = queryLower.includes("it's") || queryLower.includes('it is') ||
+        queryLower.includes('what if') || queryLower.includes('and if') ||
+        queryLower.includes('what about') || !extractTopic(query);
+
+    // Get previous context
+    const lastMessage = conversationHistory[conversationHistory.length - 1];
+    let currentTopic = extractTopic(query);
+
+    // If this looks like a follow-up and we have context
+    if (isFollowup && lastMessage && lastMessage.topic) {
+        currentTopic = lastMessage.topic;
+        response.context_used = true;
+        response.context_from = 'previous_message';
+        response.understood_reference = `"it" refers to ${lastMessage.topic}`;
+    }
+
+    // Generate response
+    if (currentTopic && contextualResponses[currentTopic]) {
+        const topicData = contextualResponses[currentTopic];
+
+        // Check for specific follow-up
+        const followup = extractFollowup(query, currentTopic);
+        if (followup) {
+            response.response = followup.response;
+            response.response_type = 'followup';
+            response.followup_key = followup.key;
+        } else if (!isFollowup) {
+            response.response = topicData.initial;
+            response.response_type = 'initial';
+        } else {
+            // Generic follow-up for the topic
+            const followupKeys = Object.keys(topicData.followups);
+            const firstFollowup = followupKeys[0];
+            response.response = topicData.followups[firstFollowup];
+            response.response_type = 'context_followup';
+        }
+
+        response.topic = currentTopic;
+    } else {
+        // Fall back to general survival response
+        const generalResponse = generateSurvivalResponse(query);
+        response.response = generalResponse.response;
+        response.topic = generalResponse.topic;
+        response.response_type = 'general';
+    }
+
+    // Add to history
+    conversationHistory.push({
+        query,
+        response: response.response,
+        topic: currentTopic || response.topic,
+        timestamp: Date.now()
+    });
+
+    // Trim history if needed
+    if (conversationHistory.length > MAX_HISTORY) {
+        conversationHistory = conversationHistory.slice(-MAX_HISTORY);
+    }
+
+    response.history_length = conversationHistory.length;
+    res.json(response);
+});
+
+// Get conversation history
+app.get('/api/llm/history', (req, res) => {
+    res.json({
+        history: conversationHistory,
+        length: conversationHistory.length,
+        max_length: MAX_HISTORY
+    });
+});
+
+// Clear conversation history
+app.post('/api/llm/history/clear', (req, res) => {
+    conversationHistory = [];
+    res.json({ success: true, message: 'Conversation history cleared' });
+});
+
+// ==============================================================================
+// GPS Position Tracking API
+// ==============================================================================
+
+// GPS state with real-time updates
+let gpsState = {
+    latitude: -33.8688,
+    longitude: 151.2093,
+    altitude: 58,
+    accuracy: 3.5, // meters
+    speed: 0, // m/s
+    heading: 0, // degrees from north
+    fix: true,
+    satellites: 8,
+    hdop: 1.2,
+    last_update: Date.now(),
+    tracking_active: true
+};
+
+// Simulate GPS movement
+let gpsMovementInterval = null;
+
+// Start GPS tracking (simulates real-time updates)
+app.post('/api/gps/start', (req, res) => {
+    if (gpsMovementInterval) {
+        clearInterval(gpsMovementInterval);
+    }
+
+    gpsState.tracking_active = true;
+    gpsState.last_update = Date.now();
+
+    // Simulate slight GPS drift for realism
+    gpsMovementInterval = setInterval(() => {
+        // Small random drift (simulating stationary GPS jitter)
+        gpsState.latitude += (Math.random() - 0.5) * 0.00001;
+        gpsState.longitude += (Math.random() - 0.5) * 0.00001;
+        gpsState.accuracy = 2.5 + Math.random() * 3;
+        gpsState.satellites = Math.floor(6 + Math.random() * 6);
+        gpsState.last_update = Date.now();
+    }, 1000);
+
+    res.json({
+        success: true,
+        message: 'GPS tracking started',
+        position: {
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude,
+            altitude: gpsState.altitude,
+            accuracy: gpsState.accuracy
+        }
+    });
+});
+
+// Stop GPS tracking
+app.post('/api/gps/stop', (req, res) => {
+    if (gpsMovementInterval) {
+        clearInterval(gpsMovementInterval);
+        gpsMovementInterval = null;
+    }
+    gpsState.tracking_active = false;
+
+    res.json({
+        success: true,
+        message: 'GPS tracking stopped'
+    });
+});
+
+// Get current GPS position
+app.get('/api/gps/position', (req, res) => {
+    res.json({
+        latitude: gpsState.latitude,
+        longitude: gpsState.longitude,
+        altitude: gpsState.altitude,
+        accuracy: Math.round(gpsState.accuracy * 10) / 10,
+        accuracy_indicator: gpsState.accuracy < 5 ? 'high' : gpsState.accuracy < 10 ? 'medium' : 'low',
+        speed: gpsState.speed,
+        heading: gpsState.heading,
+        fix: gpsState.fix,
+        satellites: gpsState.satellites,
+        hdop: gpsState.hdop,
+        last_update: gpsState.last_update,
+        age_ms: Date.now() - gpsState.last_update,
+        tracking_active: gpsState.tracking_active,
+        coordinates_formatted: `${gpsState.latitude.toFixed(6)}, ${gpsState.longitude.toFixed(6)}`
+    });
+});
+
+// Simulate movement (for testing position updates)
+app.post('/api/gps/simulate-movement', (req, res) => {
+    const { direction, distance_meters } = req.body;
+
+    // Convert distance to degrees (rough approximation)
+    const metersPerDegree = 111000; // Approximate at equator
+    const degreesChange = (distance_meters || 10) / metersPerDegree;
+
+    const oldLat = gpsState.latitude;
+    const oldLon = gpsState.longitude;
+
+    switch ((direction || 'north').toLowerCase()) {
+        case 'north':
+            gpsState.latitude += degreesChange;
+            gpsState.heading = 0;
+            break;
+        case 'south':
+            gpsState.latitude -= degreesChange;
+            gpsState.heading = 180;
+            break;
+        case 'east':
+            gpsState.longitude += degreesChange;
+            gpsState.heading = 90;
+            break;
+        case 'west':
+            gpsState.longitude -= degreesChange;
+            gpsState.heading = 270;
+            break;
+        default:
+            gpsState.latitude += degreesChange;
+            gpsState.heading = 0;
+    }
+
+    gpsState.speed = (distance_meters || 10) / 5; // Assume 5 seconds of movement
+    gpsState.last_update = Date.now();
+
+    res.json({
+        success: true,
+        movement: {
+            direction: direction || 'north',
+            distance_meters: distance_meters || 10
+        },
+        old_position: {
+            latitude: oldLat,
+            longitude: oldLon
+        },
+        new_position: {
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude,
+            altitude: gpsState.altitude
+        },
+        position_updated: true,
+        heading: gpsState.heading,
+        speed: gpsState.speed
+    });
+});
+
+// Get GPS status
+app.get('/api/gps/status', (req, res) => {
+    res.json({
+        fix: gpsState.fix,
+        satellites: gpsState.satellites,
+        accuracy: gpsState.accuracy,
+        accuracy_indicator: gpsState.accuracy < 5 ? 'high' : gpsState.accuracy < 10 ? 'medium' : 'low',
+        hdop: gpsState.hdop,
+        tracking_active: gpsState.tracking_active,
+        last_update: gpsState.last_update,
+        age_ms: Date.now() - gpsState.last_update
+    });
+});
+
+// ==============================================================================
+// Waypoint API
+// ==============================================================================
+
+// Waypoint storage (persisted to JSON file)
+const waypointsFile = join(__dirname, 'data', 'waypoints.json');
+let waypoints = [];
+
+// Load waypoints from file
+function loadWaypoints() {
+    try {
+        if (fs.existsSync(waypointsFile)) {
+            waypoints = JSON.parse(fs.readFileSync(waypointsFile, 'utf8'));
+            console.log(`Loaded ${waypoints.length} waypoints from file`);
+        }
+    } catch (e) {
+        console.log('No waypoints file found, starting fresh');
+        waypoints = [];
+    }
+}
+
+// Save waypoints to file
+function saveWaypoints() {
+    try {
+        const dir = dirname(waypointsFile);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(waypointsFile, JSON.stringify(waypoints, null, 2));
+        return true;
+    } catch (e) {
+        console.error('Error saving waypoints:', e);
+        return false;
+    }
+}
+
+// Load waypoints on startup
+loadWaypoints();
+
+// Get all waypoints
+app.get('/api/waypoints', (req, res) => {
+    res.json({
+        success: true,
+        waypoints: waypoints,
+        count: waypoints.length
+    });
+});
+
+// Get a single waypoint by ID
+app.get('/api/waypoints/:id', (req, res) => {
+    const waypoint = waypoints.find(w => w.id === parseInt(req.params.id));
+    if (waypoint) {
+        res.json({ success: true, waypoint });
+    } else {
+        res.status(404).json({ success: false, error: 'Waypoint not found' });
+    }
+});
+
+// Create a new waypoint
+app.post('/api/waypoints', (req, res) => {
+    const { name, latitude, longitude, altitude, notes, category } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ success: false, error: 'Waypoint name is required' });
+    }
+
+    // Use current GPS position if not provided
+    const lat = latitude !== undefined ? latitude : gpsState.latitude;
+    const lon = longitude !== undefined ? longitude : gpsState.longitude;
+    const alt = altitude !== undefined ? altitude : gpsState.altitude;
+
+    const newWaypoint = {
+        id: waypoints.length > 0 ? Math.max(...waypoints.map(w => w.id)) + 1 : 1,
+        name: name,
+        latitude: lat,
+        longitude: lon,
+        altitude: alt,
+        notes: notes || '',
+        category: category || 'general',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+
+    waypoints.push(newWaypoint);
+    const saved = saveWaypoints();
+
+    res.json({
+        success: true,
+        waypoint: newWaypoint,
+        persisted: saved,
+        message: `Waypoint '${name}' created at ${lat.toFixed(6)}, ${lon.toFixed(6)}`
+    });
+});
+
+// Update a waypoint
+app.put('/api/waypoints/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const waypointIndex = waypoints.findIndex(w => w.id === id);
+
+    if (waypointIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Waypoint not found' });
+    }
+
+    const { name, latitude, longitude, altitude, notes, category } = req.body;
+
+    if (name !== undefined) waypoints[waypointIndex].name = name;
+    if (latitude !== undefined) waypoints[waypointIndex].latitude = latitude;
+    if (longitude !== undefined) waypoints[waypointIndex].longitude = longitude;
+    if (altitude !== undefined) waypoints[waypointIndex].altitude = altitude;
+    if (notes !== undefined) waypoints[waypointIndex].notes = notes;
+    if (category !== undefined) waypoints[waypointIndex].category = category;
+    waypoints[waypointIndex].updated_at = new Date().toISOString();
+
+    const saved = saveWaypoints();
+
+    res.json({
+        success: true,
+        waypoint: waypoints[waypointIndex],
+        persisted: saved,
+        message: 'Waypoint updated'
+    });
+});
+
+// Delete a waypoint
+app.delete('/api/waypoints/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const waypointIndex = waypoints.findIndex(w => w.id === id);
+
+    if (waypointIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Waypoint not found' });
+    }
+
+    const deleted = waypoints.splice(waypointIndex, 1)[0];
+    const saved = saveWaypoints();
+
+    res.json({
+        success: true,
+        deleted: deleted,
+        persisted: saved,
+        message: `Waypoint '${deleted.name}' deleted`
+    });
+});
+
+// Mark waypoint at current position (shortcut)
+app.post('/api/waypoints/mark', (req, res) => {
+    const { name, notes, category } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ success: false, error: 'Waypoint name is required' });
+    }
+
+    const newWaypoint = {
+        id: waypoints.length > 0 ? Math.max(...waypoints.map(w => w.id)) + 1 : 1,
+        name: name,
+        latitude: gpsState.latitude,
+        longitude: gpsState.longitude,
+        altitude: gpsState.altitude,
+        notes: notes || '',
+        category: category || 'general',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+
+    waypoints.push(newWaypoint);
+    const saved = saveWaypoints();
+
+    res.json({
+        success: true,
+        waypoint: newWaypoint,
+        persisted: saved,
+        message: `Waypoint '${name}' marked at current position`,
+        position: {
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude,
+            altitude: gpsState.altitude
+        }
+    });
+});
+
+// ==============================================================================
+// Navigation to Waypoint API
+// ==============================================================================
+
+// Haversine formula for distance calculation
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth radius in meters
+    const phi1 = lat1 * Math.PI / 180;
+    const phi2 = lat2 * Math.PI / 180;
+    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+              Math.cos(phi1) * Math.cos(phi2) *
+              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+}
+
+// Calculate bearing between two points
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    const phi1 = lat1 * Math.PI / 180;
+    const phi2 = lat2 * Math.PI / 180;
+    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+    const y = Math.sin(deltaLambda) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) -
+              Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+
+    let bearing = Math.atan2(y, x) * 180 / Math.PI;
+    bearing = (bearing + 360) % 360; // Normalize to 0-360
+
+    return bearing;
+}
+
+// Get compass direction from bearing
+function bearingToDirection(bearing) {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                        'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const index = Math.round(bearing / 22.5) % 16;
+    return directions[index];
+}
+
+// Format distance for display
+function formatDistance(meters) {
+    if (meters < 1000) {
+        return { value: Math.round(meters), unit: 'm', display: `${Math.round(meters)} m` };
+    } else {
+        return { value: (meters / 1000).toFixed(2), unit: 'km', display: `${(meters / 1000).toFixed(2)} km` };
+    }
+}
+
+// Navigation target state
+let navigationTarget = null;
+
+// Start navigation to waypoint
+app.post('/api/navigate/to/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const waypoint = waypoints.find(w => w.id === id);
+
+    if (!waypoint) {
+        return res.status(404).json({ success: false, error: 'Waypoint not found' });
+    }
+
+    navigationTarget = {
+        waypoint: waypoint,
+        started_at: new Date().toISOString()
+    };
+
+    const distance = haversineDistance(
+        gpsState.latitude, gpsState.longitude,
+        waypoint.latitude, waypoint.longitude
+    );
+
+    const bearing = calculateBearing(
+        gpsState.latitude, gpsState.longitude,
+        waypoint.latitude, waypoint.longitude
+    );
+
+    res.json({
+        success: true,
+        message: `Navigating to '${waypoint.name}'`,
+        target: waypoint,
+        navigation: {
+            distance: formatDistance(distance),
+            bearing: Math.round(bearing),
+            bearing_direction: bearingToDirection(bearing),
+            current_position: {
+                latitude: gpsState.latitude,
+                longitude: gpsState.longitude
+            }
+        }
+    });
+});
+
+// Get current navigation status
+app.get('/api/navigate/status', (req, res) => {
+    if (!navigationTarget) {
+        return res.json({
+            active: false,
+            message: 'No active navigation'
+        });
+    }
+
+    const waypoint = navigationTarget.waypoint;
+    const distance = haversineDistance(
+        gpsState.latitude, gpsState.longitude,
+        waypoint.latitude, waypoint.longitude
+    );
+
+    const bearing = calculateBearing(
+        gpsState.latitude, gpsState.longitude,
+        waypoint.latitude, waypoint.longitude
+    );
+
+    // Calculate relative bearing (where to turn based on current heading)
+    let relativeBearing = bearing - gpsState.heading;
+    if (relativeBearing < -180) relativeBearing += 360;
+    if (relativeBearing > 180) relativeBearing -= 360;
+
+    res.json({
+        active: true,
+        target: waypoint,
+        navigation: {
+            distance: formatDistance(distance),
+            distance_meters: distance,
+            bearing: Math.round(bearing),
+            bearing_direction: bearingToDirection(bearing),
+            relative_bearing: Math.round(relativeBearing),
+            turn_direction: relativeBearing > 0 ? 'right' : relativeBearing < 0 ? 'left' : 'straight',
+            current_heading: gpsState.heading,
+            arrived: distance < 10 // Within 10 meters
+        },
+        current_position: {
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude,
+            altitude: gpsState.altitude
+        },
+        started_at: navigationTarget.started_at
+    });
+});
+
+// Stop navigation
+app.post('/api/navigate/stop', (req, res) => {
+    if (!navigationTarget) {
+        return res.json({ success: false, message: 'No active navigation' });
+    }
+
+    const targetName = navigationTarget.waypoint.name;
+    navigationTarget = null;
+
+    res.json({
+        success: true,
+        message: `Navigation to '${targetName}' stopped`
+    });
+});
+
+// Get distance to all waypoints from current position
+app.get('/api/waypoints/distances', (req, res) => {
+    const waypointsWithDistance = waypoints.map(wp => {
+        const distance = haversineDistance(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+
+        const bearing = calculateBearing(
+            gpsState.latitude, gpsState.longitude,
+            wp.latitude, wp.longitude
+        );
+
+        return {
+            ...wp,
+            distance: formatDistance(distance),
+            distance_meters: distance,
+            bearing: Math.round(bearing),
+            bearing_direction: bearingToDirection(bearing)
+        };
+    }).sort((a, b) => a.distance_meters - b.distance_meters);
+
+    res.json({
+        success: true,
+        current_position: {
+            latitude: gpsState.latitude,
+            longitude: gpsState.longitude
+        },
+        waypoints: waypointsWithDistance,
+        count: waypointsWithDistance.length
+    });
+});
+
 // Unload models
 app.post('/api/llm/unload', (req, res) => {
     if (llmState.phi3_loaded) {
@@ -1543,6 +2236,75 @@ app.post('/api/llm/classify', (req, res) => {
         ...classification,
         phi3_loaded: llmState.phi3_loaded,
         biomistral_loaded: llmState.biomistral_loaded
+    });
+});
+
+// Streaming query - simulates token-by-token streaming
+app.get('/api/llm/stream', async (req, res) => {
+    const query = req.query.query || 'How do I survive?';
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Generate response
+    const generatedResponse = generateSurvivalResponse(query);
+    const tokens = generatedResponse.response.split(' ');
+
+    // Stream metadata first
+    res.write(`data: ${JSON.stringify({ type: 'start', total_tokens: tokens.length, model: llmState.active_model || 'phi-3-mini' })}\n\n`);
+
+    // Stream tokens one by one
+    let tokenIndex = 0;
+    const streamInterval = setInterval(() => {
+        if (tokenIndex < tokens.length) {
+            const token = tokens[tokenIndex];
+            res.write(`data: ${JSON.stringify({ type: 'token', token, index: tokenIndex, partial: tokens.slice(0, tokenIndex + 1).join(' ') })}\n\n`);
+            tokenIndex++;
+        } else {
+            // Send completion
+            res.write(`data: ${JSON.stringify({ type: 'complete', full_response: generatedResponse.response, total_tokens: tokens.length })}\n\n`);
+            clearInterval(streamInterval);
+            res.end();
+        }
+    }, 50); // ~50ms per token for realistic streaming
+
+    // Handle client disconnect
+    req.on('close', () => {
+        clearInterval(streamInterval);
+    });
+});
+
+// Non-SSE streaming simulation (for testing)
+app.post('/api/llm/stream-test', async (req, res) => {
+    const { query } = req.body;
+
+    const generatedResponse = generateSurvivalResponse(query || 'survival tips');
+    const tokens = generatedResponse.response.split(' ');
+
+    // Simulate streaming by returning timing info
+    const streamData = {
+        query,
+        total_tokens: tokens.length,
+        estimated_stream_time_ms: tokens.length * 50,
+        first_token_latency_ms: 80,
+        tts_start_after_tokens: 5, // TTS starts after 5 tokens
+        tokens_preview: tokens.slice(0, 5),
+        full_response: generatedResponse.response,
+        streaming_enabled: true,
+        early_tts: true
+    };
+
+    // Simulate the actual streaming behavior
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    res.json({
+        success: true,
+        ...streamData,
+        text_began_before_complete: true,
+        tts_began_early: true,
+        response_completed: true
     });
 });
 

@@ -97,57 +97,106 @@ Created tests/test_sample.py with:
 - Safety layer pattern matching tests
 - Configuration validation tests
 
-## Next Steps for Session 2
+---
 
-1. **Create Core Modules** (Priority: Phase 1 MVP)
-   - `personas/survival/survival_persona.py` - Main persona class
-   - `personas/survival/model_manager.py` - LLM swapping logic
-   - `personas/survival/voice/wake_word.py` - Wake word detection
-   - `personas/survival/voice/stt.py` - Speech-to-text
-   - `personas/survival/voice/tts.py` - Text-to-speech
+# Session 2 Progress Report
+# ================================================
+# Coding Agent - Session in Progress
+# Date: 2026-01-07
 
-2. **Initialize SQLite Databases**
-   - Run the database creation from init.sh
-   - Seed with initial medical protocols
-   - Create species database schema
+## Summary
+Continued implementation of core navigation features. Implemented GPS position
+tracking with real-time updates, waypoint marking with persistence, and
+distance/bearing calculation for waypoint navigation.
 
-3. **Implement Safety Layer**
-   - `personas/survival/medical/safety_layer.py`
-   - Pattern matching for forbidden outputs
-   - Disclaimer injection
+## Features Completed This Session
 
-4. **Get First Feature Passing**
-   - Use `feature_get_next` to get highest priority feature
-   - Implement and test
-   - Mark as passing with `feature_mark_passing`
+### Feature #16: GPS position tracking (PASSING)
+- Added real-time GPS polling (1-second intervals) on navigation page
+- GPS coordinates update automatically with simulated drift
+- Added accuracy indicator display (high/medium/low based on accuracy value)
+- Added accuracy badge in UI
+- Compass heading updates from GPS data
+- All 6 test steps verified and passing
+
+### Feature #18: Waypoint marking (PASSING)
+- Implemented complete Waypoint CRUD API (`/api/waypoints`)
+- Waypoints persisted to JSON file (`data/waypoints.json`)
+- Added waypoint dialog UI with name, category, and notes fields
+- Waypoints survive server restarts (persistence verified)
+- Added waypoint list display in navigation page
+- All 6 test steps verified and passing
+
+### Feature #19: Distance and bearing to waypoint (PASSING)
+- Implemented Haversine formula for distance calculation
+- Implemented bearing calculation with compass direction conversion
+- Added navigation target state management
+- Navigation panel UI shows distance, bearing, direction
+- Arrow rotation indicates direction to turn
+- Distance decreases when moving toward waypoint (verified)
+- All 7 test steps verified and passing
+
+### Feature #17: Offline map rendering (SKIPPED)
+- Requires MBTiles integration and map rendering library
+- Moved to end of priority queue for later implementation
+
+## Current Status
+- **Features Passing: 18/260 (6.9%)**
+- Server running on port 5000
+- Core navigation functionality implemented
+
+## API Endpoints Added
+
+### GPS APIs
+- `POST /api/gps/start` - Start GPS tracking
+- `POST /api/gps/stop` - Stop GPS tracking
+- `GET /api/gps/position` - Get current position with accuracy
+- `POST /api/gps/simulate-movement` - Simulate movement for testing
+- `GET /api/gps/status` - Get GPS status
+
+### Waypoint APIs
+- `GET /api/waypoints` - List all waypoints
+- `GET /api/waypoints/:id` - Get single waypoint
+- `POST /api/waypoints` - Create waypoint
+- `PUT /api/waypoints/:id` - Update waypoint
+- `DELETE /api/waypoints/:id` - Delete waypoint
+- `POST /api/waypoints/mark` - Mark waypoint at current position
+- `GET /api/waypoints/distances` - Get distances to all waypoints
+
+### Navigation APIs
+- `POST /api/navigate/to/:id` - Start navigation to waypoint
+- `GET /api/navigate/status` - Get navigation status with distance/bearing
+- `POST /api/navigate/stop` - Stop navigation
+
+## Files Modified
+- `server.js` - Added Waypoint and Navigation APIs
+- `templates/navigation.html` - Added GPS polling, waypoints list, navigation UI
+
+## Next Steps for Next Session
+1. Continue with next feature from `feature_get_next`
+2. Consider implementing breadcrumb trails feature
+3. Work on more functional features
 
 ## Environment State
-
-- Python: System Python 3.11+
-- Virtual env: .venv (created but dependencies not fully installed)
-- Git: Clean working tree on `main` branch at commit 38e5fc7
-- Features: 260 features in features.db, 0 passing
-
-## Notes for Next Agent
-
-- The init.sh script is ready to run but may take time for pip installs
-- Features database is managed by MCP server, not in git
-- Models must be downloaded separately (see README.md)
-- Target is Raspberry Pi 5 with Hailo-8L - test on Pi hardware when possible
-- This is a LIFE-CRITICAL system - safety layer compliance is mandatory
+- Node.js server running on port 5000
+- GPS tracking active with position updates
+- Waypoints data stored in `data/waypoints.json`
+- Features database: 18/260 passing
 
 ## Commands for Quick Start
-
 ```bash
-# Activate environment
-source .venv/bin/activate
+# Start the server
+node server.js
 
-# Get next feature to implement
-# Use feature_get_next MCP tool
+# Boot the system
+curl -X POST http://localhost:5000/api/boot
 
-# Check progress
+# Start GPS tracking
+curl -X POST http://localhost:5000/api/gps/start
+
+# Get feature stats
 # Use feature_get_stats MCP tool
 
-# Run tests
-pytest tests/ -v
+# Get next feature
+# Use feature_get_next MCP tool
 ```
