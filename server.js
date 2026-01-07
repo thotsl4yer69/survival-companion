@@ -678,15 +678,41 @@ app.post('/api/confirm/respond', (req, res) => {
 
         // Execute the confirmed action
         if (action === 'emergency_activate') {
+            // Create emergency log entry
+            const emergencyLog = {
+                id: emergencyLogs.length + 1,
+                activated_at: new Date().toISOString(),
+                deactivated_at: null,
+                duration_seconds: null,
+                activation_source: 'voice',
+                position_at_activation: {
+                    latitude: sensorData.gps.latitude,
+                    longitude: sensorData.gps.longitude,
+                    altitude: sensorData.gps.altitude,
+                    accuracy: sensorData.gps.accuracy || 5
+                },
+                beacon_active: true,
+                resolved: false,
+                notes: []
+            };
+
+            emergencyLogs.push(emergencyLog);
+            currentEmergency = emergencyLog;
             systemState.state = 'emergency';
+
+            console.log(`EMERGENCY ACTIVATED [${emergencyLog.id}] via voice confirmation`);
+
             return res.json({
                 success: true,
                 confirmed: true,
                 action,
                 message: 'Emergency beacon activated',
+                emergency_id: emergencyLog.id,
+                navigate_to: '/emergency',
                 result: {
                     status: 'emergency_activated',
-                    gps: sensorData.gps
+                    gps: sensorData.gps,
+                    log_created: true
                 }
             });
         }
@@ -715,22 +741,160 @@ app.post('/api/confirm/respond', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Emergency SOS System with Logging
+// ==============================================================================
+
+// Emergency log storage
+const emergencyLogs = [];
+let currentEmergency = null;
+
 // Emergency activation
 app.post('/api/emergency/activate', (req, res) => {
+    const { source } = req.body; // 'voice', 'button', or 'api'
+
+    // Create emergency log entry
+    const emergencyLog = {
+        id: emergencyLogs.length + 1,
+        activated_at: new Date().toISOString(),
+        deactivated_at: null,
+        duration_seconds: null,
+        activation_source: source || 'button',
+        position_at_activation: {
+            latitude: sensorData.gps.latitude,
+            longitude: sensorData.gps.longitude,
+            altitude: sensorData.gps.altitude,
+            accuracy: sensorData.gps.accuracy || 5
+        },
+        beacon_active: true,
+        resolved: false,
+        notes: []
+    };
+
+    emergencyLogs.push(emergencyLog);
+    currentEmergency = emergencyLog;
     systemState.state = 'emergency';
+
+    console.log(`EMERGENCY ACTIVATED [${emergencyLog.id}] - Source: ${emergencyLog.activation_source}`);
+    console.log(`Position: ${emergencyLog.position_at_activation.latitude}, ${emergencyLog.position_at_activation.longitude}`);
+
     res.json({
         status: 'emergency_activated',
+        emergency_id: emergencyLog.id,
         gps: {
             latitude: sensorData.gps.latitude,
-            longitude: sensorData.gps.longitude
+            longitude: sensorData.gps.longitude,
+            altitude: sensorData.gps.altitude
         },
-        message: 'SOS beacon activated. Broadcasting position.'
+        message: 'SOS beacon activated. Broadcasting position.',
+        beacon_active: true,
+        log_created: true
     });
 });
 
 app.post('/api/emergency/deactivate', (req, res) => {
+    const wasActive = currentEmergency !== null;
+
+    if (currentEmergency) {
+        currentEmergency.deactivated_at = new Date().toISOString();
+        currentEmergency.beacon_active = false;
+        currentEmergency.resolved = true;
+        currentEmergency.duration_seconds = Math.floor(
+            (new Date(currentEmergency.deactivated_at) - new Date(currentEmergency.activated_at)) / 1000
+        );
+        console.log(`EMERGENCY DEACTIVATED [${currentEmergency.id}] - Duration: ${currentEmergency.duration_seconds}s`);
+    }
+
+    currentEmergency = null;
     systemState.state = 'ready';
-    res.json({ status: 'emergency_deactivated' });
+
+    res.json({
+        status: 'emergency_deactivated',
+        was_active: wasActive,
+        message: wasActive ? 'Emergency beacon deactivated. Stay safe.' : 'No active emergency to deactivate.'
+    });
+});
+
+// Get emergency status
+app.get('/api/emergency/status', (req, res) => {
+    res.json({
+        active: currentEmergency !== null,
+        emergency: currentEmergency,
+        position: currentEmergency ? {
+            latitude: sensorData.gps.latitude,
+            longitude: sensorData.gps.longitude,
+            altitude: sensorData.gps.altitude
+        } : null,
+        total_emergencies: emergencyLogs.length
+    });
+});
+
+// Get emergency logs
+app.get('/api/emergency/logs', (req, res) => {
+    res.json({
+        success: true,
+        logs: emergencyLogs,
+        count: emergencyLogs.length,
+        active: currentEmergency !== null
+    });
+});
+
+// Voice-activated SOS (requires confirmation)
+app.post('/api/voice/sos', (req, res) => {
+    const { confirmed } = req.body;
+
+    if (!confirmed) {
+        // Request confirmation
+        pendingConfirmation = {
+            action: 'emergency_activate',
+            description: 'activate emergency SOS beacon',
+            timestamp: Date.now(),
+            expires: Date.now() + 30000
+        };
+
+        res.json({
+            requires_confirmation: true,
+            action: 'emergency_activate',
+            voice_prompt: 'I heard you want to activate emergency SOS. Say "yes" or "confirm" to activate, or "no" to cancel.',
+            display_prompt: 'EMERGENCY SOS - Confirm activation?',
+            timeout_seconds: 30
+        });
+    } else {
+        // Confirmed - activate emergency
+        const emergencyLog = {
+            id: emergencyLogs.length + 1,
+            activated_at: new Date().toISOString(),
+            deactivated_at: null,
+            duration_seconds: null,
+            activation_source: 'voice',
+            position_at_activation: {
+                latitude: sensorData.gps.latitude,
+                longitude: sensorData.gps.longitude,
+                altitude: sensorData.gps.altitude,
+                accuracy: sensorData.gps.accuracy || 5
+            },
+            beacon_active: true,
+            resolved: false,
+            notes: []
+        };
+
+        emergencyLogs.push(emergencyLog);
+        currentEmergency = emergencyLog;
+        systemState.state = 'emergency';
+
+        res.json({
+            success: true,
+            status: 'emergency_activated',
+            emergency_id: emergencyLog.id,
+            voice_response: 'Emergency SOS activated. Beacon is now broadcasting your position. Your coordinates are displayed on screen.',
+            gps: {
+                latitude: sensorData.gps.latitude,
+                longitude: sensorData.gps.longitude,
+                altitude: sensorData.gps.altitude
+            },
+            navigate_to: '/emergency'
+        });
+    }
 });
 
 // Wake word detection (simulated)
@@ -861,9 +1025,21 @@ app.post('/api/voice/command', (req, res) => {
         action: null
     };
 
-    if (commandLower.includes('emergency') || commandLower.includes('sos') || commandLower.includes('help')) {
+    if (commandLower.includes('activate sos') || commandLower === 'sos' || commandLower === 'emergency' ||
+        (commandLower.includes('emergency') && !commandLower.includes('deactivate'))) {
+        // Request confirmation for emergency activation via voice
+        pendingConfirmation = {
+            action: 'emergency_activate',
+            description: 'activate emergency SOS beacon',
+            timestamp: Date.now(),
+            expires: Date.now() + 30000
+        };
+        response.action = 'confirm_emergency';
+        response.requires_confirmation = true;
+        response.response = 'Emergency SOS requested. Say "yes" or "confirm" to activate the beacon, or "no" to cancel.';
+    } else if (commandLower.includes('help')) {
         response.action = 'emergency';
-        response.response = 'Activating emergency mode. SOS beacon enabled.';
+        response.response = 'Do you need emergency help? Say "activate SOS" for emergency beacon, or tell me what kind of help you need.';
     } else if (commandLower.includes('weather')) {
         response.action = 'weather';
         response.response = 'Current conditions: 23.5°C, 65% humidity, 1013 hPa. No storms expected.';
