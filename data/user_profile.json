@@ -1,13 +1,11 @@
 {
   "name": "John Doe",
-  "blood_type": "O+",
+  "blood_type": "A-",
   "allergies": [
-    "Penicillin",
-    "Severe bee allergy"
+    "penicillin"
   ],
   "medical_conditions": [
-    "Diabetes Type 2",
-    "Asthma"
+    "Test Condition"
   ],
   "medications": [
     "Metformin",
@@ -21,5 +19,5 @@
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-07T11:28:51.937Z"
+  "updated_at": "2026-01-07T11:58:58.738Z"
 }

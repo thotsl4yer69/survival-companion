@@ -4369,6 +4369,226 @@ app.post('/api/llm/smart-query', async (req, res) => {
 // User Profile API (Medical Info for Rescuers)
 // ==============================================================================
 
+// ==============================================================================
+// Allergy Alert and Contraindication System
+// ==============================================================================
+
+// Medication contraindication database - maps allergies to contraindicated treatments
+const allergyContraindications = {
+    // Penicillin family
+    'penicillin': {
+        contraindicated: ['penicillin', 'amoxicillin', 'ampicillin', 'augmentin', 'penicillin v'],
+        alternatives: ['azithromycin', 'erythromycin', 'doxycycline', 'fluoroquinolones'],
+        warning: 'ALLERGY ALERT: You have a recorded PENICILLIN allergy. Avoid all penicillin-class antibiotics including amoxicillin and ampicillin.',
+        severity: 'high'
+    },
+    'penicillin_test': {
+        contraindicated: ['penicillin', 'amoxicillin', 'ampicillin', 'augmentin', 'penicillin v'],
+        alternatives: ['azithromycin', 'erythromycin', 'doxycycline', 'fluoroquinolones'],
+        warning: 'ALLERGY ALERT: You have a recorded PENICILLIN allergy. Avoid all penicillin-class antibiotics including amoxicillin and ampicillin.',
+        severity: 'high'
+    },
+    // Sulfa drugs
+    'sulfa': {
+        contraindicated: ['sulfonamides', 'sulfamethoxazole', 'bactrim', 'septra'],
+        alternatives: ['fluoroquinolones', 'nitrofurantoin'],
+        warning: 'ALLERGY ALERT: You have a recorded SULFA allergy. Avoid sulfonamide antibiotics.',
+        severity: 'high'
+    },
+    // NSAIDs
+    'aspirin': {
+        contraindicated: ['aspirin', 'ibuprofen', 'naproxen', 'nsaids'],
+        alternatives: ['acetaminophen', 'tylenol'],
+        warning: 'ALLERGY ALERT: You have an ASPIRIN allergy. Avoid all NSAIDs. Use acetaminophen for pain relief.',
+        severity: 'high'
+    },
+    'ibuprofen': {
+        contraindicated: ['ibuprofen', 'advil', 'motrin', 'nsaids'],
+        alternatives: ['acetaminophen', 'tylenol'],
+        warning: 'ALLERGY ALERT: You have an IBUPROFEN allergy. Use acetaminophen instead for pain relief.',
+        severity: 'medium'
+    },
+    // Bee/insect allergies
+    'bee': {
+        contraindicated: [],
+        alternatives: [],
+        warning: 'ALLERGY ALERT: You have a BEE STING allergy. Ensure EpiPen is available. Any bee sting requires immediate monitoring for anaphylaxis.',
+        severity: 'critical'
+    },
+    'insect': {
+        contraindicated: [],
+        alternatives: [],
+        warning: 'ALLERGY ALERT: You have an INSECT allergy. Monitor for anaphylaxis symptoms with any insect bite or sting.',
+        severity: 'high'
+    },
+    // Latex
+    'latex': {
+        contraindicated: ['latex gloves', 'latex bandages'],
+        alternatives: ['nitrile gloves', 'vinyl gloves', 'latex-free bandages'],
+        warning: 'ALLERGY ALERT: You have a LATEX allergy. Use only nitrile or vinyl gloves and latex-free medical supplies.',
+        severity: 'high'
+    },
+    // Iodine
+    'iodine': {
+        contraindicated: ['iodine', 'betadine', 'povidone-iodine'],
+        alternatives: ['chlorhexidine', 'hydrogen peroxide', 'alcohol'],
+        warning: 'ALLERGY ALERT: You have an IODINE allergy. Use chlorhexidine or alcohol for wound cleaning instead of iodine-based solutions.',
+        severity: 'medium'
+    },
+    // Adhesive/tape
+    'adhesive': {
+        contraindicated: ['medical tape', 'band-aids', 'adhesive bandages'],
+        alternatives: ['gauze wraps', 'self-adherent bandages', 'paper tape'],
+        warning: 'ALLERGY ALERT: You have an ADHESIVE allergy. Use gauze wraps or self-adherent bandages instead of adhesive bandages.',
+        severity: 'low'
+    }
+};
+
+// Treatment keywords that might suggest specific medications
+const treatmentKeywords = {
+    'infection': ['penicillin', 'amoxicillin', 'antibiotics'],
+    'antibiotic': ['penicillin', 'amoxicillin', 'antibiotics'],
+    'pain': ['ibuprofen', 'aspirin', 'nsaids', 'acetaminophen'],
+    'headache': ['ibuprofen', 'aspirin', 'acetaminophen'],
+    'fever': ['ibuprofen', 'aspirin', 'acetaminophen'],
+    'inflammation': ['ibuprofen', 'nsaids'],
+    'wound': ['iodine', 'betadine', 'bandage', 'adhesive'],
+    'cut': ['iodine', 'bandage', 'adhesive'],
+    'bee sting': ['epipen'],
+    'insect bite': ['antihistamine'],
+    'allergic reaction': ['epipen', 'antihistamine']
+};
+
+// Check user allergies against a query and return warnings
+function checkAllergyConflicts(query, userAllergies) {
+    const queryLower = query.toLowerCase();
+    const warnings = [];
+    const contraindicated = [];
+    const alternatives = [];
+
+    if (!userAllergies || userAllergies.length === 0) {
+        return { hasConflict: false, warnings: [], contraindicated: [], alternatives: [] };
+    }
+
+    // Normalize user allergies
+    const normalizedAllergies = userAllergies.map(a => a.toLowerCase().replace(/[^a-z]/g, ''));
+
+    // Check each user allergy
+    for (const allergy of normalizedAllergies) {
+        // Find matching contraindication entry
+        for (const [key, data] of Object.entries(allergyContraindications)) {
+            if (allergy.includes(key) || key.includes(allergy)) {
+                // Check if query mentions any treatment keywords that could conflict
+                for (const [treatment, meds] of Object.entries(treatmentKeywords)) {
+                    if (queryLower.includes(treatment)) {
+                        // Check if any of the suggested meds are contraindicated
+                        for (const med of meds) {
+                            if (data.contraindicated.some(c => c.includes(med) || med.includes(c))) {
+                                if (!warnings.includes(data.warning)) {
+                                    warnings.push(data.warning);
+                                }
+                                contraindicated.push(...data.contraindicated);
+                                alternatives.push(...data.alternatives);
+                            }
+                        }
+                    }
+                }
+
+                // Special case: if query directly mentions a contraindicated substance
+                for (const contra of data.contraindicated) {
+                    if (queryLower.includes(contra)) {
+                        if (!warnings.includes(data.warning)) {
+                            warnings.push(data.warning);
+                        }
+                        contraindicated.push(contra);
+                        alternatives.push(...data.alternatives);
+                    }
+                }
+
+                // Special case for bee/insect allergies - always warn if query is about stings
+                if ((key === 'bee' || key === 'insect') &&
+                    (queryLower.includes('sting') || queryLower.includes('bee') || queryLower.includes('wasp'))) {
+                    if (!warnings.includes(data.warning)) {
+                        warnings.push(data.warning);
+                    }
+                }
+            }
+        }
+    }
+
+    return {
+        hasConflict: warnings.length > 0,
+        warnings: [...new Set(warnings)],
+        contraindicated: [...new Set(contraindicated)],
+        alternatives: [...new Set(alternatives)],
+        user_allergies: userAllergies
+    };
+}
+
+// API endpoint to check treatment for allergy conflicts
+app.post('/api/allergy/check', (req, res) => {
+    const { query, treatment } = req.body;
+    const searchQuery = query || treatment || '';
+
+    const conflicts = checkAllergyConflicts(searchQuery, userProfile.allergies);
+
+    res.json({
+        success: true,
+        query: searchQuery,
+        ...conflicts,
+        profile_allergies: userProfile.allergies
+    });
+});
+
+// Get allergy-aware treatment advice
+app.post('/api/treatment/advice', (req, res) => {
+    const { condition } = req.body;
+
+    if (!condition) {
+        return res.status(400).json({ success: false, error: 'Condition is required' });
+    }
+
+    const conflicts = checkAllergyConflicts(condition, userProfile.allergies);
+
+    // Generate treatment advice based on condition
+    let advice = {
+        condition: condition,
+        general_advice: '',
+        allergy_warnings: conflicts.warnings,
+        contraindicated_treatments: conflicts.contraindicated,
+        safe_alternatives: conflicts.alternatives
+    };
+
+    const conditionLower = condition.toLowerCase();
+
+    if (conditionLower.includes('infection') || conditionLower.includes('antibiotic')) {
+        advice.general_advice = 'For infections in a survival situation: Keep wounds clean, watch for signs of infection (redness, warmth, pus, fever). Oral antibiotics may be needed.';
+
+        if (conflicts.hasConflict && conflicts.contraindicated.some(c => c.includes('penicillin') || c.includes('amox'))) {
+            advice.general_advice += '\n\n⚠️ IMPORTANT: Due to your PENICILLIN ALLERGY, avoid amoxicillin and related antibiotics. If antibiotics are needed, alternatives include azithromycin (Z-pack), erythromycin, or doxycycline.';
+            advice.penicillin_flagged = true;
+        }
+    } else if (conditionLower.includes('pain') || conditionLower.includes('headache')) {
+        advice.general_advice = 'For pain relief: Over-the-counter options include acetaminophen (Tylenol) and NSAIDs (ibuprofen, aspirin).';
+
+        if (conflicts.hasConflict && conflicts.contraindicated.some(c => c.includes('ibuprofen') || c.includes('aspirin'))) {
+            advice.general_advice += '\n\n⚠️ IMPORTANT: Due to your allergy, avoid NSAIDs. Use acetaminophen (Tylenol) only for pain relief.';
+        }
+    } else if (conditionLower.includes('wound') || conditionLower.includes('cut')) {
+        advice.general_advice = 'For wound care: Clean with clean water, apply pressure if bleeding, use antiseptic, and cover with bandage.';
+
+        if (conflicts.hasConflict && conflicts.contraindicated.some(c => c.includes('iodine'))) {
+            advice.general_advice += '\n\n⚠️ IMPORTANT: Due to your IODINE ALLERGY, do not use betadine or iodine solutions. Use chlorhexidine or diluted hydrogen peroxide instead.';
+        }
+    }
+
+    res.json({
+        success: true,
+        ...advice,
+        has_allergy_conflict: conflicts.hasConflict
+    });
+});
+
 // User profile file path
 const userProfileFile = join(__dirname, 'data', 'user_profile.json');
 
