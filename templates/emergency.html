@@ -111,6 +111,125 @@
         animation: blink 1s infinite;
     }
 
+    /* Audio Beacon Controls */
+    .audio-beacon-section {
+        margin-top: var(--spacing-lg);
+        width: 100%;
+        max-width: 350px;
+    }
+
+    .audio-beacon-controls {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-md);
+    }
+
+    .audio-beacon-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .audio-beacon-title {
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .audio-beacon-toggle {
+        width: 60px;
+        height: 32px;
+        border-radius: 16px;
+        background: var(--bg-secondary);
+        border: 2px solid var(--text-muted);
+        cursor: pointer;
+        position: relative;
+        transition: background 0.3s, border-color 0.3s;
+    }
+
+    .audio-beacon-toggle::after {
+        content: '';
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--text-primary);
+        top: 2px;
+        left: 2px;
+        transition: transform 0.3s;
+    }
+
+    .audio-beacon-toggle.active {
+        background: var(--emergency-red);
+        border-color: var(--emergency-red);
+    }
+
+    .audio-beacon-toggle.active::after {
+        transform: translateX(28px);
+    }
+
+    .audio-beacon-info {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .audio-beacon-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--font-size-sm);
+    }
+
+    .audio-beacon-label {
+        color: var(--text-secondary);
+    }
+
+    .audio-beacon-value {
+        color: var(--text-primary);
+        font-family: monospace;
+    }
+
+    .audio-beacon-value.active {
+        color: var(--emergency-red);
+        animation: blink 0.5s infinite;
+    }
+
+    .sos-pattern-visual {
+        margin-top: var(--spacing-sm);
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        padding: var(--spacing-sm);
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: var(--radius-sm);
+    }
+
+    .morse-element {
+        height: 8px;
+        background: var(--text-muted);
+        border-radius: 2px;
+        transition: background 0.1s;
+    }
+
+    .morse-element.dot {
+        width: 8px;
+    }
+
+    .morse-element.dash {
+        width: 24px;
+    }
+
+    .morse-element.space {
+        width: 12px;
+        background: transparent;
+    }
+
+    .morse-element.active {
+        background: var(--emergency-red);
+        box-shadow: 0 0 10px var(--emergency-red);
+    }
+
     .cancel-btn {
         margin-top: var(--spacing-md);
         padding: var(--spacing-md) var(--spacing-xl);
@@ -160,6 +279,51 @@
         </div>
     </div>
 
+    <!-- Audio Beacon Controls -->
+    <div class="audio-beacon-section">
+        <div class="audio-beacon-controls">
+            <div class="audio-beacon-header">
+                <span class="audio-beacon-title">Audio SOS Beacon</span>
+                <button id="audio-beacon-toggle" class="audio-beacon-toggle" title="Toggle audio beacon"></button>
+            </div>
+            <div class="audio-beacon-info">
+                <div class="audio-beacon-row">
+                    <span class="audio-beacon-label">Frequency</span>
+                    <span class="audio-beacon-value" id="beacon-frequency">2800 Hz</span>
+                </div>
+                <div class="audio-beacon-row">
+                    <span class="audio-beacon-label">Pattern</span>
+                    <span class="audio-beacon-value">SOS (... --- ...)</span>
+                </div>
+                <div class="audio-beacon-row">
+                    <span class="audio-beacon-label">Status</span>
+                    <span class="audio-beacon-value" id="audio-beacon-status">Inactive</span>
+                </div>
+                <div class="audio-beacon-row">
+                    <span class="audio-beacon-label">Cycles</span>
+                    <span class="audio-beacon-value" id="beacon-cycles">0</span>
+                </div>
+            </div>
+            <!-- Visual SOS pattern indicator -->
+            <div class="sos-pattern-visual" id="sos-visual">
+                <!-- S: ... -->
+                <div class="morse-element dot" data-index="0"></div>
+                <div class="morse-element dot" data-index="1"></div>
+                <div class="morse-element dot" data-index="2"></div>
+                <div class="morse-element space"></div>
+                <!-- O: --- -->
+                <div class="morse-element dash" data-index="3"></div>
+                <div class="morse-element dash" data-index="4"></div>
+                <div class="morse-element dash" data-index="5"></div>
+                <div class="morse-element space"></div>
+                <!-- S: ... -->
+                <div class="morse-element dot" data-index="6"></div>
+                <div class="morse-element dot" data-index="7"></div>
+                <div class="morse-element dot" data-index="8"></div>
+            </div>
+        </div>
+    </div>
+
     <button id="cancel-btn" class="cancel-btn hidden">Cancel Emergency</button>
 </div>
 {% endblock %}
@@ -168,13 +332,54 @@
 <script>
     let emergencyActive = false;
     let holdTimer = null;
+    let audioBeaconActive = false;
+
+    // Web Audio API for SOS beacon
+    let audioContext = null;
+    let oscillator = null;
+    let gainNode = null;
+    let beaconInterval = null;
+    let cycleCount = 0;
+
+    // SOS Morse pattern timing (in ms)
+    const BEACON_FREQUENCY = 2800; // Hz
+    const MORSE_UNIT = 200; // ms
+    // SOS: ... --- ...
+    // S = dot dot dot (each dot = 1 unit, gap = 1 unit)
+    // O = dash dash dash (each dash = 3 units, gap = 1 unit)
+    // Inter-letter gap = 3 units
+    const SOS_PATTERN = [
+        // S: dot, gap, dot, gap, dot
+        { tone: true, duration: 200, index: 0 },   // dot 1
+        { tone: false, duration: 200, index: -1 }, // gap
+        { tone: true, duration: 200, index: 1 },   // dot 2
+        { tone: false, duration: 200, index: -1 }, // gap
+        { tone: true, duration: 200, index: 2 },   // dot 3
+        { tone: false, duration: 600, index: -1 }, // inter-letter gap
+        // O: dash, gap, dash, gap, dash
+        { tone: true, duration: 600, index: 3 },   // dash 1
+        { tone: false, duration: 200, index: -1 }, // gap
+        { tone: true, duration: 600, index: 4 },   // dash 2
+        { tone: false, duration: 200, index: -1 }, // gap
+        { tone: true, duration: 600, index: 5 },   // dash 3
+        { tone: false, duration: 600, index: -1 }, // inter-letter gap
+        // S: dot, gap, dot, gap, dot
+        { tone: true, duration: 200, index: 6 },   // dot 1
+        { tone: false, duration: 200, index: -1 }, // gap
+        { tone: true, duration: 200, index: 7 },   // dot 2
+        { tone: false, duration: 200, index: -1 }, // gap
+        { tone: true, duration: 200, index: 8 },   // dot 3
+        { tone: false, duration: 1400, index: -1 } // inter-word gap (before repeat)
+    ];
 
     document.addEventListener('DOMContentLoaded', function() {
         const sosBtn = document.getElementById('sos-button');
         const cancelBtn = document.getElementById('cancel-btn');
+        const audioBeaconToggle = document.getElementById('audio-beacon-toggle');
 
-        // Load current GPS coordinates
+        // Load current GPS coordinates and check emergency status
         loadEmergencyData();
+        checkEmergencyStatus();
 
         // SOS button - hold to activate
         sosBtn.addEventListener('mousedown', startHold);
@@ -185,6 +390,9 @@
 
         // Cancel button
         cancelBtn.addEventListener('click', cancelEmergency);
+
+        // Audio beacon toggle
+        audioBeaconToggle.addEventListener('click', toggleAudioBeacon);
     });
 
     function startHold(e) {
@@ -226,9 +434,15 @@
 
     async function cancelEmergency() {
         if (confirm('Are you sure you want to cancel the emergency beacon?')) {
+            // Stop audio beacon first
+            if (audioBeaconActive) {
+                await disableAudioBeacon();
+            }
+
             const result = await deactivateEmergency();
             if (result) {
                 emergencyActive = false;
+                audioBeaconActive = false;
 
                 const sosBtn = document.getElementById('sos-button');
                 sosBtn.classList.remove('active');
@@ -239,6 +453,9 @@
                 beaconStatus.className = 'beacon-status inactive';
 
                 document.getElementById('cancel-btn').classList.add('hidden');
+
+                // Reset audio beacon UI
+                updateAudioBeaconUI(false);
 
                 // Update status bar
                 document.getElementById('system-state').textContent = 'READY';
@@ -256,5 +473,244 @@
             document.getElementById('emergency-gps').textContent = sensors.gps.fix ? 'Fixed' : 'Searching...';
         }
     }
+
+    // Check if emergency mode is already active on page load
+    async function checkEmergencyStatus() {
+        try {
+            const response = await fetch('/api/emergency/status');
+            const data = await response.json();
+
+            if (data.active) {
+                emergencyActive = true;
+
+                const sosBtn = document.getElementById('sos-button');
+                sosBtn.classList.add('active');
+                sosBtn.textContent = 'ACTIVE';
+
+                const beaconStatus = document.getElementById('beacon-status');
+                beaconStatus.textContent = 'BEACON ACTIVE - Broadcasting Position';
+                beaconStatus.className = 'beacon-status active';
+
+                document.getElementById('cancel-btn').classList.remove('hidden');
+                document.getElementById('system-state').textContent = 'EMERGENCY';
+                document.getElementById('system-state').className = 'status-item state-emergency';
+            }
+
+            // Check audio beacon status
+            const beaconResponse = await fetch('/api/emergency/beacon/status');
+            const beaconData = await beaconResponse.json();
+
+            if (beaconData.beacon && beaconData.beacon.active) {
+                audioBeaconActive = true;
+                cycleCount = beaconData.beacon.cycles_completed || 0;
+                updateAudioBeaconUI(true);
+                // Start the audio if beacon was active
+                startAudioBeacon();
+            }
+        } catch (error) {
+            console.error('Error checking emergency status:', error);
+        }
+    }
+
+    // Toggle audio beacon on/off
+    async function toggleAudioBeacon() {
+        if (!emergencyActive) {
+            alert('Please activate emergency mode first (hold the SOS button for 2 seconds)');
+            return;
+        }
+
+        if (audioBeaconActive) {
+            await disableAudioBeacon();
+        } else {
+            await enableAudioBeacon();
+        }
+    }
+
+    // Enable audio beacon
+    async function enableAudioBeacon() {
+        try {
+            const response = await fetch('/api/emergency/beacon/enable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ frequency: BEACON_FREQUENCY, volume: 0.8 })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                audioBeaconActive = true;
+                cycleCount = 0;
+                updateAudioBeaconUI(true);
+                startAudioBeacon();
+            }
+        } catch (error) {
+            console.error('Error enabling audio beacon:', error);
+            alert('Failed to enable audio beacon');
+        }
+    }
+
+    // Disable audio beacon
+    async function disableAudioBeacon() {
+        try {
+            const response = await fetch('/api/emergency/beacon/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            audioBeaconActive = false;
+            updateAudioBeaconUI(false);
+            stopAudioBeacon();
+        } catch (error) {
+            console.error('Error disabling audio beacon:', error);
+        }
+    }
+
+    // Update UI to reflect audio beacon state
+    function updateAudioBeaconUI(active) {
+        const toggle = document.getElementById('audio-beacon-toggle');
+        const statusEl = document.getElementById('audio-beacon-status');
+        const cyclesEl = document.getElementById('beacon-cycles');
+
+        if (active) {
+            toggle.classList.add('active');
+            statusEl.textContent = 'ACTIVE';
+            statusEl.classList.add('active');
+        } else {
+            toggle.classList.remove('active');
+            statusEl.textContent = 'Inactive';
+            statusEl.classList.remove('active');
+            clearAllMorseHighlights();
+        }
+
+        cyclesEl.textContent = cycleCount.toString();
+    }
+
+    // Initialize Web Audio API
+    function initAudio() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Create gain node for volume control
+        gainNode = audioContext.createGain();
+        gainNode.connect(audioContext.destination);
+        gainNode.gain.value = 0; // Start silent
+    }
+
+    // Play a tone at the beacon frequency
+    function startTone() {
+        if (!audioContext) initAudio();
+
+        // Stop any existing oscillator
+        if (oscillator) {
+            try { oscillator.stop(); } catch(e) {}
+        }
+
+        oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = BEACON_FREQUENCY;
+        oscillator.connect(gainNode);
+        oscillator.start();
+        gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+    }
+
+    // Stop the tone
+    function stopTone() {
+        if (gainNode) {
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        }
+        if (oscillator) {
+            try {
+                oscillator.stop();
+                oscillator = null;
+            } catch(e) {}
+        }
+    }
+
+    // Clear all morse element highlights
+    function clearAllMorseHighlights() {
+        const elements = document.querySelectorAll('.morse-element[data-index]');
+        elements.forEach(el => el.classList.remove('active'));
+    }
+
+    // Highlight specific morse element
+    function highlightMorseElement(index) {
+        clearAllMorseHighlights();
+        if (index >= 0) {
+            const el = document.querySelector(`.morse-element[data-index="${index}"]`);
+            if (el) el.classList.add('active');
+        }
+    }
+
+    // Start the SOS beacon pattern
+    function startAudioBeacon() {
+        if (!audioContext) initAudio();
+
+        // Resume audio context if suspended (browser autoplay policy)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+
+        let patternIndex = 0;
+
+        function playNextElement() {
+            if (!audioBeaconActive) {
+                stopTone();
+                clearAllMorseHighlights();
+                return;
+            }
+
+            const element = SOS_PATTERN[patternIndex];
+
+            if (element.tone) {
+                startTone();
+                highlightMorseElement(element.index);
+            } else {
+                stopTone();
+                clearAllMorseHighlights();
+            }
+
+            patternIndex++;
+
+            // If we've completed one cycle
+            if (patternIndex >= SOS_PATTERN.length) {
+                patternIndex = 0;
+                cycleCount++;
+                document.getElementById('beacon-cycles').textContent = cycleCount.toString();
+
+                // Report cycle to server
+                fetch('/api/emergency/beacon/cycle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(err => console.log('Cycle report error:', err));
+            }
+
+            // Schedule next element
+            beaconInterval = setTimeout(playNextElement, element.duration);
+        }
+
+        // Start the pattern
+        playNextElement();
+    }
+
+    // Stop the audio beacon
+    function stopAudioBeacon() {
+        if (beaconInterval) {
+            clearTimeout(beaconInterval);
+            beaconInterval = null;
+        }
+        stopTone();
+        clearAllMorseHighlights();
+    }
+
+    // Clean up when page unloads
+    window.addEventListener('beforeunload', function() {
+        stopAudioBeacon();
+        if (audioContext) {
+            audioContext.close();
+        }
+    });
 </script>
 {% endblock %}

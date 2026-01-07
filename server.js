@@ -839,6 +839,162 @@ app.get('/api/emergency/logs', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Audio Beacon System (SOS Morse Pattern)
+// ==============================================================================
+
+// Audio beacon state
+let audioBeaconState = {
+    active: false,
+    frequency: 2800, // Hz - piezo buzzer frequency
+    pattern: 'sos', // SOS morse pattern: ... --- ...
+    started_at: null,
+    cycles_completed: 0
+};
+
+// SOS Morse timing (in milliseconds)
+// Dot = 1 unit, Dash = 3 units, Gap between dots/dashes = 1 unit, Gap between letters = 3 units
+const MORSE_TIMING = {
+    unit: 200, // base unit in ms
+    dot: 200,
+    dash: 600,
+    intraChar: 200, // gap between dots/dashes in same letter
+    interChar: 600, // gap between letters
+    interWord: 1400, // gap between words/pattern repeat
+    // SOS pattern: ... --- ... = 3 dots, 3 dashes, 3 dots
+    sosPattern: [
+        // S: dot dot dot
+        { type: 'tone', duration: 200 },
+        { type: 'silence', duration: 200 },
+        { type: 'tone', duration: 200 },
+        { type: 'silence', duration: 200 },
+        { type: 'tone', duration: 200 },
+        { type: 'silence', duration: 600 }, // inter-char gap
+        // O: dash dash dash
+        { type: 'tone', duration: 600 },
+        { type: 'silence', duration: 200 },
+        { type: 'tone', duration: 600 },
+        { type: 'silence', duration: 200 },
+        { type: 'tone', duration: 600 },
+        { type: 'silence', duration: 600 }, // inter-char gap
+        // S: dot dot dot
+        { type: 'tone', duration: 200 },
+        { type: 'silence', duration: 200 },
+        { type: 'tone', duration: 200 },
+        { type: 'silence', duration: 200 },
+        { type: 'tone', duration: 200 },
+        { type: 'silence', duration: 1400 } // inter-word gap before repeat
+    ]
+};
+
+// Enable audio beacon
+app.post('/api/emergency/beacon/enable', (req, res) => {
+    const { frequency, volume } = req.body;
+
+    if (!currentEmergency) {
+        return res.status(400).json({
+            success: false,
+            error: 'No active emergency. Activate emergency mode first.',
+            code: 'NO_EMERGENCY'
+        });
+    }
+
+    audioBeaconState = {
+        active: true,
+        frequency: frequency || 2800,
+        volume: Math.min(1.0, Math.max(0.1, volume || 0.8)),
+        pattern: 'sos',
+        started_at: new Date().toISOString(),
+        cycles_completed: 0
+    };
+
+    // Update emergency record
+    if (currentEmergency) {
+        currentEmergency.beacon_active = true;
+        currentEmergency.audio_beacon_started = audioBeaconState.started_at;
+    }
+
+    console.log(`AUDIO BEACON ENABLED - ${audioBeaconState.frequency}Hz SOS pattern`);
+
+    res.json({
+        success: true,
+        beacon: {
+            active: true,
+            frequency: audioBeaconState.frequency,
+            volume: audioBeaconState.volume,
+            pattern: 'SOS (... --- ...)',
+            timing: MORSE_TIMING.sosPattern,
+            message: 'Audio beacon enabled. Playing SOS pattern at 2800Hz.'
+        }
+    });
+});
+
+// Disable audio beacon
+app.post('/api/emergency/beacon/disable', (req, res) => {
+    const wasActive = audioBeaconState.active;
+
+    audioBeaconState = {
+        active: false,
+        frequency: 2800,
+        pattern: 'sos',
+        started_at: null,
+        cycles_completed: audioBeaconState.cycles_completed
+    };
+
+    // Update emergency record if still active
+    if (currentEmergency) {
+        currentEmergency.audio_beacon_stopped = new Date().toISOString();
+    }
+
+    console.log(`AUDIO BEACON DISABLED - ${audioBeaconState.cycles_completed} cycles completed`);
+
+    res.json({
+        success: true,
+        beacon: {
+            active: false,
+            was_active: wasActive,
+            cycles_completed: audioBeaconState.cycles_completed,
+            message: wasActive ? 'Audio beacon disabled.' : 'Audio beacon was not active.'
+        }
+    });
+});
+
+// Get audio beacon status
+app.get('/api/emergency/beacon/status', (req, res) => {
+    const duration = audioBeaconState.started_at
+        ? Math.floor((Date.now() - new Date(audioBeaconState.started_at).getTime()) / 1000)
+        : 0;
+
+    res.json({
+        success: true,
+        beacon: {
+            active: audioBeaconState.active,
+            frequency: audioBeaconState.frequency,
+            volume: audioBeaconState.volume || 0.8,
+            pattern: audioBeaconState.pattern,
+            pattern_description: 'SOS (... --- ...)',
+            started_at: audioBeaconState.started_at,
+            duration_seconds: duration,
+            cycles_completed: audioBeaconState.cycles_completed,
+            timing: MORSE_TIMING.sosPattern
+        },
+        emergency_active: currentEmergency !== null
+    });
+});
+
+// Increment beacon cycle count (called by client after each SOS pattern completion)
+app.post('/api/emergency/beacon/cycle', (req, res) => {
+    if (audioBeaconState.active) {
+        audioBeaconState.cycles_completed++;
+    }
+
+    res.json({
+        success: true,
+        cycles_completed: audioBeaconState.cycles_completed,
+        active: audioBeaconState.active
+    });
+});
+
 // Voice-activated SOS (requires confirmation)
 app.post('/api/voice/sos', (req, res) => {
     const { confirmed } = req.body;
