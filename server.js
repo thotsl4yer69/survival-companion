@@ -937,26 +937,69 @@ const firstAidProtocolDatabase = [
         category: 'environmental',
         name: 'Hypothermia Treatment',
         severity: 'critical',
-        keywords: ['cold', 'hypothermia', 'freezing', 'shivering', 'cold exposure', 'frostbite'],
-        summary: 'Recognition and treatment of cold-related emergencies',
+        keywords: ['cold', 'hypothermia', 'freezing', 'shivering', 'cold exposure', 'frostbite', 'confusion', 'slurred speech'],
+        summary: 'Recognition and treatment of cold-related emergencies with symptom staging',
         steps: [
-            { step: 1, summary: 'Move to shelter', detail: 'Get the person out of the cold and wind into a dry, warm shelter if possible.' },
-            { step: 2, summary: 'Remove wet clothing', detail: 'Gently remove any wet clothing and replace with dry layers or blankets.' },
-            { step: 3, summary: 'Insulate from ground', detail: 'Place insulating material (foam pad, branches, dry leaves) between person and ground.' },
-            { step: 4, summary: 'Warm the core first', detail: 'Apply warm (not hot) compresses to neck, armpits, and groin. Use body heat from another person if needed.' },
-            { step: 5, summary: 'Give warm fluids', detail: 'If person is conscious and can swallow, give warm, sweet liquids. NOT alcohol.' },
-            { step: 6, summary: 'Handle gently', detail: 'Move the person very gently - rough handling can cause cardiac arrest in severe hypothermia.' },
-            { step: 7, summary: 'Monitor continuously', detail: 'Watch breathing and pulse. Be prepared for CPR. Hypothermic hearts are fragile.' }
+            { step: 1, summary: 'Recognize symptoms', detail: 'Mild: shivering, cold skin, alert. Moderate: violent shivering, confusion, slurred speech, stumbling. Severe: no shivering, very confused or unconscious, weak pulse, shallow breathing.' },
+            { step: 2, summary: 'Move to shelter', detail: 'Get the person out of the cold and wind into a dry, warm shelter if possible. Protect from further heat loss.' },
+            { step: 3, summary: 'Remove wet clothing', detail: 'GENTLY remove any wet clothing and replace with dry layers or blankets. Cut clothing off if needed to minimize movement.' },
+            { step: 4, summary: 'Insulate from ground', detail: 'Place insulating material (foam pad, branches, dry leaves, backpack) between person and ground. Ground steals heat rapidly.' },
+            { step: 5, summary: 'Warm the core first', detail: 'Apply warm (not hot) compresses to neck, armpits, and groin - where major blood vessels are close to surface. Use body heat from another person if needed (skin to skin).' },
+            { step: 6, summary: 'Give warm fluids', detail: 'If person is conscious and can swallow, give warm, sweet liquids. NOT alcohol or caffeine. Do NOT give fluids if confused or unable to swallow.' },
+            { step: 7, summary: 'Handle very gently', detail: 'Move the person very gently - rough handling or sudden movement can cause cardiac arrest in severe hypothermia.' },
+            { step: 8, summary: 'Monitor continuously', detail: 'Watch breathing and pulse closely. Be prepared for CPR. Hypothermic hearts are very fragile.' }
         ],
+        symptom_stages: {
+            mild: {
+                body_temp: '32-35°C (90-95°F)',
+                symptoms: [
+                    'Shivering - body trying to generate heat',
+                    'Cold, pale skin',
+                    'Numbness in extremities',
+                    'Person is alert and responsive',
+                    'Fatigue and weakness',
+                    'Slight difficulty with coordination'
+                ],
+                treatment: 'Can usually be treated in field. Get to shelter, remove wet clothes, add dry layers, give warm drinks, keep person moving if able.'
+            },
+            moderate: {
+                body_temp: '28-32°C (82-90°F)',
+                symptoms: [
+                    'Violent, uncontrollable shivering',
+                    'Confusion and poor judgment',
+                    'Slurred speech',
+                    'Stumbling, poor coordination',
+                    'Drowsiness',
+                    'Memory problems',
+                    'Muscle stiffness'
+                ],
+                treatment: 'Requires more aggressive warming. Handle gently. Apply warm compresses to core areas. DO NOT let person walk. Seek medical help.'
+            },
+            severe: {
+                body_temp: 'Below 28°C (82°F)',
+                symptoms: [
+                    'Shivering STOPS - very dangerous sign',
+                    'Severe confusion or unconsciousness',
+                    'Weak or irregular pulse',
+                    'Very slow, shallow breathing',
+                    'Blue skin (cyanosis)',
+                    'Muscle rigidity',
+                    'Person may appear dead'
+                ],
+                treatment: 'MEDICAL EMERGENCY - Activate SOS. Handle EXTREMELY gently. Do not attempt rapid rewarming. Keep horizontal. Be ready for CPR. Even if person appears dead, continue CPR until help arrives - people have survived after appearing dead from hypothermia.'
+            }
+        },
         warnings: [
-            'Do NOT apply direct heat to skin (heating pads, hot water bottles directly on skin)',
-            'Do NOT give alcohol - it causes more heat loss',
-            'Do NOT rub or massage limbs - this can cause cardiac arrest',
-            'Handle very gently - sudden movements can trigger heart problems',
-            'In severe hypothermia, person may appear dead - continue warming and seek help'
+            'Do NOT rub or massage limbs - this can cause cardiac arrest by sending cold blood to the heart',
+            'Do NOT apply direct heat to skin (heating pads, hot water bottles directly on skin) - can cause burns and shock',
+            'Do NOT give alcohol - it causes blood vessels to dilate and INCREASES heat loss',
+            'Handle VERY gently - sudden movements can trigger fatal heart arrhythmias',
+            'In severe hypothermia, person may appear dead - continue care and seek help',
+            'Do NOT let a hypothermic person walk or exert themselves - can cause heart failure',
+            'When shivering STOPS but person is still cold, this indicates SEVERE hypothermia'
         ],
-        contraindications: ['No alcohol', 'No direct heat application', 'No massage', 'No rough handling'],
-        when_to_seek_help: 'Seek help immediately for severe hypothermia (confusion, slurred speech, loss of consciousness, very slow breathing). Mild hypothermia (shivering, alert) can be treated in field if shelter is available.'
+        contraindications: ['No alcohol', 'No direct heat application', 'No massage or rubbing limbs', 'No rough handling', 'No exertion/walking in moderate-severe cases'],
+        when_to_seek_help: 'Seek immediate help for: moderate hypothermia (confusion, slurred speech, violent shivering), severe hypothermia (shivering stopped, unconscious, weak pulse), any loss of consciousness, symptoms not improving with warming, or if unable to provide adequate shelter and warming.'
     },
     // HEAT STROKE
     {
