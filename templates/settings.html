@@ -582,6 +582,16 @@
             toggleNightMode();
         });
 
+        // Font size select
+        const fontSizeSelect = document.getElementById('font-size');
+        // Set current value from localStorage
+        const currentFontSize = localStorage.getItem('fontSize') || 'medium';
+        fontSizeSelect.value = currentFontSize;
+
+        fontSizeSelect.addEventListener('change', function() {
+            setFontSize(this.value);
+        });
+
         // Load profile from server API
         loadProfile();
 

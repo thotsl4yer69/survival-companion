@@ -360,6 +360,34 @@ function checkNightMode() {
 checkNightMode();
 
 // ==============================================================================
+// Font Scaling
+// ==============================================================================
+function setFontSize(size) {
+    // Remove existing font size classes
+    document.body.classList.remove('font-small', 'font-large');
+
+    // Add new font size class (medium is default, no class needed)
+    if (size === 'small') {
+        document.body.classList.add('font-small');
+    } else if (size === 'large') {
+        document.body.classList.add('font-large');
+    }
+    // 'medium' uses default CSS variables
+
+    // Persist to localStorage
+    localStorage.setItem('fontSize', size);
+}
+
+function checkFontSize() {
+    const savedSize = localStorage.getItem('fontSize') || 'medium';
+    setFontSize(savedSize);
+    return savedSize;
+}
+
+// Initialize font size on load
+checkFontSize();
+
+// ==============================================================================
 // Power Management & Low-Power Mode
 // ==============================================================================
 async function checkPowerStatus() {
@@ -471,3 +499,5 @@ window.activateEmergency = activateEmergency;
 window.deactivateEmergency = deactivateEmergency;
 window.toggleNightMode = toggleNightMode;
 window.checkPowerStatus = checkPowerStatus;
+window.setFontSize = setFontSize;
+window.checkFontSize = checkFontSize;

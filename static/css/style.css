@@ -843,3 +843,63 @@ body.night-mode .status-indicator.ready {
     background: rgba(255, 0, 0, 0.2);
     color: #ff3333;
 }
+
+/* ==============================================================================
+   Font Scaling
+============================================================================== */
+/* Default (Medium) - base sizes as defined in :root */
+
+/* Small Font Size */
+body.font-small {
+    --font-size-xs: 11px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 28px;
+    --font-size-3xl: 40px;
+}
+
+/* Large Font Size - minimum 16px for body text */
+body.font-large {
+    --font-size-xs: 14px;
+    --font-size-sm: 16px;  /* Minimum 16px maintained */
+    --font-size-base: 18px;
+    --font-size-lg: 22px;
+    --font-size-xl: 30px;
+    --font-size-2xl: 40px;
+    --font-size-3xl: 56px;
+}
+
+/* Ensure layouts don't break with large fonts */
+body.font-large .action-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+body.font-large .dashboard-grid {
+    gap: var(--spacing-md);
+}
+
+body.font-large .conditions-grid {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+body.font-large .vitals-grid {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+body.font-large .nav-bar .nav-item span {
+    display: none;  /* Hide nav text on large fonts to prevent overflow */
+}
+
+body.font-large .card h2 {
+    font-size: var(--font-size-lg);
+}
+
+body.font-large .action-btn span {
+    font-size: var(--font-size-sm);
+}
