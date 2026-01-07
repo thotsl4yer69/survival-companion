@@ -558,6 +558,361 @@ function getDegradedFeatures() {
 }
 
 // ==============================================================================
+// Error Recovery and Logging System
+// ==============================================================================
+
+// Error log storage
+const errorLog = [];
+const MAX_ERROR_LOG_SIZE = 100;
+
+// Recovery attempt tracking
+const recoveryState = {
+    active_issues: [],
+    recovery_attempts: [],
+    last_recovery_at: null,
+    system_health: 'healthy'
+};
+
+// Error types and their recovery strategies
+const ERROR_TYPES = {
+    sensor_failure: {
+        severity: 'warning',
+        recoverable: true,
+        recovery_action: 'restart_sensor',
+        max_attempts: 3
+    },
+    gps_lost: {
+        severity: 'warning',
+        recoverable: true,
+        recovery_action: 'retry_gps',
+        max_attempts: 5
+    },
+    llm_error: {
+        severity: 'error',
+        recoverable: true,
+        recovery_action: 'reload_llm',
+        max_attempts: 2
+    },
+    memory_pressure: {
+        severity: 'critical',
+        recoverable: true,
+        recovery_action: 'clear_cache',
+        max_attempts: 1
+    },
+    network_error: {
+        severity: 'warning',
+        recoverable: true,
+        recovery_action: 'retry_connection',
+        max_attempts: 3
+    },
+    file_error: {
+        severity: 'error',
+        recoverable: true,
+        recovery_action: 'retry_io',
+        max_attempts: 2
+    },
+    unknown: {
+        severity: 'error',
+        recoverable: false,
+        recovery_action: 'log_only',
+        max_attempts: 0
+    }
+};
+
+// Log an error and trigger recovery if applicable
+function logError(errorType, message, details = {}) {
+    const now = new Date();
+    const errorInfo = ERROR_TYPES[errorType] || ERROR_TYPES.unknown;
+
+    const errorEntry = {
+        id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: now.toISOString(),
+        type: errorType,
+        severity: errorInfo.severity,
+        message: message,
+        details: details,
+        recoverable: errorInfo.recoverable,
+        recovered: false,
+        recovery_attempts: 0
+    };
+
+    // Add to error log
+    errorLog.unshift(errorEntry);
+
+    // Trim log if too large
+    if (errorLog.length > MAX_ERROR_LOG_SIZE) {
+        errorLog.pop();
+    }
+
+    // Log to console
+    console.log(`[ERROR] ${errorInfo.severity.toUpperCase()}: ${message}`);
+
+    // Update system health
+    updateSystemHealth();
+
+    // Attempt recovery if applicable
+    if (errorInfo.recoverable) {
+        attemptRecovery(errorEntry, errorInfo);
+    }
+
+    return errorEntry;
+}
+
+// Attempt to recover from an error
+function attemptRecovery(errorEntry, errorInfo) {
+    const recoveryAttempt = {
+        error_id: errorEntry.id,
+        error_type: errorEntry.type,
+        action: errorInfo.recovery_action,
+        started_at: new Date().toISOString(),
+        success: false,
+        message: null
+    };
+
+    // Check if max attempts exceeded
+    const previousAttempts = recoveryState.recovery_attempts.filter(
+        a => a.error_id === errorEntry.id
+    ).length;
+
+    if (previousAttempts >= errorInfo.max_attempts) {
+        recoveryAttempt.success = false;
+        recoveryAttempt.message = `Max recovery attempts (${errorInfo.max_attempts}) exceeded`;
+        console.log(`[RECOVERY] Max attempts exceeded for ${errorEntry.type}`);
+
+        // Add to active issues
+        if (!recoveryState.active_issues.find(i => i.id === errorEntry.id)) {
+            recoveryState.active_issues.push({
+                id: errorEntry.id,
+                type: errorEntry.type,
+                message: errorEntry.message,
+                since: errorEntry.timestamp
+            });
+        }
+    } else {
+        // Perform recovery action
+        const result = performRecoveryAction(errorInfo.recovery_action, errorEntry);
+        recoveryAttempt.success = result.success;
+        recoveryAttempt.message = result.message;
+
+        if (result.success) {
+            errorEntry.recovered = true;
+            errorEntry.recovery_attempts = previousAttempts + 1;
+            console.log(`[RECOVERY] Successfully recovered from ${errorEntry.type}`);
+
+            // Remove from active issues if present
+            recoveryState.active_issues = recoveryState.active_issues.filter(
+                i => i.id !== errorEntry.id
+            );
+        }
+    }
+
+    recoveryAttempt.completed_at = new Date().toISOString();
+    recoveryState.recovery_attempts.unshift(recoveryAttempt);
+    recoveryState.last_recovery_at = new Date().toISOString();
+
+    // Trim recovery attempts
+    if (recoveryState.recovery_attempts.length > 50) {
+        recoveryState.recovery_attempts.pop();
+    }
+
+    return recoveryAttempt;
+}
+
+// Perform a specific recovery action
+function performRecoveryAction(action, errorEntry) {
+    switch (action) {
+        case 'restart_sensor':
+            const sensorName = errorEntry.details.sensor || 'unknown';
+            // Simulate sensor restart
+            if (systemState.sensors[sensorName] !== undefined) {
+                systemState.sensors[sensorName] = true;
+                if (sensorHealthState[sensorName]) {
+                    sensorHealthState[sensorName].status = 'ok';
+                    sensorHealthState[sensorName].errorCount = 0;
+                    sensorHealthState[sensorName].errorMessage = null;
+                }
+                return { success: true, message: `Sensor ${sensorName} restarted` };
+            }
+            return { success: false, message: 'Unknown sensor' };
+
+        case 'retry_gps':
+            // Simulate GPS retry
+            systemState.sensors.gps = true;
+            systemState.bootStatus.gps_fix = true;
+            return { success: true, message: 'GPS connection reestablished' };
+
+        case 'reload_llm':
+            // Simulate LLM reload
+            systemState.bootStatus.llm_ready = true;
+            return { success: true, message: 'LLM model reloaded' };
+
+        case 'clear_cache':
+            // Simulate cache clearing
+            return { success: true, message: 'Cache cleared, memory freed' };
+
+        case 'retry_connection':
+            // Simulate network retry
+            return { success: true, message: 'Connection restored' };
+
+        case 'retry_io':
+            // Simulate IO retry
+            return { success: true, message: 'File operation succeeded on retry' };
+
+        case 'log_only':
+        default:
+            return { success: false, message: 'No automatic recovery available' };
+    }
+}
+
+// Update overall system health based on active issues
+function updateSystemHealth() {
+    const criticalIssues = recoveryState.active_issues.filter(
+        i => ERROR_TYPES[i.type]?.severity === 'critical'
+    ).length;
+    const errorIssues = recoveryState.active_issues.filter(
+        i => ERROR_TYPES[i.type]?.severity === 'error'
+    ).length;
+
+    if (criticalIssues > 0) {
+        recoveryState.system_health = 'critical';
+    } else if (errorIssues > 0) {
+        recoveryState.system_health = 'degraded';
+    } else if (recoveryState.active_issues.length > 0) {
+        recoveryState.system_health = 'warning';
+    } else {
+        recoveryState.system_health = 'healthy';
+    }
+}
+
+// Get error log
+app.get('/api/errors', (req, res) => {
+    const limit = parseInt(req.query.limit) || 20;
+    const severity = req.query.severity;
+    const type = req.query.type;
+
+    let filtered = errorLog;
+
+    if (severity) {
+        filtered = filtered.filter(e => e.severity === severity);
+    }
+
+    if (type) {
+        filtered = filtered.filter(e => e.type === type);
+    }
+
+    res.json({
+        success: true,
+        total: errorLog.length,
+        errors: filtered.slice(0, limit)
+    });
+});
+
+// Get recovery status
+app.get('/api/recovery/status', (req, res) => {
+    res.json({
+        success: true,
+        system_health: recoveryState.system_health,
+        active_issues: recoveryState.active_issues,
+        recent_recoveries: recoveryState.recovery_attempts.slice(0, 10),
+        last_recovery_at: recoveryState.last_recovery_at,
+        stats: {
+            total_errors_logged: errorLog.length,
+            active_issues_count: recoveryState.active_issues.length,
+            successful_recoveries: recoveryState.recovery_attempts.filter(r => r.success).length,
+            failed_recoveries: recoveryState.recovery_attempts.filter(r => !r.success).length
+        }
+    });
+});
+
+// Trigger a test error (for testing)
+app.post('/api/errors/trigger', (req, res) => {
+    const { type, message, details } = req.body;
+
+    if (!type || !ERROR_TYPES[type]) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid error type',
+            available_types: Object.keys(ERROR_TYPES)
+        });
+    }
+
+    const errorEntry = logError(type, message || `Test ${type} error`, details || {});
+
+    res.json({
+        success: true,
+        error_entry: errorEntry,
+        system_health: recoveryState.system_health,
+        recovered: errorEntry.recovered
+    });
+});
+
+// Manually attempt recovery for an active issue
+app.post('/api/recovery/attempt', (req, res) => {
+    const { error_id } = req.body;
+
+    if (!error_id) {
+        return res.status(400).json({
+            success: false,
+            error: 'error_id required'
+        });
+    }
+
+    // Find the error entry
+    const errorEntry = errorLog.find(e => e.id === error_id);
+
+    if (!errorEntry) {
+        return res.status(404).json({
+            success: false,
+            error: 'Error not found'
+        });
+    }
+
+    const errorInfo = ERROR_TYPES[errorEntry.type] || ERROR_TYPES.unknown;
+
+    if (!errorInfo.recoverable) {
+        return res.json({
+            success: false,
+            message: 'This error type is not recoverable',
+            error_entry: errorEntry
+        });
+    }
+
+    // Reset attempt counter to allow manual retry
+    const result = performRecoveryAction(errorInfo.recovery_action, errorEntry);
+
+    if (result.success) {
+        errorEntry.recovered = true;
+        recoveryState.active_issues = recoveryState.active_issues.filter(
+            i => i.id !== error_id
+        );
+        updateSystemHealth();
+    }
+
+    res.json({
+        success: result.success,
+        message: result.message,
+        error_entry: errorEntry,
+        system_health: recoveryState.system_health
+    });
+});
+
+// Clear resolved errors from log
+app.post('/api/errors/clear-resolved', (req, res) => {
+    const unresolvedCount = errorLog.filter(e => !e.recovered).length;
+    const clearedCount = errorLog.length - unresolvedCount;
+
+    // Keep only unresolved errors
+    errorLog.length = 0;
+    errorLog.push(...errorLog.filter(e => !e.recovered));
+
+    res.json({
+        success: true,
+        cleared: clearedCount,
+        remaining: errorLog.length
+    });
+});
+
+// ==============================================================================
 // Weather / Pressure History and Storm Prediction
 // ==============================================================================
 
