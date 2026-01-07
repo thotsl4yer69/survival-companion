@@ -3057,6 +3057,324 @@ const survivalKnowledge = {
     }
 };
 
+// ==============================================================================
+// Shelter Construction Database
+// ==============================================================================
+
+const shelterDatabase = {
+    debris_hut: {
+        id: 'debris_hut',
+        name: 'Debris Hut (A-Frame)',
+        difficulty: 'beginner',
+        time_to_build: '2-4 hours',
+        capacity: '1-2 people',
+        climate_suitability: ['temperate', 'cold', 'rainy'],
+        description: 'Classic survival shelter using natural materials. Excellent insulation when properly built.',
+        location_selection: {
+            guidelines: [
+                'Choose flat, dry ground slightly elevated to avoid water pooling',
+                'Avoid low areas where cold air collects',
+                'Look for natural windbreaks (hills, large rocks, dense trees)',
+                'Avoid dead standing trees (widowmakers) that could fall',
+                'Check above for unstable branches or overhanging hazards',
+                'Stay at least 50 feet from water sources to avoid insects and flooding',
+                'Consider sun exposure - south-facing in cold climates for warmth'
+            ],
+            avoid: ['Valley bottoms (cold air sinks)', 'Flood zones', 'Under dead trees', 'Animal trails', 'Near insect nests']
+        },
+        materials: {
+            required: [
+                { item: 'Ridge pole', description: '9-12 feet long, sturdy branch about wrist thickness', quantity: 1 },
+                { item: 'Support stump/rock', description: 'Elevated support 3-4 feet high for ridge pole', quantity: 1 },
+                { item: 'Rib branches', description: '4-6 feet long branches for framework', quantity: '20-30' },
+                { item: 'Debris (leaves, grass, ferns)', description: 'Dead leaves, pine needles, grass, ferns for insulation', quantity: 'Large pile' },
+                { item: 'Small sticks', description: 'For holding debris in place', quantity: '50+' }
+            ],
+            optional: [
+                { item: 'Cordage', description: 'Rope, paracord, or natural cordage for lashing' },
+                { item: 'Tarp', description: 'Waterproof layer if available' },
+                { item: 'Ground insulation', description: 'Extra leaves/grass for sleeping pad' }
+            ]
+        },
+        steps: [
+            { step: 1, summary: 'Find ridge pole', detail: 'Select a sturdy branch 9-12 feet long, about wrist thickness. It must support its own weight plus debris.' },
+            { step: 2, summary: 'Create support', detail: 'Place one end of ridge pole on a stump, rock, or forked tree branch 3-4 feet off the ground. The other end rests on the ground.' },
+            { step: 3, summary: 'Add rib branches', detail: 'Lean rib branches against ridge pole at 45-degree angles, spaced 6-8 inches apart. Create ribcage structure.' },
+            { step: 4, summary: 'Add lattice layer', detail: 'Weave smaller sticks horizontally through ribs to create a lattice that holds debris in place.' },
+            { step: 5, summary: 'Apply debris - first layer', detail: 'Start from the bottom, pile leaves/debris 1 foot thick. Work upward like shingling a roof.' },
+            { step: 6, summary: 'Apply debris - final layers', detail: 'Build up to 2-3 feet of debris thickness. More = warmer. Pack it tight.' },
+            { step: 7, summary: 'Add weight sticks', detail: 'Lay branches over debris to prevent wind from blowing it away.' },
+            { step: 8, summary: 'Create ground insulation', detail: 'Fill interior with 6+ inches of dry leaves/debris as bedding. Never sleep on bare ground.' },
+            { step: 9, summary: 'Create door plug', detail: 'Make a removable debris bundle to block entrance after you\'re inside.' },
+            { step: 10, summary: 'Test and improve', detail: 'Crawl in, check for drafts and gaps. Fill any holes with more debris.' }
+        ],
+        tips: [
+            'Shelter should be just big enough to fit you - smaller is warmer',
+            'Entry should face away from prevailing wind',
+            'In rain, make shelter steeper to shed water',
+            'You can\'t have too much debris - pile it on',
+            'Test before nightfall and improve as needed'
+        ]
+    },
+    lean_to: {
+        id: 'lean_to',
+        name: 'Lean-To Shelter',
+        difficulty: 'beginner',
+        time_to_build: '1-2 hours',
+        capacity: '1-3 people',
+        climate_suitability: ['temperate', 'dry'],
+        description: 'Simple one-sided shelter, quick to build. Best paired with fire for warmth.',
+        location_selection: {
+            guidelines: [
+                'Find natural support (fallen tree, rock face, standing trees)',
+                'Position back to prevailing wind',
+                'Consider fire placement - shelter reflects heat',
+                'Avoid flood zones and cold pockets'
+            ],
+            avoid: ['Windy exposed areas', 'Low wet ground', 'Under dead branches']
+        },
+        materials: {
+            required: [
+                { item: 'Horizontal support pole', description: '8-10 feet long, sturdy', quantity: 1 },
+                { item: 'Angled support poles', description: 'If no natural support available', quantity: 2 },
+                { item: 'Roofing poles', description: '6-8 feet long branches', quantity: '10-15' },
+                { item: 'Covering material', description: 'Leaves, grass, bark, pine boughs', quantity: 'Large amount' }
+            ],
+            optional: [
+                { item: 'Tarp or emergency blanket', description: 'For waterproofing' },
+                { item: 'Cordage', description: 'For lashing if needed' }
+            ]
+        },
+        steps: [
+            { step: 1, summary: 'Establish horizontal support', detail: 'Lash or wedge horizontal pole between two trees, or prop against rock/stump at 4-5 feet height.' },
+            { step: 2, summary: 'Add roof poles', detail: 'Lean poles from ground to horizontal support at 45-60 degrees. Space 6-8 inches apart.' },
+            { step: 3, summary: 'Add cross supports', detail: 'Weave thin branches horizontally to create framework for covering.' },
+            { step: 4, summary: 'Apply covering', detail: 'Layer leaves, bark, or pine boughs from bottom up, overlapping like shingles.' },
+            { step: 5, summary: 'Add ground insulation', detail: 'Create thick bed of dry leaves/grass inside.' },
+            { step: 6, summary: 'Build fire reflector', detail: 'Build fire 3-4 feet in front of opening. Place logs behind fire to reflect heat into shelter.' }
+        ],
+        tips: [
+            'Open side should face fire, not wind',
+            'Fire reflector wall doubles heat efficiency',
+            'Add sides in cold weather for more protection',
+            'Quick to build but less insulating than debris hut'
+        ]
+    },
+    snow_cave: {
+        id: 'snow_cave',
+        name: 'Snow Cave / Quinzhee',
+        difficulty: 'intermediate',
+        time_to_build: '2-4 hours',
+        capacity: '1-3 people',
+        climate_suitability: ['cold', 'arctic', 'snowy'],
+        description: 'Excellent winter shelter dug into packed snow. Temperature stays near freezing even in extreme cold.',
+        location_selection: {
+            guidelines: [
+                'Find deep snowdrift on leeward side of hill or tree line',
+                'Snow depth should be at least 5-6 feet',
+                'Avoid avalanche zones on slopes',
+                'Look for packed, consolidated snow (not fresh powder)',
+                'Check snow stability by digging test hole'
+            ],
+            avoid: ['Avalanche paths', 'Cornices on ridges', 'Areas with shallow snow', 'South-facing slopes (sun melts)']
+        },
+        materials: {
+            required: [
+                { item: 'Digging tool', description: 'Shovel, pot, flat stick, snowshoe', quantity: 1 },
+                { item: 'Deep snowdrift', description: 'Minimum 5-6 feet deep packed snow', quantity: 'Natural' }
+            ],
+            optional: [
+                { item: 'Ventilation stick', description: 'For creating air holes' },
+                { item: 'Ground pad', description: 'Insulation from ice floor' },
+                { item: 'Marker', description: 'Flag or bright item to mark location' }
+            ]
+        },
+        steps: [
+            { step: 1, summary: 'Identify location', detail: 'Find a deep snowdrift. For quinzhee, pile snow 5+ feet high and let it settle 2-3 hours.' },
+            { step: 2, summary: 'Dig entrance tunnel', detail: 'Dig horizontal or slightly upward-sloping entrance tunnel. Entrance lower than sleeping platform.' },
+            { step: 3, summary: 'Excavate main chamber', detail: 'Hollow out dome-shaped chamber. Smooth walls to prevent dripping. Ceiling should be arched.' },
+            { step: 4, summary: 'Create sleeping platform', detail: 'Sleeping area MUST be higher than entrance to trap warm air.' },
+            { step: 5, summary: 'Poke ventilation hole', detail: 'CRITICAL: Make small hole in roof for fresh air. CO2 from breathing can be deadly without ventilation.' },
+            { step: 6, summary: 'Smooth interior walls', detail: 'Smooth ceiling to prevent drip points. Any bumps will cause water to drip on you.' },
+            { step: 7, summary: 'Create door block', detail: 'Pack snow block to partially cover entrance, reducing heat loss while allowing air flow.' },
+            { step: 8, summary: 'Mark location', detail: 'Mark outside with skis, poles, or bright item so you can be found and others don\'t walk over it.' }
+        ],
+        tips: [
+            'Interior temp stays 25-32°F even when -40°F outside',
+            'ALWAYS maintain ventilation hole - carbon dioxide kills',
+            'Keep digging tool inside in case entrance collapses',
+            'Brush snow off clothes before entering to stay dry',
+            'A candle can raise interior temp 10+ degrees'
+        ],
+        warnings: [
+            'NEVER block ventilation hole - carbon dioxide poisoning is deadly',
+            'Avoid building in avalanche zones',
+            'Mark location clearly to prevent someone walking over roof',
+            'Keep entrance clear of drifting snow'
+        ]
+    },
+    tarp_shelter: {
+        id: 'tarp_shelter',
+        name: 'Tarp/Poncho Shelter',
+        difficulty: 'beginner',
+        time_to_build: '15-30 minutes',
+        capacity: '1-2 people',
+        climate_suitability: ['all'],
+        description: 'Quick and versatile shelter using a tarp or poncho. Many configuration options.',
+        materials: {
+            required: [
+                { item: 'Tarp or poncho', description: '8x10 feet minimum', quantity: 1 },
+                { item: 'Cordage', description: 'Rope, paracord, or line', quantity: '50+ feet' },
+                { item: 'Stakes or anchors', description: 'Stakes, rocks, or logs to secure', quantity: '4-8' }
+            ],
+            optional: [
+                { item: 'Ridge line', description: 'For A-frame configuration' },
+                { item: 'Trekking poles', description: 'For support structure' }
+            ]
+        },
+        configurations: [
+            { name: 'A-Frame', description: 'Ridge line between trees, tarp draped over, sides staked down. Good rain protection.' },
+            { name: 'Lean-To', description: 'One edge high, other staked to ground. Quick setup, pairs with fire.' },
+            { name: 'Tube Tent', description: 'Ridge line through tarp, ends open. Fast to deploy.' },
+            { name: 'Diamond Fly', description: 'Corner up with stick/pole, edges staked. Good coverage.' }
+        ],
+        steps: [
+            { step: 1, summary: 'Choose configuration', detail: 'Select based on weather conditions - A-frame for rain, lean-to for fire reflection.' },
+            { step: 2, summary: 'Set ridge line', detail: 'For A-frame: tie tight line between two trees at desired height.' },
+            { step: 3, summary: 'Position tarp', detail: 'Drape tarp over ridge line or attach corners for chosen configuration.' },
+            { step: 4, summary: 'Stake corners', detail: 'Pull tarp taut and secure corners with stakes, rocks, or logs.' },
+            { step: 5, summary: 'Adjust tension', detail: 'Tighten all lines to prevent sagging and flapping in wind.' },
+            { step: 6, summary: 'Add ground insulation', detail: 'Place leaves, pine boughs, or pad inside for ground insulation.' }
+        ],
+        tips: [
+            'Practice different configurations before you need them',
+            'Pitch tarp at angle to shed rain effectively',
+            'Face opening away from wind',
+            'Silver emergency blankets work in a pinch'
+        ]
+    }
+};
+
+// Get shelter by type
+app.get('/api/shelter/:type', (req, res) => {
+    const type = req.params.type.toLowerCase().replace(/-/g, '_');
+    const shelter = shelterDatabase[type];
+
+    if (!shelter) {
+        return res.status(404).json({
+            success: false,
+            error: `Shelter type '${type}' not found`,
+            available_types: Object.keys(shelterDatabase)
+        });
+    }
+
+    res.json({
+        success: true,
+        shelter: shelter
+    });
+});
+
+// List all shelter types
+app.get('/api/shelters', (req, res) => {
+    const { climate, difficulty } = req.query;
+
+    let shelters = Object.values(shelterDatabase);
+
+    if (climate) {
+        shelters = shelters.filter(s => s.climate_suitability.includes(climate.toLowerCase()));
+    }
+
+    if (difficulty) {
+        shelters = shelters.filter(s => s.difficulty === difficulty.toLowerCase());
+    }
+
+    const summary = shelters.map(s => ({
+        id: s.id,
+        name: s.name,
+        difficulty: s.difficulty,
+        time_to_build: s.time_to_build,
+        capacity: s.capacity,
+        climate_suitability: s.climate_suitability,
+        description: s.description
+    }));
+
+    res.json({
+        success: true,
+        count: summary.length,
+        shelters: summary
+    });
+});
+
+// Search shelters by query
+app.post('/api/shelters/search', (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    // Check for specific shelter types
+    const shelterMatches = [];
+    for (const [key, shelter] of Object.entries(shelterDatabase)) {
+        const nameMatch = shelter.name.toLowerCase().includes(queryLower);
+        const descMatch = shelter.description.toLowerCase().includes(queryLower);
+        const idMatch = key.includes(queryLower);
+
+        if (nameMatch || descMatch || idMatch) {
+            shelterMatches.push(shelter);
+        }
+    }
+
+    // Keyword matching
+    const keywords = {
+        debris: 'debris_hut',
+        'a-frame': 'debris_hut',
+        'a frame': 'debris_hut',
+        hut: 'debris_hut',
+        'lean to': 'lean_to',
+        'lean-to': 'lean_to',
+        leanto: 'lean_to',
+        snow: 'snow_cave',
+        cave: 'snow_cave',
+        quinzhee: 'snow_cave',
+        igloo: 'snow_cave',
+        tarp: 'tarp_shelter',
+        poncho: 'tarp_shelter',
+        quick: 'tarp_shelter'
+    };
+
+    for (const [keyword, shelterKey] of Object.entries(keywords)) {
+        if (queryLower.includes(keyword) && !shelterMatches.find(s => s.id === shelterKey)) {
+            shelterMatches.push(shelterDatabase[shelterKey]);
+        }
+    }
+
+    if (shelterMatches.length === 0) {
+        // Return all shelters as suggestions
+        return res.json({
+            success: true,
+            found: false,
+            message: `No specific match for "${query}". Here are all available shelters:`,
+            shelters: Object.values(shelterDatabase).map(s => ({
+                id: s.id,
+                name: s.name,
+                description: s.description
+            }))
+        });
+    }
+
+    const primary = shelterMatches[0];
+
+    res.json({
+        success: true,
+        found: true,
+        query: query,
+        shelter: primary,
+        other_options: shelterMatches.slice(1).map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description
+        }))
+    });
+});
+
 // Generate contextually appropriate survival response
 function generateSurvivalResponse(query) {
     const queryLower = query.toLowerCase();
