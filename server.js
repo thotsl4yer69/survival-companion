@@ -9660,6 +9660,593 @@ app.post('/api/vitals/alerts/simulate', (req, res) => {
 });
 
 // ==============================================================================
+// Camera System
+// ==============================================================================
+
+// Camera state
+const cameraState = {
+    initialized: false,
+    preview_active: false,
+    last_capture: null,
+    captured_images: [],
+    max_stored_images: 50,
+    resolution: { width: 1920, height: 1080 },
+    target_resolution: { width: 224, height: 224 }, // For inference
+    quality: 85, // JPEG quality
+    flash_mode: 'auto'
+};
+
+// Initialize camera
+app.post('/api/camera/initialize', (req, res) => {
+    // Simulate camera initialization
+    cameraState.initialized = true;
+    sensorHealthState.camera.status = 'ok';
+    sensorHealthState.camera.last_success = new Date().toISOString();
+    sensorHealthState.camera.error_message = null;
+    sensorHealthState.camera.error_count = 0;
+
+    res.json({
+        success: true,
+        message: 'Camera initialized',
+        resolution: cameraState.resolution,
+        target_inference_resolution: cameraState.target_resolution,
+        quality: cameraState.quality,
+        flash_mode: cameraState.flash_mode
+    });
+});
+
+// Get camera status
+app.get('/api/camera/status', (req, res) => {
+    res.json({
+        success: true,
+        initialized: cameraState.initialized,
+        preview_active: cameraState.preview_active,
+        resolution: cameraState.resolution,
+        quality: cameraState.quality,
+        flash_mode: cameraState.flash_mode,
+        images_stored: cameraState.captured_images.length,
+        last_capture: cameraState.last_capture
+    });
+});
+
+// Start preview
+app.post('/api/camera/preview/start', (req, res) => {
+    if (!cameraState.initialized) {
+        return res.status(400).json({ error: 'Camera not initialized', action: 'Call /api/camera/initialize first' });
+    }
+
+    cameraState.preview_active = true;
+    res.json({
+        success: true,
+        message: 'Preview started',
+        preview_endpoint: '/api/camera/preview/frame',
+        fps: 15
+    });
+});
+
+// Stop preview
+app.post('/api/camera/preview/stop', (req, res) => {
+    cameraState.preview_active = false;
+    res.json({
+        success: true,
+        message: 'Preview stopped'
+    });
+});
+
+// Get preview frame (simulated)
+app.get('/api/camera/preview/frame', (req, res) => {
+    if (!cameraState.preview_active) {
+        return res.status(400).json({ error: 'Preview not active' });
+    }
+
+    // Generate a simulated frame descriptor
+    res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        frame: {
+            width: cameraState.resolution.width,
+            height: cameraState.resolution.height,
+            format: 'jpeg',
+            size_bytes: 125000 + Math.floor(Math.random() * 50000),
+            brightness: 0.6 + Math.random() * 0.3,
+            focus_quality: 0.7 + Math.random() * 0.3,
+            motion_blur: Math.random() * 0.2
+        },
+        quality_assessment: {
+            is_usable: true,
+            brightness_ok: true,
+            focus_ok: true,
+            recommendations: []
+        }
+    });
+});
+
+// Capture image
+app.post('/api/camera/capture', (req, res) => {
+    const { purpose = 'general', subject_hint } = req.body;
+
+    if (!cameraState.initialized) {
+        return res.status(400).json({ error: 'Camera not initialized' });
+    }
+
+    const captureId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const timestamp = new Date().toISOString();
+
+    // Simulate capture with quality assessment
+    const brightness = 0.5 + Math.random() * 0.5;
+    const focus = 0.6 + Math.random() * 0.4;
+    const exposureOk = brightness > 0.4 && brightness < 0.95;
+    const focusOk = focus > 0.7;
+
+    const capturedImage = {
+        id: captureId,
+        timestamp,
+        purpose,
+        subject_hint: subject_hint || null,
+        resolution: { ...cameraState.resolution },
+        target_resolution: { ...cameraState.target_resolution },
+        file_size_bytes: 150000 + Math.floor(Math.random() * 100000),
+        quality_score: Math.round((brightness + focus) / 2 * 100),
+        assessment: {
+            brightness_level: parseFloat(brightness.toFixed(2)),
+            focus_quality: parseFloat(focus.toFixed(2)),
+            exposure_ok: exposureOk,
+            focus_ok: focusOk,
+            is_usable: exposureOk && focusOk,
+            recommendations: []
+        },
+        processed_for_inference: true,
+        inference_ready: true
+    };
+
+    // Add recommendations if quality issues
+    if (brightness < 0.4) {
+        capturedImage.assessment.recommendations.push('Image too dark - try adding light or moving to brighter area');
+    }
+    if (brightness > 0.95) {
+        capturedImage.assessment.recommendations.push('Image overexposed - move away from direct light');
+    }
+    if (focus < 0.7) {
+        capturedImage.assessment.recommendations.push('Image not sharp - hold camera steady and ensure subject is in focus');
+    }
+
+    // Store image
+    cameraState.captured_images.push(capturedImage);
+    cameraState.last_capture = capturedImage;
+
+    // Trim old images
+    while (cameraState.captured_images.length > cameraState.max_stored_images) {
+        cameraState.captured_images.shift();
+    }
+
+    res.json({
+        success: true,
+        capture: capturedImage,
+        message: capturedImage.assessment.is_usable
+            ? 'Image captured successfully - ready for analysis'
+            : 'Image captured but quality issues detected - consider recapturing'
+    });
+});
+
+// Get captured image
+app.get('/api/camera/images/:imageId', (req, res) => {
+    const { imageId } = req.params;
+    const image = cameraState.captured_images.find(img => img.id === imageId);
+
+    if (!image) {
+        return res.status(404).json({ error: 'Image not found' });
+    }
+
+    res.json({
+        success: true,
+        image
+    });
+});
+
+// List captured images
+app.get('/api/camera/images', (req, res) => {
+    const { limit = 10, purpose } = req.query;
+    let images = cameraState.captured_images;
+
+    if (purpose) {
+        images = images.filter(img => img.purpose === purpose);
+    }
+
+    res.json({
+        success: true,
+        images: images.slice(-parseInt(limit)),
+        total_count: cameraState.captured_images.length
+    });
+});
+
+// Delete image
+app.delete('/api/camera/images/:imageId', (req, res) => {
+    const { imageId } = req.params;
+    const index = cameraState.captured_images.findIndex(img => img.id === imageId);
+
+    if (index === -1) {
+        return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const deleted = cameraState.captured_images.splice(index, 1)[0];
+    res.json({
+        success: true,
+        deleted_image: deleted.id,
+        remaining_count: cameraState.captured_images.length
+    });
+});
+
+// Configure camera settings
+app.put('/api/camera/settings', (req, res) => {
+    const { quality, flash_mode, resolution } = req.body;
+
+    if (quality !== undefined) {
+        cameraState.quality = Math.min(100, Math.max(1, quality));
+    }
+    if (flash_mode && ['auto', 'on', 'off', 'torch'].includes(flash_mode)) {
+        cameraState.flash_mode = flash_mode;
+    }
+    if (resolution) {
+        // Validate common resolutions
+        const valid = [
+            { width: 640, height: 480 },
+            { width: 1280, height: 720 },
+            { width: 1920, height: 1080 }
+        ];
+        if (valid.some(v => v.width === resolution.width && v.height === resolution.height)) {
+            cameraState.resolution = resolution;
+        }
+    }
+
+    res.json({
+        success: true,
+        settings: {
+            quality: cameraState.quality,
+            flash_mode: cameraState.flash_mode,
+            resolution: cameraState.resolution
+        }
+    });
+});
+
+// ==============================================================================
+// Vision Pipeline - Triage and Specialist Models
+// ==============================================================================
+
+// Vision model state (Hailo-8L)
+const visionState = {
+    triage_model_loaded: false,
+    plant_model_loaded: false,
+    wildlife_model_loaded: false,
+    skin_model_loaded: false,
+    wound_model_loaded: false,
+    active_specialist: null,
+    hailo_available: true,  // Hailo NPU present
+    inference_count: 0
+};
+
+// Triage categories
+const triageCategories = ['plant', 'animal', 'skin_lesion', 'wound', 'other'];
+
+// Specialist model info
+const specialistModels = {
+    plant: {
+        name: 'plant_classifier.hef',
+        description: 'PlantNet regional plant identification',
+        memory_mb: 150,
+        categories: ['edible', 'poisonous', 'medicinal', 'unknown']
+    },
+    animal: {
+        name: 'wildlife_classifier.hef',
+        description: 'iNaturalist wildlife identification',
+        memory_mb: 180,
+        categories: ['dangerous', 'venomous', 'safe', 'unknown']
+    },
+    skin_lesion: {
+        name: 'skin_cancer.hef',
+        description: 'ISIC2024 skin lesion classification',
+        memory_mb: 200,
+        categories: ['melanoma_concern', 'moderate_concern', 'low_concern', 'benign']
+    },
+    wound: {
+        name: 'wound_assessor.hef',
+        description: 'Wound type and severity classifier',
+        memory_mb: 160,
+        categories: ['laceration', 'abrasion', 'puncture', 'burn', 'bite']
+    }
+};
+
+// Load triage model
+app.post('/api/vision/triage/load', (req, res) => {
+    visionState.triage_model_loaded = true;
+    res.json({
+        success: true,
+        message: 'Triage model loaded on Hailo-8L',
+        model: 'triage.hef',
+        categories: triageCategories
+    });
+});
+
+// Triage classify an image
+app.post('/api/vision/triage/classify', (req, res) => {
+    const { image_id, hint } = req.body;
+
+    if (!visionState.triage_model_loaded) {
+        visionState.triage_model_loaded = true; // Auto-load
+    }
+
+    // Simulate classification based on hint or random
+    let classification;
+    let confidence;
+
+    if (hint) {
+        const hintLower = hint.toLowerCase();
+        if (hintLower.includes('plant') || hintLower.includes('leaf') || hintLower.includes('flower')) {
+            classification = 'plant';
+            confidence = 0.85 + Math.random() * 0.1;
+        } else if (hintLower.includes('animal') || hintLower.includes('snake') || hintLower.includes('spider')) {
+            classification = 'animal';
+            confidence = 0.82 + Math.random() * 0.12;
+        } else if (hintLower.includes('skin') || hintLower.includes('mole') || hintLower.includes('lesion')) {
+            classification = 'skin_lesion';
+            confidence = 0.88 + Math.random() * 0.08;
+        } else if (hintLower.includes('wound') || hintLower.includes('cut') || hintLower.includes('burn')) {
+            classification = 'wound';
+            confidence = 0.87 + Math.random() * 0.1;
+        } else {
+            classification = triageCategories[Math.floor(Math.random() * triageCategories.length)];
+            confidence = 0.6 + Math.random() * 0.25;
+        }
+    } else {
+        classification = triageCategories[Math.floor(Math.random() * (triageCategories.length - 1))];
+        confidence = 0.7 + Math.random() * 0.2;
+    }
+
+    visionState.inference_count++;
+
+    res.json({
+        success: true,
+        image_id: image_id || 'current_frame',
+        triage_result: {
+            classification,
+            confidence: parseFloat(confidence.toFixed(3)),
+            all_scores: {
+                plant: classification === 'plant' ? confidence : Math.random() * 0.3,
+                animal: classification === 'animal' ? confidence : Math.random() * 0.3,
+                skin_lesion: classification === 'skin_lesion' ? confidence : Math.random() * 0.3,
+                wound: classification === 'wound' ? confidence : Math.random() * 0.3,
+                other: classification === 'other' ? confidence : Math.random() * 0.2
+            }
+        },
+        recommended_specialist: specialistModels[classification] ? classification : null,
+        specialist_model: specialistModels[classification] || null,
+        inference_time_ms: 45 + Math.floor(Math.random() * 30)
+    });
+});
+
+// Load specialist model
+app.post('/api/vision/specialist/load', (req, res) => {
+    const { specialist } = req.body;
+
+    if (!specialist || !specialistModels[specialist]) {
+        return res.status(400).json({
+            error: 'Valid specialist required',
+            available: Object.keys(specialistModels)
+        });
+    }
+
+    // Unload previous specialist
+    if (visionState.active_specialist && visionState.active_specialist !== specialist) {
+        visionState[`${visionState.active_specialist}_model_loaded`] = false;
+    }
+
+    // Load new specialist
+    visionState[`${specialist}_model_loaded`] = true;
+    visionState.active_specialist = specialist;
+
+    res.json({
+        success: true,
+        loaded: specialist,
+        model: specialistModels[specialist],
+        message: `${specialist} specialist model loaded`
+    });
+});
+
+// Run specialist analysis
+app.post('/api/vision/specialist/analyze', (req, res) => {
+    const { image_id, specialist, hint } = req.body;
+
+    if (!specialist || !specialistModels[specialist]) {
+        return res.status(400).json({
+            error: 'Valid specialist required',
+            available: Object.keys(specialistModels)
+        });
+    }
+
+    // Auto-load specialist if needed
+    if (!visionState[`${specialist}_model_loaded`]) {
+        visionState[`${specialist}_model_loaded`] = true;
+        visionState.active_specialist = specialist;
+    }
+
+    visionState.inference_count++;
+    const model = specialistModels[specialist];
+
+    // Generate specialist-specific results
+    let result;
+    const confidence = 0.75 + Math.random() * 0.2;
+
+    switch (specialist) {
+        case 'plant':
+            result = {
+                identified: true,
+                name: hint || 'Unidentified Plant',
+                scientific_name: 'Species unknown',
+                classification: model.categories[Math.floor(Math.random() * (model.categories.length - 1))],
+                confidence: confidence,
+                edibility: Math.random() > 0.7 ? 'POTENTIALLY POISONOUS - Do not consume' : 'Unknown - Do not consume unless 100% certain',
+                warning: 'Many edible plants have poisonous look-alikes. Never eat plants you cannot identify with certainty.'
+            };
+            break;
+
+        case 'animal':
+            result = {
+                identified: true,
+                name: hint || 'Unidentified Animal',
+                classification: model.categories[Math.floor(Math.random() * (model.categories.length - 1))],
+                confidence: confidence,
+                danger_level: Math.random() > 0.6 ? 'HIGH' : Math.random() > 0.3 ? 'MODERATE' : 'LOW',
+                warning: 'ASSUME DANGEROUS if identification confidence is low. Keep distance. Do not approach.'
+            };
+            break;
+
+        case 'skin_lesion':
+            const category = model.categories[Math.floor(Math.random() * model.categories.length)];
+            result = {
+                analyzed: true,
+                classification: category,
+                confidence: confidence,
+                concern_level: category === 'melanoma_concern' ? 'HIGH' :
+                              category === 'moderate_concern' ? 'MODERATE' : 'LOW',
+                recommendation: 'This is a screening tool ONLY. See a dermatologist for professional evaluation.',
+                disclaimer: 'I cannot diagnose skin cancer. This analysis identifies features that warrant professional examination.'
+            };
+            break;
+
+        case 'wound':
+            result = {
+                analyzed: true,
+                wound_type: model.categories[Math.floor(Math.random() * model.categories.length)],
+                severity: Math.random() > 0.7 ? 'severe' : Math.random() > 0.4 ? 'moderate' : 'minor',
+                confidence: confidence,
+                infection_risk: Math.random() > 0.5 ? 'elevated' : 'normal',
+                immediate_action: 'Clean wound thoroughly, apply pressure if bleeding, cover with clean dressing.',
+                seek_help_if: ['Deep wound', 'Won\'t stop bleeding', 'Signs of infection', 'Foreign object embedded']
+            };
+            break;
+
+        default:
+            result = { error: 'Unknown specialist' };
+    }
+
+    res.json({
+        success: true,
+        image_id: image_id || 'current_frame',
+        specialist,
+        result,
+        inference_time_ms: 80 + Math.floor(Math.random() * 50),
+        model_used: model.name
+    });
+});
+
+// Full vision pipeline - triage then specialist
+app.post('/api/vision/analyze', async (req, res) => {
+    const { image_id, hint, auto_route = true } = req.body;
+
+    // Step 1: Triage
+    if (!visionState.triage_model_loaded) {
+        visionState.triage_model_loaded = true;
+    }
+
+    let classification;
+    let triageConfidence;
+    const hintLower = (hint || '').toLowerCase();
+
+    if (hintLower.includes('plant') || hintLower.includes('leaf')) {
+        classification = 'plant';
+        triageConfidence = 0.88;
+    } else if (hintLower.includes('animal') || hintLower.includes('snake')) {
+        classification = 'animal';
+        triageConfidence = 0.85;
+    } else if (hintLower.includes('skin') || hintLower.includes('mole')) {
+        classification = 'skin_lesion';
+        triageConfidence = 0.9;
+    } else if (hintLower.includes('wound') || hintLower.includes('cut')) {
+        classification = 'wound';
+        triageConfidence = 0.87;
+    } else {
+        classification = triageCategories[Math.floor(Math.random() * (triageCategories.length - 1))];
+        triageConfidence = 0.7;
+    }
+
+    visionState.inference_count++;
+
+    const response = {
+        success: true,
+        image_id: image_id || 'current_frame',
+        pipeline_stages: ['triage'],
+        triage: {
+            classification,
+            confidence: triageConfidence
+        }
+    };
+
+    // Step 2: Route to specialist if applicable
+    if (auto_route && specialistModels[classification]) {
+        // Load specialist
+        visionState[`${classification}_model_loaded`] = true;
+        visionState.active_specialist = classification;
+
+        visionState.inference_count++;
+        response.pipeline_stages.push('specialist');
+        response.specialist = classification;
+        response.specialist_model = specialistModels[classification].name;
+
+        // Generate specialist result
+        const confidence = 0.75 + Math.random() * 0.2;
+
+        if (classification === 'skin_lesion') {
+            response.analysis = {
+                concern_level: Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MODERATE' : 'LOW',
+                classification: specialistModels.skin_lesion.categories[Math.floor(Math.random() * 4)],
+                confidence,
+                disclaimer: 'This is a SCREENING TOOL only. See a dermatologist for diagnosis.'
+            };
+        } else if (classification === 'plant') {
+            response.analysis = {
+                identified: Math.random() > 0.3,
+                edibility_warning: 'DO NOT EAT unless 100% certain of identification',
+                confidence,
+                safety_default: 'ASSUME POISONOUS if uncertain'
+            };
+        } else if (classification === 'animal') {
+            response.analysis = {
+                danger_assessment: Math.random() > 0.5 ? 'POTENTIALLY DANGEROUS' : 'LOW RISK',
+                confidence,
+                safety_default: 'ASSUME DANGEROUS and keep distance if uncertain'
+            };
+        } else if (classification === 'wound') {
+            response.analysis = {
+                wound_type: specialistModels.wound.categories[Math.floor(Math.random() * 5)],
+                severity: Math.random() > 0.6 ? 'moderate' : 'minor',
+                confidence,
+                action: 'Clean thoroughly, apply pressure to stop bleeding, cover with clean dressing'
+            };
+        }
+    }
+
+    response.total_inference_time_ms = 100 + Math.floor(Math.random() * 80);
+
+    res.json(response);
+});
+
+// Get vision pipeline status
+app.get('/api/vision/status', (req, res) => {
+    res.json({
+        success: true,
+        hailo_available: visionState.hailo_available,
+        triage_loaded: visionState.triage_model_loaded,
+        active_specialist: visionState.active_specialist,
+        specialists_loaded: {
+            plant: visionState.plant_model_loaded,
+            animal: visionState.wildlife_model_loaded,
+            skin_lesion: visionState.skin_model_loaded,
+            wound: visionState.wound_model_loaded
+        },
+        total_inferences: visionState.inference_count
+    });
+});
+
+// ==============================================================================
 // Boot Sequence Logic
 // ==============================================================================
 async function runBootSequence() {
