@@ -10,6 +10,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import yaml from 'js-yaml';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -910,6 +911,346 @@ app.post('/api/errors/clear-resolved', (req, res) => {
         cleared: clearedCount,
         remaining: errorLog.length
     });
+});
+
+// ==============================================================================
+// Configuration Persistence (YAML)
+// ==============================================================================
+
+const CONFIG_PATH = join(__dirname, 'config', 'survival_config.yaml');
+const USER_SETTINGS_PATH = join(__dirname, 'data', 'user_settings.yaml');
+
+// Default user settings (merged with config)
+const defaultUserSettings = {
+    display: {
+        night_mode: false,
+        font_size: 'medium',
+        screen_timeout: 60
+    },
+    voice: {
+        volume: 80,
+        voice_feedback: true
+    },
+    power: {
+        low_power_warning: true,
+        critical_warning: true,
+        auto_low_power: true
+    },
+    navigation: {
+        breadcrumb_interval: 10,
+        default_zoom: 15,
+        gps_accuracy_mode: 'balanced'
+    },
+    notifications: {
+        storm_alerts: true,
+        health_alerts: true,
+        sensor_warnings: true
+    }
+};
+
+// Current user settings (loaded from file or defaults)
+let userSettings = { ...defaultUserSettings };
+
+// Load main system configuration
+function loadSystemConfig() {
+    try {
+        if (fs.existsSync(CONFIG_PATH)) {
+            const content = fs.readFileSync(CONFIG_PATH, 'utf8');
+            return yaml.load(content);
+        }
+    } catch (error) {
+        console.log('[CONFIG] Error loading system config:', error.message);
+    }
+    return null;
+}
+
+// Load user settings from YAML
+function loadUserSettings() {
+    try {
+        if (fs.existsSync(USER_SETTINGS_PATH)) {
+            const content = fs.readFileSync(USER_SETTINGS_PATH, 'utf8');
+            const loaded = yaml.load(content);
+            // Deep merge with defaults
+            userSettings = deepMerge(defaultUserSettings, loaded);
+            console.log('User settings loaded from file');
+            return true;
+        }
+    } catch (error) {
+        console.log('[CONFIG] Error loading user settings:', error.message);
+    }
+    userSettings = { ...defaultUserSettings };
+    return false;
+}
+
+// Save user settings to YAML
+function saveUserSettings() {
+    try {
+        // Ensure data directory exists
+        const dataDir = join(__dirname, 'data');
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        const header = `# ==============================================================================
+# Survival Companion - User Settings
+# Generated: ${new Date().toISOString()}
+# ==============================================================================\n\n`;
+
+        const content = header + yaml.dump(userSettings, {
+            indent: 2,
+            lineWidth: 80,
+            noRefs: true
+        });
+
+        fs.writeFileSync(USER_SETTINGS_PATH, content);
+        console.log('[CONFIG] User settings saved');
+        return true;
+    } catch (error) {
+        console.log('[CONFIG] Error saving user settings:', error.message);
+        return false;
+    }
+}
+
+// Deep merge objects
+function deepMerge(target, source) {
+    const result = { ...target };
+
+    for (const key in source) {
+        if (source.hasOwnProperty(key)) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                result[key] = deepMerge(target[key] || {}, source[key]);
+            } else {
+                result[key] = source[key];
+            }
+        }
+    }
+
+    return result;
+}
+
+// Initialize user settings on startup
+loadUserSettings();
+
+// Get all configuration (system + user)
+app.get('/api/config', (req, res) => {
+    const systemConfig = loadSystemConfig();
+
+    res.json({
+        success: true,
+        system: systemConfig,
+        user_settings: userSettings,
+        config_path: CONFIG_PATH,
+        settings_path: USER_SETTINGS_PATH
+    });
+});
+
+// Get just user settings
+app.get('/api/config/settings', (req, res) => {
+    res.json({
+        success: true,
+        settings: userSettings,
+        defaults: defaultUserSettings
+    });
+});
+
+// Get specific setting category
+app.get('/api/config/settings/:category', (req, res) => {
+    const category = req.params.category;
+
+    if (!userSettings[category]) {
+        return res.status(404).json({
+            success: false,
+            error: 'Category not found',
+            available: Object.keys(userSettings)
+        });
+    }
+
+    res.json({
+        success: true,
+        category: category,
+        settings: userSettings[category],
+        defaults: defaultUserSettings[category]
+    });
+});
+
+// Update user settings
+app.put('/api/config/settings', (req, res) => {
+    const updates = req.body;
+
+    if (!updates || typeof updates !== 'object') {
+        return res.status(400).json({
+            success: false,
+            error: 'Settings object required'
+        });
+    }
+
+    // Merge updates with current settings
+    userSettings = deepMerge(userSettings, updates);
+
+    // Save to file
+    const saved = saveUserSettings();
+
+    res.json({
+        success: saved,
+        message: saved ? 'Settings saved successfully' : 'Failed to save settings',
+        settings: userSettings
+    });
+});
+
+// Update specific setting category
+app.put('/api/config/settings/:category', (req, res) => {
+    const category = req.params.category;
+    const updates = req.body;
+
+    if (!defaultUserSettings[category]) {
+        return res.status(404).json({
+            success: false,
+            error: 'Invalid category',
+            available: Object.keys(defaultUserSettings)
+        });
+    }
+
+    if (!updates || typeof updates !== 'object') {
+        return res.status(400).json({
+            success: false,
+            error: 'Settings object required'
+        });
+    }
+
+    // Update category
+    userSettings[category] = deepMerge(userSettings[category] || {}, updates);
+
+    // Save to file
+    const saved = saveUserSettings();
+
+    res.json({
+        success: saved,
+        category: category,
+        settings: userSettings[category]
+    });
+});
+
+// Reset settings to defaults
+app.post('/api/config/settings/reset', (req, res) => {
+    const { category } = req.body;
+
+    if (category) {
+        // Reset specific category
+        if (!defaultUserSettings[category]) {
+            return res.status(404).json({
+                success: false,
+                error: 'Invalid category'
+            });
+        }
+        userSettings[category] = { ...defaultUserSettings[category] };
+    } else {
+        // Reset all
+        userSettings = { ...defaultUserSettings };
+    }
+
+    const saved = saveUserSettings();
+
+    res.json({
+        success: saved,
+        message: category ? `Category '${category}' reset to defaults` : 'All settings reset to defaults',
+        settings: userSettings
+    });
+});
+
+// Validate configuration file
+app.get('/api/config/validate', (req, res) => {
+    const results = {
+        system_config: { valid: false, error: null },
+        user_settings: { valid: false, error: null }
+    };
+
+    // Check system config
+    try {
+        if (fs.existsSync(CONFIG_PATH)) {
+            const content = fs.readFileSync(CONFIG_PATH, 'utf8');
+            yaml.load(content);
+            results.system_config.valid = true;
+        } else {
+            results.system_config.error = 'File not found';
+        }
+    } catch (error) {
+        results.system_config.error = error.message;
+    }
+
+    // Check user settings
+    try {
+        if (fs.existsSync(USER_SETTINGS_PATH)) {
+            const content = fs.readFileSync(USER_SETTINGS_PATH, 'utf8');
+            yaml.load(content);
+            results.user_settings.valid = true;
+        } else {
+            results.user_settings.error = 'File not found (will use defaults)';
+            results.user_settings.valid = true; // This is OK
+        }
+    } catch (error) {
+        results.user_settings.error = error.message;
+    }
+
+    res.json({
+        success: results.system_config.valid,
+        validation: results
+    });
+});
+
+// Export settings (for backup)
+app.get('/api/config/export', (req, res) => {
+    const exportData = {
+        exported_at: new Date().toISOString(),
+        version: '1.0.0',
+        settings: userSettings
+    };
+
+    const yamlContent = yaml.dump(exportData, {
+        indent: 2,
+        lineWidth: 80
+    });
+
+    res.setHeader('Content-Type', 'text/yaml');
+    res.setHeader('Content-Disposition', 'attachment; filename=survival_settings_backup.yaml');
+    res.send(yamlContent);
+});
+
+// Import settings (from backup)
+app.post('/api/config/import', (req, res) => {
+    const { yaml_content } = req.body;
+
+    if (!yaml_content) {
+        return res.status(400).json({
+            success: false,
+            error: 'yaml_content required'
+        });
+    }
+
+    try {
+        const imported = yaml.load(yaml_content);
+
+        if (imported.settings) {
+            userSettings = deepMerge(defaultUserSettings, imported.settings);
+            const saved = saveUserSettings();
+
+            res.json({
+                success: saved,
+                message: 'Settings imported successfully',
+                imported_from: imported.exported_at,
+                settings: userSettings
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                error: 'Invalid backup format - missing settings'
+            });
+        }
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            error: 'Invalid YAML: ' + error.message
+        });
+    }
 });
 
 // ==============================================================================
