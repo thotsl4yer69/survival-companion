@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - Survival Skills{% endblock %}
+
+{% block content %}
+<div class="survival-container">
+    <div class="page-header">
+        <h1>Survival Skills</h1>
+        <p class="subtitle">Essential wilderness survival guides</p>
+    </div>
+
+    <div class="category-grid">
+        <!-- Shelter -->
+        <div class="skill-card" id="shelter-card">
+            <div class="skill-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3L4 9v12h16V9l-8-6zm6 16H6v-9.5l6-4.5 6 4.5V19z"/>
+                    <path d="M10 14h4v5h-4z"/>
+                </svg>
+            </div>
+            <h2>Shelter</h2>
+            <p>Emergency shelter construction</p>
+            <button class="btn btn-primary" onclick="showShelterGuide()">View Guide</button>
+        </div>
+
+        <!-- Fire -->
+        <div class="skill-card" id="fire-card">
+            <div class="skill-icon fire">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 22c3.31 0 6-2.69 6-6 0-4-4-8-6-10-2 2-6 6-6 10 0 3.31 2.69 6 6 6zm0-2c-2.21 0-4-1.79-4-4 0-2.33 2.19-5.06 4-6.95 1.81 1.89 4 4.62 4 6.95 0 2.21-1.79 4-4 4z"/>
+                </svg>
+            </div>
+            <h2>Fire</h2>
+            <p>Fire starting methods</p>
+            <button class="btn btn-primary" onclick="showFireGuide()">View Guide</button>
+        </div>
+
+        <!-- Water -->
+        <div class="skill-card" id="water-card">
+            <div class="skill-icon water">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z"/>
+                </svg>
+            </div>
+            <h2>Water</h2>
+            <p>Finding & purifying water</p>
+            <button class="btn btn-primary" onclick="showWaterGuide()">View Guide</button>
+        </div>
+
+        <!-- Knots -->
+        <div class="skill-card" id="knots-card">
+            <div class="skill-icon knots">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H6zm0 2h12v12H6V6z"/>
+                    <circle cx="8" cy="12" r="2"/>
+                    <circle cx="16" cy="12" r="2"/>
+                    <path d="M10 12h4" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </div>
+            <h2>Knots</h2>
+            <p>Essential knot tying</p>
+            <button class="btn btn-primary" onclick="showKnotsGuide()">View Guide</button>
+        </div>
+
+        <!-- Signaling -->
+        <div class="skill-card" id="signaling-card">
+            <div class="skill-icon signaling">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+            </div>
+            <h2>Signaling</h2>
+            <p>Rescue signaling methods</p>
+            <button class="btn btn-primary" onclick="showSignalingGuide()">View Guide</button>
+        </div>
+
+        <!-- Cold Weather -->
+        <div class="skill-card" id="cold-card">
+            <div class="skill-icon cold">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22 11h-4.17l3.24-3.24-1.41-1.42L15 11h-2V9l4.66-4.66-1.42-1.41L13 6.17V2h-2v4.17L7.76 2.93 6.34 4.34 11 9v2H9L4.34 6.34 2.93 7.76 6.17 11H2v2h4.17l-3.24 3.24 1.41 1.42L9 13h2v2l-4.66 4.66 1.42 1.41L11 17.83V22h2v-4.17l3.24 3.24 1.42-1.41L13 15v-2h2l4.66 4.66 1.41-1.42L17.83 13H22z"/>
+                </svg>
+            </div>
+            <h2>Cold Weather</h2>
+            <p>Surviving cold conditions</p>
+            <button class="btn btn-primary" onclick="showColdGuide()">View Guide</button>
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div id="detail-panel" class="detail-panel hidden">
+        <div class="detail-header">
+            <button class="btn-back" onclick="closeDetailPanel()">&larr; Back</button>
+            <h2 id="detail-title">Guide</h2>
+        </div>
+        <div id="detail-content" class="detail-content">
+            <!-- Guide content loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .survival-container {
+        padding-bottom: var(--spacing-xl);
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header h1 {
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        font-size: var(--font-size-sm);
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+
+    .skill-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 160px;
+    }
+
+    .skill-icon {
+        width: 48px;
+        height: 48px;
+        margin-bottom: var(--spacing-sm);
+        color: var(--accent-secondary);
+    }
+
+    .skill-icon.fire {
+        color: #ff6b35;
+    }
+
+    .skill-icon.water {
+        color: #4dabf7;
+    }
+
+    .skill-icon.knots {
+        color: #a9e34b;
+    }
+
+    .skill-icon.signaling {
+        color: #fcc419;
+    }
+
+    .skill-icon.cold {
+        color: #74c0fc;
+    }
+
+    .skill-card h2 {
+        font-size: var(--font-size-md);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .skill-card p {
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+        margin-bottom: var(--spacing-sm);
+        flex: 1;
+    }
+
+    .skill-card .btn {
+        width: 100%;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        min-height: 44px;
+    }
+
+    /* Detail Panel */
+    .detail-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-primary);
+        z-index: 100;
+        overflow-y: auto;
+        padding: var(--spacing-md);
+        padding-top: 60px;
+    }
+
+    .detail-panel.hidden {
+        display: none;
+    }
+
+    .detail-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-card);
+        padding: var(--spacing-sm) var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        z-index: 101;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .btn-back {
+        background: transparent;
+        border: none;
+        color: var(--accent-secondary);
+        font-size: var(--font-size-md);
+        cursor: pointer;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        min-height: 44px;
+    }
+
+    .detail-content {
+        padding-bottom: 80px;
+    }
+
+    .guide-section {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .guide-section h3 {
+        margin-bottom: var(--spacing-sm);
+        color: var(--accent-secondary);
+    }
+
+    .step-list {
+        list-style: none;
+        padding: 0;
+        counter-reset: step;
+    }
+
+    .step-list li {
+        counter-increment: step;
+        padding: var(--spacing-sm);
+        padding-left: 40px;
+        position: relative;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .step-list li:before {
+        content: counter(step);
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        background: var(--accent-secondary);
+        color: var(--bg-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-xs);
+        font-weight: bold;
+    }
+
+    .step-list li:last-child {
+        border-bottom: none;
+    }
+
+    .warning-box {
+        background: rgba(255, 165, 0, 0.1);
+        border: 1px solid rgba(255, 165, 0, 0.3);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        color: var(--accent-warning);
+    }
+
+    .tip-box {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        color: var(--accent-primary);
+    }
+
+    .method-card {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .method-card h4 {
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .knot-item {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .knot-item h4 {
+        color: var(--accent-secondary);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .knot-uses {
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .loading-indicator {
+        text-align: center;
+        padding: var(--spacing-lg);
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Shelter Guide
+    async function showShelterGuide() {
+        showDetailPanel('Shelter Construction');
+        const content = document.getElementById('detail-content');
+        content.innerHTML = '<div class="loading-indicator">Loading...</div>';
+
+        try {
+            const response = await fetch('/api/shelters');
+            const data = await response.json();
+
+            let html = '';
+            data.shelters.forEach(shelter => {
+                html += `
+                    <div class="guide-section">
+                        <h3>${shelter.name}</h3>
+                        <p>${shelter.description}</p>
+                        <p><strong>Time:</strong> ${shelter.time_to_build} | <strong>Tools:</strong> ${shelter.tools_needed.join(', ')}</p>
+                        <h4>Steps:</h4>
+                        <ol class="step-list">
+                            ${shelter.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                        ${shelter.warnings ? `<div class="warning-box">${shelter.warnings.join('<br>')}</div>` : ''}
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        } catch (error) {
+            content.innerHTML = '<p>Error loading shelter guide</p>';
+        }
+    }
+
+    // Fire Guide
+    async function showFireGuide() {
+        showDetailPanel('Fire Starting');
+        const content = document.getElementById('detail-content');
+        content.innerHTML = '<div class="loading-indicator">Loading...</div>';
+
+        try {
+            const response = await fetch('/api/fire');
+            const data = await response.json();
+
+            let html = '<div class="guide-section"><h3>Safety First</h3><ul>';
+            data.safety.forEach(s => {
+                html += `<li>${s}</li>`;
+            });
+            html += '</ul></div>';
+
+            html += '<div class="guide-section"><h3>Fire Lay Types</h3>';
+            data.fire_lays.forEach(lay => {
+                html += `<div class="method-card"><h4>${lay.name}</h4><p>${lay.description}</p><p><em>Best for: ${lay.best_for}</em></p></div>`;
+            });
+            html += '</div>';
+
+            Object.keys(data.methods).forEach(category => {
+                html += `<div class="guide-section"><h3>${category.charAt(0).toUpperCase() + category.slice(1)} Methods</h3>`;
+                data.methods[category].forEach(method => {
+                    html += `
+                        <div class="method-card">
+                            <h4>${method.name}</h4>
+                            <p><strong>Difficulty:</strong> ${method.difficulty}</p>
+                            <ol class="step-list">
+                                ${method.steps.map(step => `<li>${step}</li>`).join('')}
+                            </ol>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            });
+
+            content.innerHTML = html;
+        } catch (error) {
+            content.innerHTML = '<p>Error loading fire guide</p>';
+        }
+    }
+
+    // Water Guide
+    async function showWaterGuide() {
+        showDetailPanel('Water Purification');
+        const content = document.getElementById('detail-content');
+        content.innerHTML = '<div class="loading-indicator">Loading...</div>';
+
+        try {
+            const response = await fetch('/api/water');
+            const data = await response.json();
+
+            let html = '<div class="guide-section"><h3>Water Sources</h3>';
+            html += '<p><strong>Best:</strong> ' + data.water_sources.best.join(', ') + '</p>';
+            html += '<p><strong>Acceptable:</strong> ' + data.water_sources.acceptable.join(', ') + '</p>';
+            html += '<div class="warning-box"><strong>Dangerous:</strong> ' + data.water_sources.dangerous.join(', ') + '</div>';
+            html += '</div>';
+
+            Object.keys(data.methods).forEach(method => {
+                const m = data.methods[method];
+                html += `
+                    <div class="guide-section">
+                        <h3>${m.name}</h3>
+                        <p>${m.description}</p>
+                        <p><strong>Effectiveness:</strong> ${m.effectiveness}</p>
+                        <ol class="step-list">
+                            ${m.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                        ${m.warnings ? `<div class="warning-box">${m.warnings.join('<br>')}</div>` : ''}
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        } catch (error) {
+            content.innerHTML = '<p>Error loading water guide</p>';
+        }
+    }
+
+    // Knots Guide
+    async function showKnotsGuide() {
+        showDetailPanel('Essential Knots');
+        const content = document.getElementById('detail-content');
+        content.innerHTML = '<div class="loading-indicator">Loading...</div>';
+
+        try {
+            const response = await fetch('/api/knots');
+            const data = await response.json();
+
+            let html = '';
+            data.knots.forEach(knot => {
+                html += `
+                    <div class="knot-item">
+                        <h4>${knot.name}</h4>
+                        <p class="knot-uses">${knot.uses.join(' | ')}</p>
+                        <p>${knot.description}</p>
+                        <ol class="step-list">
+                            ${knot.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                        ${knot.mnemonic ? `<div class="tip-box">Remember: "${knot.mnemonic}"</div>` : ''}
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        } catch (error) {
+            content.innerHTML = '<p>Error loading knots guide</p>';
+        }
+    }
+
+    // Signaling Guide
+    async function showSignalingGuide() {
+        showDetailPanel('Rescue Signaling');
+        const content = document.getElementById('detail-content');
+        content.innerHTML = '<div class="loading-indicator">Loading...</div>';
+
+        try {
+            const response = await fetch('/api/rescue/signaling');
+            const data = await response.json();
+
+            let html = '';
+            Object.keys(data.methods).forEach(key => {
+                const method = data.methods[key];
+                html += `
+                    <div class="guide-section">
+                        <h3>${method.name}</h3>
+                        <p><strong>When to use:</strong> ${method.when_to_use}</p>
+                        <p><strong>Visibility:</strong> ${method.visibility}</p>
+                        <ol class="step-list">
+                            ${method.instructions.map(inst => `<li>${inst}</li>`).join('')}
+                        </ol>
+                        ${method.tips ? `<div class="tip-box">${method.tips.join('<br>')}</div>` : ''}
+                    </div>
+                `;
+            });
+
+            if (data.ground_signals) {
+                html += '<div class="guide-section"><h3>Ground-to-Air Signals</h3><ul>';
+                data.ground_signals.forEach(signal => {
+                    html += `<li><strong>${signal.symbol}:</strong> ${signal.meaning} - ${signal.description}</li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            content.innerHTML = html;
+        } catch (error) {
+            content.innerHTML = '<p>Error loading signaling guide</p>';
+        }
+    }
+
+    // Cold Weather Guide
+    async function showColdGuide() {
+        showDetailPanel('Cold Weather Survival');
+        const content = document.getElementById('detail-content');
+        content.innerHTML = '<div class="loading-indicator">Loading...</div>';
+
+        try {
+            const response = await fetch('/api/cold-weather');
+            const data = await response.json();
+
+            let html = '<div class="guide-section"><h3>Priorities</h3><ol class="step-list">';
+            data.priorities.forEach(p => {
+                html += `<li>${p}</li>`;
+            });
+            html += '</ol></div>';
+
+            html += '<div class="guide-section"><h3>Layering System</h3>';
+            Object.keys(data.layering).forEach(layer => {
+                const l = data.layering[layer];
+                html += `<div class="method-card"><h4>${l.name}</h4><p>${l.purpose}</p><p><em>Materials: ${l.materials.join(', ')}</em></p></div>`;
+            });
+            html += '</div>';
+
+            if (data.warning_signs) {
+                html += '<div class="guide-section"><h3>Warning Signs</h3>';
+                Object.keys(data.warning_signs).forEach(condition => {
+                    const w = data.warning_signs[condition];
+                    html += `<div class="warning-box"><strong>${condition.charAt(0).toUpperCase() + condition.slice(1)}:</strong> ${w.symptoms.join(', ')}</div>`;
+                });
+                html += '</div>';
+            }
+
+            content.innerHTML = html;
+        } catch (error) {
+            content.innerHTML = '<p>Error loading cold weather guide</p>';
+        }
+    }
+
+    function showDetailPanel(title) {
+        document.getElementById('detail-title').textContent = title;
+        document.getElementById('detail-panel').classList.remove('hidden');
+        document.querySelector('.survival-container > .category-grid').style.display = 'none';
+        document.querySelector('.page-header').style.display = 'none';
+    }
+
+    function closeDetailPanel() {
+        document.getElementById('detail-panel').classList.add('hidden');
+        document.querySelector('.survival-container > .category-grid').style.display = 'grid';
+        document.querySelector('.page-header').style.display = 'block';
+    }
+</script>
+{% endblock %}

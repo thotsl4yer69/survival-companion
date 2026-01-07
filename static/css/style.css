@@ -423,8 +423,20 @@ body.low-power-mode-active #nav-bar {
 
 .action-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-sm);
+}
+
+/* 5 items: 3 on top row, 2 centered on bottom */
+.action-grid .action-btn:nth-child(4),
+.action-grid .action-btn:nth-child(5) {
+    grid-column: span 1;
+}
+
+@media (min-width: 400px) {
+    .action-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
 }
 
 .action-btn {
@@ -459,6 +471,7 @@ body.low-power-mode-active #nav-bar {
 
 .action-btn.medical svg { color: var(--accent-primary); }
 .action-btn.navigation svg { color: var(--accent-secondary); }
+.action-btn.survival svg { color: #a9e34b; }
 .action-btn.weather svg { color: var(--accent-warning); }
 .action-btn.emergency svg { color: var(--accent-danger); }
 

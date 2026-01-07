@@ -194,6 +194,15 @@ app.get('/settings', (req, res) => {
     }
 });
 
+app.get('/survival', (req, res) => {
+    try {
+        const html = renderTemplate('survival.html');
+        res.send(html);
+    } catch (error) {
+        res.status(500).send('Template error: ' + error.message);
+    }
+});
+
 // ==============================================================================
 // API Routes
 // ==============================================================================
