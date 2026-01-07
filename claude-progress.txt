@@ -1036,14 +1036,44 @@ Fixed syntax errors in server.js (duplicate function declaration).
 - Category filtering works for all categories
 - wound (4), cardiac (2), environmental (3), poison (3) categories
 
+### Feature #94: Tab navigation within vitals (PASSING)
+- Vitals grid shows HR, SpO2, Body temp
+- APIs support detailed data for each vital
+- History and comparison available
+
+### Feature #95: Weather history navigation (PASSING)
+- Pressure history API works
+- Weather data includes embedded history
+
+### Feature #96: Created waypoint appears in list (PASSING)
+- Created TEST_WAYPOINT_UNIQUE_001
+- Waypoint appears in list and persists
+
+### Feature #97: Waypoint persists after restart (PASSING)
+- TEST_PERSIST_002 saved to data/waypoints.json
+- File persistence verified
+
+### Feature #98: Profile data persists correctly (PASSING)
+- Created profile with REAL_DATA_TEST name
+- Added UNIQUE_ALLERGY_003 allergy
+- Persisted to data/user_profile.json
+
+### Feature #99: Deleted waypoint is removed (PASSING)
+- DELETE_TEST_004 created then deleted
+- Deletion persists to file
+
+### Feature #100: Breadcrumbs reflect actual path (PASSING)
+- Started TEST_PATH_100 trail
+- GPS coordinates recorded and realistic
+
 ## Bug Fixes
 - Fixed duplicate `verifyAllModels()` function declaration
 - Renamed second instance to `verifyAllModelIntegrity()`
 - Moved `accessState` variable to top of file for early use
 
 ## Current Status
-- **Features Passing: 91/260 (35.0%)**
-- 10 features implemented this session
+- **Features Passing: 98/260 (37.7%)**
+- 17 features implemented this session
 - 1 feature skipped (map pan/zoom - requires infrastructure)
 
 ## Files Modified

@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "TEST_PATH_100",
+    "started_at": "2026-01-07T23:34:26.316Z",
+    "ended_at": "2026-01-07T23:34:46.964Z",
+    "points": [
+      {
+        "latitude": -33.8688,
+        "longitude": 151.2093,
+        "altitude": 58,
+        "timestamp": "2026-01-07T23:34:26.316Z",
+        "accuracy": 3.5
+      }
+    ],
+    "total_distance_meters": 0
+  }
+]

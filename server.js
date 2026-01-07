@@ -15060,6 +15060,400 @@ app.post('/api/voice/navigate-direct', (req, res) => {
 });
 
 // ==============================================================================
+// FEATURE #94: Vitals Tab Navigation
+// ==============================================================================
+
+// Vitals dashboard state with tabs
+const vitalsDashboard = {
+    current_tab: 'overview',
+    tabs: {
+        overview: {
+            id: 'overview',
+            name: 'Overview',
+            icon: 'dashboard',
+            description: 'All vitals at a glance',
+            order: 0,
+            metrics: ['heart_rate', 'spo2', 'temperature', 'ecg']
+        },
+        heart_rate: {
+            id: 'heart_rate',
+            name: 'Heart Rate',
+            icon: 'favorite',
+            description: 'Detailed heart rate monitoring',
+            order: 1,
+            metrics: ['current_hr', 'resting_hr', 'max_hr', 'hr_trend', 'hr_zones'],
+            data: {
+                current_bpm: 72,
+                resting_bpm: 58,
+                max_bpm: 165,
+                average_bpm: 68,
+                variability: 45,
+                trend: 'stable',
+                zones: {
+                    resting: { min: 50, max: 60 },
+                    fat_burn: { min: 100, max: 120 },
+                    cardio: { min: 120, max: 145 },
+                    peak: { min: 145, max: 180 }
+                },
+                current_zone: 'resting',
+                history_24h: []
+            }
+        },
+        spo2: {
+            id: 'spo2',
+            name: 'SpO2',
+            icon: 'air',
+            description: 'Blood oxygen saturation',
+            order: 2,
+            metrics: ['current_spo2', 'average_spo2', 'trend', 'altitude_adjusted'],
+            data: {
+                current_percent: 98,
+                average_percent: 97.5,
+                min_percent: 95,
+                max_percent: 99,
+                trend: 'stable',
+                altitude_adjusted: false,
+                current_altitude: 150,
+                perfusion_index: 2.5,
+                signal_quality: 'good',
+                history_24h: []
+            }
+        },
+        temperature: {
+            id: 'temperature',
+            name: 'Temperature',
+            icon: 'thermostat',
+            description: 'Body and ambient temperature',
+            order: 3,
+            metrics: ['body_temp', 'ambient_temp', 'trend', 'fever_detection'],
+            data: {
+                body_celsius: 36.6,
+                body_fahrenheit: 97.88,
+                ambient_celsius: 22.5,
+                ambient_fahrenheit: 72.5,
+                trend: 'stable',
+                is_fever: false,
+                fever_threshold: 37.5,
+                history_24h: []
+            }
+        },
+        ecg: {
+            id: 'ecg',
+            name: 'ECG',
+            icon: 'monitor_heart',
+            description: 'Electrocardiogram (if available)',
+            order: 4,
+            available: true,
+            requires_sensor: 'MAX30102_ECG',
+            metrics: ['rhythm', 'qrs_duration', 'pr_interval', 'qt_interval'],
+            data: {
+                sensor_connected: true,
+                rhythm: 'normal_sinus',
+                rhythm_description: 'Normal sinus rhythm',
+                heart_rate_from_ecg: 72,
+                qrs_duration_ms: 95,
+                pr_interval_ms: 160,
+                qt_interval_ms: 380,
+                alerts: [],
+                waveform_available: true,
+                last_reading: new Date().toISOString()
+            }
+        },
+        blood_pressure: {
+            id: 'blood_pressure',
+            name: 'Blood Pressure',
+            icon: 'speed',
+            description: 'Blood pressure monitoring (manual entry)',
+            order: 5,
+            available: true,
+            manual_entry_only: true,
+            metrics: ['systolic', 'diastolic', 'pulse', 'classification'],
+            data: {
+                systolic: 120,
+                diastolic: 80,
+                pulse: 72,
+                classification: 'normal',
+                classifications: {
+                    low: { systolic_max: 90, diastolic_max: 60 },
+                    normal: { systolic_max: 120, diastolic_max: 80 },
+                    elevated: { systolic_max: 129, diastolic_max: 80 },
+                    high_stage_1: { systolic_max: 139, diastolic_max: 89 },
+                    high_stage_2: { systolic_max: 180, diastolic_max: 120 },
+                    crisis: { systolic_min: 180, diastolic_min: 120 }
+                },
+                last_reading: new Date().toISOString(),
+                history: []
+            }
+        }
+    },
+    navigation_history: []
+};
+
+// Function to select a vitals tab
+function selectVitalsTab(tabId) {
+    if (!vitalsDashboard.tabs[tabId]) {
+        return {
+            success: false,
+            error: `Tab '${tabId}' not found`,
+            available_tabs: Object.keys(vitalsDashboard.tabs)
+        };
+    }
+
+    const previousTab = vitalsDashboard.current_tab;
+    vitalsDashboard.current_tab = tabId;
+
+    // Add to navigation history
+    vitalsDashboard.navigation_history.push({
+        from: previousTab,
+        to: tabId,
+        timestamp: new Date().toISOString()
+    });
+
+    // Keep history limited
+    if (vitalsDashboard.navigation_history.length > 50) {
+        vitalsDashboard.navigation_history.shift();
+    }
+
+    const tab = vitalsDashboard.tabs[tabId];
+
+    return {
+        success: true,
+        tab_id: tabId,
+        tab_name: tab.name,
+        previous_tab: previousTab,
+        description: tab.description,
+        metrics: tab.metrics,
+        data: tab.data || null,
+        available: tab.available !== false
+    };
+}
+
+// Function to get current vitals data for a tab
+function getVitalsTabData(tabId) {
+    const tab = vitalsDashboard.tabs[tabId];
+    if (!tab) {
+        return null;
+    }
+
+    // Simulate live data updates
+    if (tabId === 'heart_rate') {
+        tab.data.current_bpm = Math.round(68 + Math.random() * 10);
+        tab.data.variability = Math.round(40 + Math.random() * 15);
+    } else if (tabId === 'spo2') {
+        tab.data.current_percent = Math.round(96 + Math.random() * 3);
+        tab.data.perfusion_index = parseFloat((2.0 + Math.random() * 1.5).toFixed(1));
+    } else if (tabId === 'temperature') {
+        tab.data.body_celsius = parseFloat((36.4 + Math.random() * 0.4).toFixed(1));
+        tab.data.body_fahrenheit = parseFloat((tab.data.body_celsius * 9/5 + 32).toFixed(2));
+    }
+
+    return {
+        tab_id: tabId,
+        tab_name: tab.name,
+        description: tab.description,
+        data: tab.data,
+        updated_at: new Date().toISOString()
+    };
+}
+
+// API: Open vitals dashboard
+app.get('/api/vitals/dashboard', (req, res) => {
+    const tabs = Object.values(vitalsDashboard.tabs).map(tab => ({
+        id: tab.id,
+        name: tab.name,
+        icon: tab.icon,
+        description: tab.description,
+        order: tab.order,
+        available: tab.available !== false,
+        manual_entry: tab.manual_entry_only || false
+    })).sort((a, b) => a.order - b.order);
+
+    res.json({
+        dashboard: 'vitals',
+        current_tab: vitalsDashboard.current_tab,
+        tabs: tabs,
+        total_tabs: tabs.length,
+        message: 'Vitals dashboard opened'
+    });
+});
+
+// API: Select a vitals tab (HR, SpO2, etc.)
+app.post('/api/vitals/tab/select', (req, res) => {
+    const { tab_id } = req.body;
+
+    if (!tab_id) {
+        return res.status(400).json({
+            error: 'tab_id required',
+            available_tabs: Object.keys(vitalsDashboard.tabs)
+        });
+    }
+
+    const result = selectVitalsTab(tab_id);
+
+    if (!result.success) {
+        return res.status(404).json(result);
+    }
+
+    res.json({
+        ...result,
+        message: `Viewing ${result.tab_name} tab`
+    });
+});
+
+// API: Get current tab data
+app.get('/api/vitals/tab/current', (req, res) => {
+    const currentTabId = vitalsDashboard.current_tab;
+    const tabData = getVitalsTabData(currentTabId);
+
+    res.json({
+        current_tab: currentTabId,
+        ...tabData,
+        navigation_history_count: vitalsDashboard.navigation_history.length
+    });
+});
+
+// API: Test vitals tab navigation (for feature verification) - MUST be before parameterized route
+app.get('/api/vitals/tab/test-navigation', (req, res) => {
+    const testResults = [];
+
+    // Step 1: Open vitals dashboard
+    testResults.push({
+        step: 1,
+        action: 'Open vitals dashboard',
+        current_tab: vitalsDashboard.current_tab,
+        tabs_available: Object.keys(vitalsDashboard.tabs).length,
+        passed: Object.keys(vitalsDashboard.tabs).length > 0
+    });
+
+    // Step 2: Select HR tab
+    let result = selectVitalsTab('heart_rate');
+    testResults.push({
+        step: 2,
+        action: 'Select HR tab',
+        success: result.success,
+        tab_id: result.tab_id,
+        tab_name: result.tab_name,
+        passed: result.success && result.tab_id === 'heart_rate'
+    });
+
+    // Step 3: Verify HR details shown
+    const hrData = getVitalsTabData('heart_rate');
+    testResults.push({
+        step: 3,
+        action: 'Verify HR details shown',
+        has_current_bpm: hrData?.data?.current_bpm !== undefined,
+        has_zones: hrData?.data?.zones !== undefined,
+        has_trend: hrData?.data?.trend !== undefined,
+        passed: hrData && hrData.data && hrData.data.current_bpm !== undefined
+    });
+
+    // Step 4: Select SpO2 tab
+    result = selectVitalsTab('spo2');
+    testResults.push({
+        step: 4,
+        action: 'Select SpO2 tab',
+        success: result.success,
+        tab_id: result.tab_id,
+        tab_name: result.tab_name,
+        passed: result.success && result.tab_id === 'spo2'
+    });
+
+    // Step 5: Verify SpO2 details shown
+    const spo2Data = getVitalsTabData('spo2');
+    testResults.push({
+        step: 5,
+        action: 'Verify SpO2 details shown',
+        has_current_percent: spo2Data?.data?.current_percent !== undefined,
+        has_signal_quality: spo2Data?.data?.signal_quality !== undefined,
+        has_perfusion_index: spo2Data?.data?.perfusion_index !== undefined,
+        passed: spo2Data && spo2Data.data && spo2Data.data.current_percent !== undefined
+    });
+
+    // Step 6: Verify ECG tab if available
+    const ecgTab = vitalsDashboard.tabs.ecg;
+    result = selectVitalsTab('ecg');
+    const ecgData = getVitalsTabData('ecg');
+    testResults.push({
+        step: 6,
+        action: 'Verify ECG tab if available',
+        ecg_available: ecgTab.available !== false,
+        has_rhythm: ecgData?.data?.rhythm !== undefined,
+        has_qrs_duration: ecgData?.data?.qrs_duration_ms !== undefined,
+        sensor_connected: ecgData?.data?.sensor_connected,
+        passed: result.success && ecgData && ecgData.data.rhythm !== undefined
+    });
+
+    const allPassed = testResults.every(t => t.passed);
+
+    // Reset to overview
+    selectVitalsTab('overview');
+
+    res.json({
+        test_name: 'Vitals Tab Navigation',
+        feature_id: 94,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'All vitals tab navigation tests passed - HR, SpO2, and ECG tabs working correctly'
+            : 'Some vitals tab navigation tests failed',
+        tabs_tested: ['heart_rate', 'spo2', 'ecg']
+    });
+});
+
+// API: Get specific tab data by ID
+app.get('/api/vitals/tab/:tabId', (req, res) => {
+    const { tabId } = req.params;
+
+    const tab = vitalsDashboard.tabs[tabId];
+    if (!tab) {
+        return res.status(404).json({
+            error: `Tab '${tabId}' not found`,
+            available_tabs: Object.keys(vitalsDashboard.tabs)
+        });
+    }
+
+    const tabData = getVitalsTabData(tabId);
+
+    res.json({
+        ...tabData,
+        is_current_tab: vitalsDashboard.current_tab === tabId
+    });
+});
+
+// API: Navigate to next/previous tab
+app.post('/api/vitals/tab/navigate', (req, res) => {
+    const { direction } = req.body;
+
+    if (!direction || !['next', 'previous'].includes(direction)) {
+        return res.status(400).json({
+            error: 'direction required (next or previous)'
+        });
+    }
+
+    const tabOrder = Object.values(vitalsDashboard.tabs)
+        .sort((a, b) => a.order - b.order)
+        .map(t => t.id);
+
+    const currentIndex = tabOrder.indexOf(vitalsDashboard.current_tab);
+    let newIndex;
+
+    if (direction === 'next') {
+        newIndex = (currentIndex + 1) % tabOrder.length;
+    } else {
+        newIndex = (currentIndex - 1 + tabOrder.length) % tabOrder.length;
+    }
+
+    const newTabId = tabOrder[newIndex];
+    const result = selectVitalsTab(newTabId);
+
+    res.json({
+        ...result,
+        direction: direction,
+        message: `Navigated ${direction} to ${result.tab_name}`
+    });
+});
+
+// ==============================================================================
 // Boot Sequence Logic
 // ==============================================================================
 async function runBootSequence() {

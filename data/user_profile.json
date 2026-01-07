@@ -1,7 +1,8 @@
 {
-  "name": "Alice Survivor",
-  "blood_type": "O+",
+  "name": "REAL_DATA_TEST",
+  "blood_type": "AB+",
   "allergies": [
+    "UNIQUE_ALLERGY_003",
     "penicillin"
   ],
   "medical_conditions": [
@@ -19,7 +20,7 @@
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-07T21:30:24.058Z",
+  "updated_at": "2026-01-07T23:33:08.746Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,

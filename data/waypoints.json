@@ -20,5 +20,27 @@
     "category": "water",
     "created_at": "2026-01-07T07:09:34.390Z",
     "updated_at": "2026-01-07T07:09:34.390Z"
+  },
+  {
+    "id": 3,
+    "name": "TEST_WAYPOINT_UNIQUE_001",
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "Test waypoint for verification",
+    "category": "general",
+    "created_at": "2026-01-07T23:32:09.498Z",
+    "updated_at": "2026-01-07T23:32:09.498Z"
+  },
+  {
+    "id": 4,
+    "name": "TEST_PERSIST_002",
+    "latitude": -33.869,
+    "longitude": 151.2095,
+    "altitude": 58,
+    "notes": "Persistence test waypoint",
+    "category": "general",
+    "created_at": "2026-01-07T23:32:48.162Z",
+    "updated_at": "2026-01-07T23:32:48.162Z"
   }
 ]
