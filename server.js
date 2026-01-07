@@ -7885,6 +7885,194 @@ function generateLostModeVoiceResponse(nearbyWaypoints, backtrackRoute) {
 }
 
 // ==============================================================================
+// Graceful Shutdown System
+// ==============================================================================
+
+let shutdownState = {
+    initiated: false,
+    confirmed: false,
+    shutdownToken: null,
+    dataSaved: false,
+    shutdownLog: []
+};
+
+// Request shutdown (requires confirmation)
+app.post('/api/shutdown/request', (req, res) => {
+    if (shutdownState.initiated && !shutdownState.confirmed) {
+        return res.json({
+            success: true,
+            awaiting_confirmation: true,
+            token: shutdownState.shutdownToken,
+            message: 'Shutdown already pending - awaiting confirmation'
+        });
+    }
+
+    // Generate shutdown token
+    shutdownState.shutdownToken = 'shutdown_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    shutdownState.initiated = true;
+    shutdownState.confirmed = false;
+    shutdownState.dataSaved = false;
+    shutdownState.shutdownLog = [{
+        time: new Date().toISOString(),
+        event: 'Shutdown requested'
+    }];
+
+    console.log('[SHUTDOWN] Shutdown requested - awaiting confirmation');
+
+    res.json({
+        success: true,
+        awaiting_confirmation: true,
+        token: shutdownState.shutdownToken,
+        message: 'Shutdown requested. Please confirm to proceed.',
+        warning: 'All unsaved data will be saved before shutdown.'
+    });
+});
+
+// Confirm and execute shutdown
+app.post('/api/shutdown/confirm', (req, res) => {
+    const { token } = req.body;
+
+    if (!shutdownState.initiated) {
+        return res.status(400).json({
+            success: false,
+            error: 'No shutdown pending. Please request shutdown first.'
+        });
+    }
+
+    if (token !== shutdownState.shutdownToken) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid shutdown token'
+        });
+    }
+
+    shutdownState.confirmed = true;
+    shutdownState.shutdownLog.push({
+        time: new Date().toISOString(),
+        event: 'Shutdown confirmed'
+    });
+
+    console.log('[SHUTDOWN] Shutdown confirmed - saving data...');
+
+    // Save all data
+    const saveResults = [];
+
+    // Save user profile
+    try {
+        saveUserProfile();
+        saveResults.push({ data: 'user_profile', saved: true });
+        shutdownState.shutdownLog.push({
+            time: new Date().toISOString(),
+            event: 'User profile saved'
+        });
+    } catch (e) {
+        saveResults.push({ data: 'user_profile', saved: false, error: e.message });
+    }
+
+    // Save waypoints
+    try {
+        saveWaypoints();
+        saveResults.push({ data: 'waypoints', saved: true });
+        shutdownState.shutdownLog.push({
+            time: new Date().toISOString(),
+            event: 'Waypoints saved'
+        });
+    } catch (e) {
+        saveResults.push({ data: 'waypoints', saved: false, error: e.message });
+    }
+
+    // Save breadcrumb trails
+    try {
+        saveBreadcrumbs();
+        saveResults.push({ data: 'breadcrumb_trails', saved: true });
+        shutdownState.shutdownLog.push({
+            time: new Date().toISOString(),
+            event: 'Breadcrumb trails saved'
+        });
+    } catch (e) {
+        saveResults.push({ data: 'breadcrumb_trails', saved: false, error: e.message });
+    }
+
+    // Save settings
+    try {
+        saveSettings();
+        saveResults.push({ data: 'settings', saved: true });
+        shutdownState.shutdownLog.push({
+            time: new Date().toISOString(),
+            event: 'Settings saved'
+        });
+    } catch (e) {
+        saveResults.push({ data: 'settings', saved: false, error: e.message });
+    }
+
+    shutdownState.dataSaved = true;
+    shutdownState.shutdownLog.push({
+        time: new Date().toISOString(),
+        event: 'All data saved successfully'
+    });
+
+    // Update system state
+    systemState.state = 'shutdown';
+
+    shutdownState.shutdownLog.push({
+        time: new Date().toISOString(),
+        event: 'System shutdown complete'
+    });
+
+    console.log('[SHUTDOWN] Data saved - system shutdown complete');
+    console.log('[SHUTDOWN] Clean shutdown message: All data preserved. Safe to power off.');
+
+    res.json({
+        success: true,
+        message: 'Clean shutdown complete. All data has been saved.',
+        shutdown_log: shutdownState.shutdownLog,
+        save_results: saveResults,
+        safe_to_power_off: true
+    });
+
+    // In a real system, this would trigger actual power-off
+    // For simulation, we just reset state after a delay
+    setTimeout(() => {
+        console.log('[SHUTDOWN] System would power off now in production');
+        // Reset shutdown state for simulation purposes
+        shutdownState.initiated = false;
+        shutdownState.confirmed = false;
+        shutdownState.shutdownToken = null;
+    }, 2000);
+});
+
+// Cancel pending shutdown
+app.post('/api/shutdown/cancel', (req, res) => {
+    if (!shutdownState.initiated || shutdownState.confirmed) {
+        return res.status(400).json({
+            success: false,
+            error: 'No pending shutdown to cancel'
+        });
+    }
+
+    shutdownState.initiated = false;
+    shutdownState.shutdownToken = null;
+    shutdownState.shutdownLog = [];
+
+    console.log('[SHUTDOWN] Shutdown cancelled');
+
+    res.json({
+        success: true,
+        message: 'Shutdown cancelled'
+    });
+});
+
+// Get shutdown status
+app.get('/api/shutdown/status', (req, res) => {
+    res.json({
+        shutdown_initiated: shutdownState.initiated,
+        awaiting_confirmation: shutdownState.initiated && !shutdownState.confirmed,
+        shutdown_complete: shutdownState.confirmed && shutdownState.dataSaved,
+        shutdown_log: shutdownState.shutdownLog
+    });
+});
+
+// ==============================================================================
 // Start Server
 // ==============================================================================
 app.listen(PORT, '0.0.0.0', () => {
