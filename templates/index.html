@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - Dashboard{% endblock %}
+
+{% block content %}
+<!-- Boot Screen (shown during boot sequence) -->
+<div id="boot-screen">
+    <div class="boot-logo">
+        <svg viewBox="0 0 100 100" class="boot-icon">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M50 15 L50 50 L75 65" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="50" cy="50" r="5" fill="currentColor"/>
+        </svg>
+        <h1>SURVIVAL COMPANION</h1>
+        <p class="version">v1.0.0</p>
+    </div>
+
+    <div id="boot-progress">
+        <div class="boot-step" data-step="config">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Loading configuration</span>
+        </div>
+        <div class="boot-step" data-step="display">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Initializing display</span>
+        </div>
+        <div class="boot-step" data-step="i2c">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Scanning I2C devices</span>
+        </div>
+        <div class="boot-step" data-step="sensors">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Initializing sensors</span>
+        </div>
+        <div class="boot-step" data-step="gps">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Initializing GPS</span>
+        </div>
+        <div class="boot-step" data-step="llm">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Warming up LLM</span>
+        </div>
+        <div class="boot-step" data-step="wake">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Activating wake word</span>
+        </div>
+        <div class="boot-step" data-step="dashboard">
+            <span class="step-icon pending"></span>
+            <span class="step-text">Loading dashboard</span>
+        </div>
+    </div>
+
+    <div id="boot-status-text">Initializing...</div>
+
+    <button id="start-boot-btn" class="btn btn-primary">Start System</button>
+</div>
+
+<!-- Main Dashboard (shown after boot complete) -->
+<div id="dashboard" class="hidden">
+    <div class="dashboard-grid">
+        <!-- Quick Actions -->
+        <div class="card quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="action-grid">
+                <a href="/medical" class="action-btn medical">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                    </svg>
+                    <span>First Aid</span>
+                </a>
+                <a href="/navigation" class="action-btn navigation">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <span>I'm Lost</span>
+                </a>
+                <a href="/weather" class="action-btn weather">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z"/>
+                    </svg>
+                    <span>Weather</span>
+                </a>
+                <a href="/emergency" class="action-btn emergency">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                    </svg>
+                    <span>SOS</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Current Conditions -->
+        <div class="card conditions">
+            <h2>Conditions</h2>
+            <div class="conditions-grid">
+                <div class="condition-item">
+                    <span class="condition-value" id="temp-value">--</span>
+                    <span class="condition-unit">°C</span>
+                    <span class="condition-label">Temp</span>
+                </div>
+                <div class="condition-item">
+                    <span class="condition-value" id="humidity-value">--</span>
+                    <span class="condition-unit">%</span>
+                    <span class="condition-label">Humidity</span>
+                </div>
+                <div class="condition-item">
+                    <span class="condition-value" id="pressure-value">--</span>
+                    <span class="condition-unit">hPa</span>
+                    <span class="condition-label">Pressure</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vitals (if sensors active) -->
+        <div class="card vitals">
+            <h2>Vitals</h2>
+            <div class="vitals-grid">
+                <div class="vital-item">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="vital-icon heart">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span class="vital-value" id="hr-value">--</span>
+                    <span class="vital-label">BPM</span>
+                </div>
+                <div class="vital-item">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="vital-icon oxygen">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span class="vital-value" id="spo2-value">--</span>
+                    <span class="vital-label">SpO2 %</span>
+                </div>
+                <div class="vital-item">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="vital-icon temp">
+                        <path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/>
+                    </svg>
+                    <span class="vital-value" id="body-temp-value">--</span>
+                    <span class="vital-label">Body °C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPS/Location -->
+        <div class="card location">
+            <h2>Location</h2>
+            <div class="location-info">
+                <div class="coords">
+                    <span id="lat-value">---.----</span>°
+                    <span id="lon-value">---.----</span>°
+                </div>
+                <div class="altitude">
+                    <span id="alt-value">--</span>m elevation
+                </div>
+                <div id="gps-fix-status" class="gps-status searching">
+                    Searching for GPS fix...
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card system-status">
+            <h2>System</h2>
+            <div class="status-grid">
+                <div class="status-row">
+                    <span class="status-label">LLM</span>
+                    <span id="llm-status" class="status-indicator ready">Ready</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Voice</span>
+                    <span id="voice-status" class="status-indicator ready">Listening</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Sensors</span>
+                    <span id="sensors-status" class="status-indicator ready">3/3 OK</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voice Command Button -->
+        <div class="card voice-card">
+            <button id="voice-btn" class="voice-button">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+                <span>Tap to speak</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Boot sequence management
+    document.addEventListener('DOMContentLoaded', function() {
+        const startBtn = document.getElementById('start-boot-btn');
+        const bootScreen = document.getElementById('boot-screen');
+        const dashboard = document.getElementById('dashboard');
+
+        // Check if system already booted
+        checkSystemStatus();
+
+        startBtn.addEventListener('click', function() {
+            startBootSequence();
+        });
+    });
+
+    function checkSystemStatus() {
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_ready) {
+                    showDashboard();
+                    updateDashboard(data);
+                }
+            })
+            .catch(err => console.log('System not started yet'));
+    }
+
+    function startBootSequence() {
+        const startBtn = document.getElementById('start-boot-btn');
+        startBtn.disabled = true;
+        startBtn.textContent = 'Booting...';
+
+        fetch('/api/boot', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                pollBootStatus();
+            });
+    }
+
+    function pollBootStatus() {
+        const stepMapping = {
+            'Loading configuration': 'config',
+            'Initializing display': 'display',
+            'Scanning I2C devices': 'i2c',
+            'Initializing sensors': 'sensors',
+            'Initializing GPS': 'gps',
+            'Warming up LLM': 'llm',
+            'Activating wake word': 'wake',
+            'Loading dashboard': 'dashboard'
+        };
+
+        let completedSteps = new Set();
+
+        const poll = setInterval(() => {
+            fetch('/api/boot/status')
+                .then(response => response.json())
+                .then(data => {
+                    // Update boot log display
+                    if (data.boot_log) {
+                        data.boot_log.forEach(log => {
+                            const stepKey = stepMapping[log.step];
+                            if (stepKey && !completedSteps.has(stepKey)) {
+                                updateBootStep(stepKey, 'active');
+                                setTimeout(() => {
+                                    updateBootStep(stepKey, 'complete');
+                                    completedSteps.add(stepKey);
+                                }, 300);
+                            }
+                        });
+                    }
+
+                    document.getElementById('boot-status-text').textContent =
+                        data.boot_log && data.boot_log.length > 0
+                            ? data.boot_log[data.boot_log.length - 1].step
+                            : 'Initializing...';
+
+                    // Check if boot complete
+                    if (data.dashboard_ready) {
+                        clearInterval(poll);
+                        updateBootStep('dashboard', 'complete');
+                        setTimeout(() => {
+                            showDashboard();
+                            loadSensorData();
+                        }, 500);
+                    }
+                });
+        }, 500);
+    }
+
+    function updateBootStep(step, status) {
+        const stepEl = document.querySelector(`.boot-step[data-step="${step}"] .step-icon`);
+        if (stepEl) {
+            stepEl.className = 'step-icon ' + status;
+        }
+    }
+
+    function showDashboard() {
+        document.getElementById('boot-screen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        document.getElementById('system-state').textContent = 'READY';
+        document.getElementById('system-state').className = 'status-item state-ready';
+    }
+
+    function loadSensorData() {
+        fetch('/api/sensors')
+            .then(response => response.json())
+            .then(data => {
+                if (data.temperature) {
+                    document.getElementById('temp-value').textContent = data.temperature.value.toFixed(1);
+                }
+                if (data.humidity) {
+                    document.getElementById('humidity-value').textContent = data.humidity.value;
+                }
+                if (data.pressure) {
+                    document.getElementById('pressure-value').textContent = data.pressure.value.toFixed(0);
+                }
+                if (data.heart_rate) {
+                    document.getElementById('hr-value').textContent = data.heart_rate.value;
+                }
+                if (data.spo2) {
+                    document.getElementById('spo2-value').textContent = data.spo2.value;
+                }
+                if (data.body_temp) {
+                    document.getElementById('body-temp-value').textContent = data.body_temp.value.toFixed(1);
+                }
+                if (data.gps) {
+                    document.getElementById('lat-value').textContent = data.gps.latitude.toFixed(4);
+                    document.getElementById('lon-value').textContent = data.gps.longitude.toFixed(4);
+                    document.getElementById('alt-value').textContent = data.gps.altitude;
+
+                    const fixStatus = document.getElementById('gps-fix-status');
+                    if (data.gps.fix) {
+                        fixStatus.textContent = 'GPS Fix Acquired';
+                        fixStatus.className = 'gps-status fixed';
+                    }
+                }
+            });
+    }
+
+    function updateDashboard(data) {
+        // Update status bar
+        document.getElementById('battery-percent').textContent = data.boot_status.battery + '%';
+
+        // Update GPS indicator
+        const gpsStatus = document.getElementById('gps-status');
+        if (data.boot_status.gps_fix) {
+            gpsStatus.className = 'status-item gps-fixed';
+        }
+
+        loadSensorData();
+    }
+</script>
+{% endblock %}

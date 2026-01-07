@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - Weather{% endblock %}
+
+{% block content %}
+<div class="weather-container">
+    <div class="current-conditions card">
+        <h2>Current Conditions</h2>
+        <div class="conditions-grid">
+            <div class="condition-main">
+                <span class="temp-large" id="weather-temp">23.5</span>
+                <span class="temp-unit">°C</span>
+            </div>
+            <div class="condition-secondary">
+                <div class="condition-row">
+                    <span class="label">Humidity</span>
+                    <span class="value" id="weather-humidity">65%</span>
+                </div>
+                <div class="condition-row">
+                    <span class="label">Pressure</span>
+                    <span class="value" id="weather-pressure">1013 hPa</span>
+                </div>
+                <div class="condition-row">
+                    <span class="label">Altitude</span>
+                    <span class="value" id="weather-altitude">58 m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pressure-trend card">
+        <h2>Pressure Trend (3hr)</h2>
+        <div class="trend-indicator" id="pressure-trend">
+            <div class="trend-arrow stable">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22 12l-4-4v3H3v2h15v3z"/>
+                </svg>
+            </div>
+            <div class="trend-text">
+                <span class="trend-label">Stable</span>
+                <span class="trend-change">+0.2 hPa</span>
+            </div>
+        </div>
+        <div class="trend-graph">
+            <div class="graph-bars">
+                <div class="bar" style="height: 60%"></div>
+                <div class="bar" style="height: 62%"></div>
+                <div class="bar" style="height: 61%"></div>
+                <div class="bar" style="height: 63%"></div>
+                <div class="bar" style="height: 64%"></div>
+                <div class="bar" style="height: 63%"></div>
+                <div class="bar active" style="height: 63%"></div>
+            </div>
+            <div class="graph-labels">
+                <span>-3h</span>
+                <span>Now</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="alerts card">
+        <h2>Weather Alerts</h2>
+        <div id="weather-alerts">
+            <div class="alert-item success">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span>No severe weather expected</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="recommendations card">
+        <h2>Activity Recommendations</h2>
+        <div class="recommendation-list">
+            <div class="recommendation good">
+                <span class="rec-icon">👍</span>
+                <span class="rec-text">Safe to travel</span>
+            </div>
+            <div class="recommendation info">
+                <span class="rec-icon">💧</span>
+                <span class="rec-text">Stay hydrated</span>
+            </div>
+            <div class="recommendation info">
+                <span class="rec-icon">🧥</span>
+                <span class="rec-text">Light layers recommended</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .weather-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .current-conditions .conditions-grid {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .condition-main {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .temp-large {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .temp-unit {
+        font-size: var(--font-size-xl);
+        color: var(--text-secondary);
+        margin-left: var(--spacing-xs);
+    }
+
+    .condition-secondary {
+        text-align: right;
+    }
+
+    .condition-row {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .condition-row .label {
+        color: var(--text-muted);
+        font-size: var(--font-size-sm);
+    }
+
+    .condition-row .value {
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+    }
+
+    .pressure-trend .trend-indicator {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .trend-arrow {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .trend-arrow svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .trend-arrow.stable {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--accent-primary);
+    }
+
+    .trend-arrow.rising {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-warning);
+        transform: rotate(-45deg);
+    }
+
+    .trend-arrow.falling {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--accent-danger);
+        transform: rotate(45deg);
+    }
+
+    .trend-label {
+        display: block;
+        font-weight: 600;
+    }
+
+    .trend-change {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+    }
+
+    .trend-graph {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+    }
+
+    .graph-bars {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        height: 60px;
+        gap: var(--spacing-sm);
+    }
+
+    .bar {
+        flex: 1;
+        background: var(--text-muted);
+        border-radius: var(--radius-sm);
+        opacity: 0.5;
+    }
+
+    .bar.active {
+        background: var(--accent-secondary);
+        opacity: 1;
+    }
+
+    .graph-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: var(--spacing-xs);
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+    }
+
+    .alerts .alert-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-md);
+    }
+
+    .alert-item svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .alert-item.success {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--accent-primary);
+    }
+
+    .alert-item.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--accent-warning);
+    }
+
+    .alert-item.danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--accent-danger);
+    }
+
+    .recommendation-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .recommendation {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-md);
+    }
+
+    .rec-icon {
+        font-size: 20px;
+    }
+
+    .rec-text {
+        font-size: var(--font-size-sm);
+    }
+
+    .recommendation.good {
+        border-left: 3px solid var(--accent-primary);
+    }
+
+    .recommendation.info {
+        border-left: 3px solid var(--accent-secondary);
+    }
+
+    .recommendation.caution {
+        border-left: 3px solid var(--accent-warning);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadWeatherData();
+
+        // Refresh every 30 seconds
+        setInterval(loadWeatherData, 30000);
+    });
+
+    async function loadWeatherData() {
+        const sensors = await loadSensorData();
+
+        if (sensors) {
+            if (sensors.temperature) {
+                document.getElementById('weather-temp').textContent = sensors.temperature.value.toFixed(1);
+            }
+            if (sensors.humidity) {
+                document.getElementById('weather-humidity').textContent = sensors.humidity.value + '%';
+            }
+            if (sensors.pressure) {
+                document.getElementById('weather-pressure').textContent = sensors.pressure.value.toFixed(0) + ' hPa';
+            }
+            if (sensors.gps) {
+                document.getElementById('weather-altitude').textContent = sensors.gps.altitude + ' m';
+            }
+        }
+    }
+</script>
+{% endblock %}

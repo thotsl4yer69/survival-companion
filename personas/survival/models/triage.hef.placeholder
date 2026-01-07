@@ -1,1 +1,3 @@
-# PLACEHOLDER - Train and compile triage HEF model for Hailo-8L
+# PLACEHOLDER - Train and compile HEF model
+# Model: triage.hef
+# Target: Hailo-8L

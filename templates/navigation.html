@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - Navigation{% endblock %}
+
+{% block content %}
+<div class="navigation-container">
+    <div class="map-placeholder">
+        <div class="map-content">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="map-icon">
+                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+            </svg>
+            <p>Offline Map View</p>
+            <span class="map-note">Maps require MBTiles download</span>
+        </div>
+    </div>
+
+    <div class="nav-info-panel">
+        <div class="position-card">
+            <h3>Current Position</h3>
+            <div class="coords-display">
+                <div class="coord">
+                    <span class="coord-label">LAT</span>
+                    <span class="coord-value" id="nav-lat">-33.8688°</span>
+                </div>
+                <div class="coord">
+                    <span class="coord-label">LON</span>
+                    <span class="coord-value" id="nav-lon">151.2093°</span>
+                </div>
+                <div class="coord">
+                    <span class="coord-label">ALT</span>
+                    <span class="coord-value" id="nav-alt">58 m</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-actions">
+            <button class="nav-btn" id="mark-waypoint">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                Mark Waypoint
+            </button>
+            <button class="nav-btn" id="start-breadcrumbs">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+                Start Trail
+            </button>
+            <button class="nav-btn emergency" id="im-lost">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                I'm Lost
+            </button>
+        </div>
+
+        <div class="compass-widget">
+            <div class="compass-ring">
+                <div class="compass-needle" id="compass-needle">
+                    <div class="needle-n">N</div>
+                </div>
+            </div>
+            <div class="compass-heading">
+                <span id="heading-value">0</span>°
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .navigation-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        height: calc(100vh - var(--status-bar-height) - var(--nav-bar-height) - 40px);
+    }
+
+    .map-placeholder {
+        flex: 1;
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+    }
+
+    .map-content {
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .map-icon {
+        width: 64px;
+        height: 64px;
+        opacity: 0.5;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .map-note {
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+        display: block;
+        margin-top: var(--spacing-xs);
+    }
+
+    .nav-info-panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .position-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-md);
+    }
+
+    .position-card h3 {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .coords-display {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .coord {
+        text-align: center;
+    }
+
+    .coord-label {
+        display: block;
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .coord-value {
+        font-family: monospace;
+        font-size: var(--font-size-base);
+        font-weight: 600;
+        color: var(--accent-secondary);
+    }
+
+    .nav-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+    }
+
+    .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-sm);
+        background: var(--bg-card);
+        border: none;
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: var(--font-size-xs);
+        cursor: pointer;
+        min-height: var(--touch-preferred);
+        transition: background 0.2s;
+    }
+
+    .nav-btn:active {
+        background: var(--bg-hover);
+    }
+
+    .nav-btn svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: var(--spacing-xs);
+        color: var(--accent-secondary);
+    }
+
+    .nav-btn.emergency svg {
+        color: var(--accent-danger);
+    }
+
+    .compass-widget {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-md);
+    }
+
+    .compass-ring {
+        width: 80px;
+        height: 80px;
+        border: 2px solid var(--text-muted);
+        border-radius: 50%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .compass-needle {
+        width: 60px;
+        height: 60px;
+        position: relative;
+        transition: transform 0.3s ease;
+    }
+
+    .needle-n {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: 700;
+        color: var(--accent-danger);
+        font-size: var(--font-size-sm);
+    }
+
+    .compass-heading {
+        font-size: var(--font-size-2xl);
+        font-weight: 700;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadNavigationData();
+
+        // Simulate compass rotation
+        let heading = 0;
+        setInterval(() => {
+            heading = (heading + Math.random() * 2 - 1) % 360;
+            if (heading < 0) heading += 360;
+            document.getElementById('compass-needle').style.transform = `rotate(${heading}deg)`;
+            document.getElementById('heading-value').textContent = Math.round(heading);
+        }, 500);
+    });
+
+    async function loadNavigationData() {
+        const sensors = await loadSensorData();
+        if (sensors && sensors.gps) {
+            document.getElementById('nav-lat').textContent = sensors.gps.latitude.toFixed(4) + '°';
+            document.getElementById('nav-lon').textContent = sensors.gps.longitude.toFixed(4) + '°';
+            document.getElementById('nav-alt').textContent = sensors.gps.altitude + ' m';
+        }
+    }
+
+    document.getElementById('mark-waypoint').addEventListener('click', function() {
+        alert('Waypoint marked at current position!');
+    });
+
+    document.getElementById('start-breadcrumbs').addEventListener('click', function() {
+        this.textContent = 'Recording...';
+        this.style.background = 'var(--accent-primary)';
+    });
+
+    document.getElementById('im-lost').addEventListener('click', function() {
+        if (confirm('Activate "I\'m Lost" mode? This will display your last known position and provide guidance.')) {
+            alert('I\'m Lost mode activated. Follow breadcrumbs to return to your last waypoint.');
+        }
+    });
+</script>
+{% endblock %}

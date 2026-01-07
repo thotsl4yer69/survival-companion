@@ -1,1 +1,3 @@
-# PLACEHOLDER - Train and compile wildlife classifier HEF model for Hailo-8L
+# PLACEHOLDER - Train and compile HEF model
+# Model: wildlife_classifier.hef
+# Target: Hailo-8L

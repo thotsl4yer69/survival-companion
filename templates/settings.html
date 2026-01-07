@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - Settings{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="card settings-section">
+        <h2>User Profile</h2>
+        <div class="setting-item">
+            <span class="setting-label">Name</span>
+            <input type="text" class="setting-input" id="user-name" placeholder="Enter name">
+        </div>
+        <div class="setting-item">
+            <span class="setting-label">Blood Type</span>
+            <select class="setting-select" id="blood-type">
+                <option value="">Select...</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <span class="setting-label">Allergies</span>
+            <input type="text" class="setting-input" id="allergies" placeholder="e.g., Penicillin, Bees">
+        </div>
+        <div class="setting-item">
+            <span class="setting-label">Medical Conditions</span>
+            <input type="text" class="setting-input" id="conditions" placeholder="e.g., Diabetes, Asthma">
+        </div>
+        <button class="btn btn-primary" id="save-profile">Save Profile</button>
+    </div>
+
+    <div class="card settings-section">
+        <h2>Display</h2>
+        <div class="setting-item toggle">
+            <span class="setting-label">Night Mode</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="night-mode-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <span class="setting-label">Font Size</span>
+            <select class="setting-select" id="font-size">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <span class="setting-label">Screen Timeout</span>
+            <select class="setting-select" id="screen-timeout">
+                <option value="30">30 seconds</option>
+                <option value="60" selected>1 minute</option>
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+                <option value="0">Never</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card settings-section">
+        <h2>Voice</h2>
+        <div class="setting-item">
+            <span class="setting-label">Volume</span>
+            <input type="range" class="setting-range" id="volume" min="0" max="100" value="80">
+        </div>
+        <div class="setting-item toggle">
+            <span class="setting-label">Voice Feedback</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="voice-feedback" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="card settings-section">
+        <h2>Sensors</h2>
+        <div class="sensor-status-list">
+            <div class="sensor-row">
+                <span class="sensor-name">MAX30102 (SpO2/HR)</span>
+                <span class="sensor-status connected" id="sensor-max30102">Connected</span>
+            </div>
+            <div class="sensor-row">
+                <span class="sensor-name">MLX90614 (Temp)</span>
+                <span class="sensor-status connected" id="sensor-mlx90614">Connected</span>
+            </div>
+            <div class="sensor-row">
+                <span class="sensor-name">BME280 (Environment)</span>
+                <span class="sensor-status connected" id="sensor-bme280">Connected</span>
+            </div>
+            <div class="sensor-row">
+                <span class="sensor-name">GPS Module</span>
+                <span class="sensor-status connected" id="sensor-gps">Connected</span>
+            </div>
+            <div class="sensor-row">
+                <span class="sensor-name">Camera</span>
+                <span class="sensor-status connected" id="sensor-camera">Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card settings-section">
+        <h2>System</h2>
+        <div class="system-info">
+            <div class="info-row">
+                <span class="info-label">Version</span>
+                <span class="info-value">1.0.0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">LLM Model</span>
+                <span class="info-value">Phi-3-mini</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Medical LLM</span>
+                <span class="info-value">BioMistral-7B</span>
+            </div>
+        </div>
+        <button class="btn btn-danger" id="factory-reset">Factory Reset</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding-bottom: var(--spacing-xl);
+    }
+
+    .settings-section h2 {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .setting-item:last-of-type {
+        border-bottom: none;
+    }
+
+    .setting-label {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+    }
+
+    .setting-input,
+    .setting-select {
+        background: var(--bg-secondary);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        padding: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        width: 60%;
+        text-align: right;
+    }
+
+    .setting-input:focus,
+    .setting-select:focus {
+        outline: none;
+        border-color: var(--accent-secondary);
+    }
+
+    .setting-range {
+        width: 60%;
+        accent-color: var(--accent-secondary);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 28px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--bg-secondary);
+        transition: .3s;
+        border-radius: 28px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: var(--text-secondary);
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background-color: var(--accent-secondary);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(22px);
+        background-color: white;
+    }
+
+    /* Sensor Status */
+    .sensor-status-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .sensor-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+    }
+
+    .sensor-name {
+        font-size: var(--font-size-sm);
+    }
+
+    .sensor-status {
+        font-size: var(--font-size-xs);
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+    }
+
+    .sensor-status.connected {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--accent-primary);
+    }
+
+    .sensor-status.disconnected {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--accent-danger);
+    }
+
+    /* System Info */
+    .system-info {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-xs) 0;
+    }
+
+    .info-label {
+        color: var(--text-muted);
+        font-size: var(--font-size-sm);
+    }
+
+    .info-value {
+        font-size: var(--font-size-sm);
+    }
+
+    .btn {
+        width: 100%;
+        margin-top: var(--spacing-md);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Night mode toggle
+        const nightModeToggle = document.getElementById('night-mode-toggle');
+        nightModeToggle.checked = document.body.classList.contains('night-mode');
+
+        nightModeToggle.addEventListener('change', function() {
+            toggleNightMode();
+        });
+
+        // Save profile
+        document.getElementById('save-profile').addEventListener('click', function() {
+            const profile = {
+                name: document.getElementById('user-name').value,
+                bloodType: document.getElementById('blood-type').value,
+                allergies: document.getElementById('allergies').value,
+                conditions: document.getElementById('conditions').value
+            };
+
+            localStorage.setItem('userProfile', JSON.stringify(profile));
+            alert('Profile saved successfully!');
+        });
+
+        // Load saved profile
+        const savedProfile = localStorage.getItem('userProfile');
+        if (savedProfile) {
+            const profile = JSON.parse(savedProfile);
+            document.getElementById('user-name').value = profile.name || '';
+            document.getElementById('blood-type').value = profile.bloodType || '';
+            document.getElementById('allergies').value = profile.allergies || '';
+            document.getElementById('conditions').value = profile.conditions || '';
+        }
+
+        // Factory reset
+        document.getElementById('factory-reset').addEventListener('click', function() {
+            if (confirm('Are you sure you want to reset all settings? This cannot be undone.')) {
+                localStorage.clear();
+                alert('Settings reset. Reloading...');
+                location.reload();
+            }
+        });
+
+        // Load sensor status
+        loadSensorStatus();
+    });
+
+    async function loadSensorStatus() {
+        const status = await fetch('/api/status').then(r => r.json());
+
+        if (status && status.sensors) {
+            updateSensorStatus('sensor-max30102', status.sensors.max30102);
+            updateSensorStatus('sensor-mlx90614', status.sensors.mlx90614);
+            updateSensorStatus('sensor-bme280', status.sensors.bme280);
+            updateSensorStatus('sensor-gps', status.sensors.gps);
+            updateSensorStatus('sensor-camera', status.sensors.camera);
+        }
+    }
+
+    function updateSensorStatus(elementId, isConnected) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.textContent = isConnected ? 'Connected' : 'Disconnected';
+            el.className = 'sensor-status ' + (isConnected ? 'connected' : 'disconnected');
+        }
+    }
+</script>
+{% endblock %}

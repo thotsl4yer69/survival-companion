@@ -1,1 +1,3 @@
-# PLACEHOLDER - Train and compile wound assessor HEF model for Hailo-8L
+# PLACEHOLDER - Train and compile HEF model
+# Model: wound_assessor.hef
+# Target: Hailo-8L

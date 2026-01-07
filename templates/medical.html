@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - Medical{% endblock %}
+
+{% block content %}
+<div class="medical-container">
+    <div class="search-box">
+        <input type="text" id="medical-search" placeholder="Search conditions or injuries..." autocomplete="off">
+    </div>
+
+    <div class="medical-categories">
+        <button class="category-btn active" data-category="all">All</button>
+        <button class="category-btn" data-category="wound">Wounds</button>
+        <button class="category-btn" data-category="cardiac">Cardiac</button>
+        <button class="category-btn" data-category="env">Environmental</button>
+        <button class="category-btn" data-category="poison">Poison</button>
+    </div>
+
+    <div id="protocols-list" class="protocols-list">
+        <!-- Protocols loaded dynamically -->
+        <div class="protocol-card" data-category="wound">
+            <div class="protocol-header">
+                <span class="severity minor">Minor</span>
+                <h3>Minor Cut Treatment</h3>
+            </div>
+            <p class="protocol-summary">Clean and bandage minor cuts to prevent infection</p>
+        </div>
+
+        <div class="protocol-card" data-category="cardiac">
+            <div class="protocol-header">
+                <span class="severity critical">Critical</span>
+                <h3>CPR - Adult</h3>
+            </div>
+            <p class="protocol-summary">Cardiopulmonary resuscitation for unresponsive adults</p>
+        </div>
+
+        <div class="protocol-card" data-category="env">
+            <div class="protocol-header">
+                <span class="severity moderate">Moderate</span>
+                <h3>Hypothermia Treatment</h3>
+            </div>
+            <p class="protocol-summary">Recognition and treatment of cold exposure</p>
+        </div>
+
+        <div class="protocol-card" data-category="env">
+            <div class="protocol-header">
+                <span class="severity moderate">Moderate</span>
+                <h3>Heat Stroke</h3>
+            </div>
+            <p class="protocol-summary">Emergency cooling for heat-related illness</p>
+        </div>
+
+        <div class="protocol-card" data-category="poison">
+            <div class="protocol-header">
+                <span class="severity critical">Critical</span>
+                <h3>Snake Bite Protocol</h3>
+            </div>
+            <p class="protocol-summary">Immediate response to venomous snake bites</p>
+        </div>
+
+        <div class="protocol-card" data-category="wound">
+            <div class="protocol-header">
+                <span class="severity moderate">Moderate</span>
+                <h3>Burns Treatment</h3>
+            </div>
+            <p class="protocol-summary">First, second, and third degree burn care</p>
+        </div>
+    </div>
+
+    <!-- Protocol Detail Modal -->
+    <div id="protocol-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Protocol Title</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="protocol-steps" id="modal-steps">
+                    <!-- Steps loaded dynamically -->
+                </div>
+                <div class="protocol-warnings" id="modal-warnings">
+                    <!-- Warnings loaded dynamically -->
+                </div>
+                <div class="protocol-seek-help" id="modal-seek-help">
+                    <!-- When to seek help -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .medical-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .search-box {
+        position: sticky;
+        top: calc(var(--status-bar-height) + var(--spacing-md));
+        z-index: 10;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: var(--spacing-md);
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: var(--font-size-base);
+    }
+
+    .search-box input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--accent-secondary);
+    }
+
+    .medical-categories {
+        display: flex;
+        gap: var(--spacing-xs);
+        overflow-x: auto;
+        padding-bottom: var(--spacing-xs);
+    }
+
+    .category-btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--bg-card);
+        border: none;
+        border-radius: var(--radius-full);
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .category-btn.active {
+        background: var(--accent-secondary);
+        color: white;
+    }
+
+    .protocols-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .protocol-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+    }
+
+    .protocol-card:active {
+        background: var(--bg-hover);
+        transform: scale(0.99);
+    }
+
+    .protocol-card.hidden {
+        display: none;
+    }
+
+    .protocol-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .severity {
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .severity.minor {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--accent-primary);
+    }
+
+    .severity.moderate {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-warning);
+    }
+
+    .severity.critical {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--accent-danger);
+    }
+
+    .protocol-header h3 {
+        font-size: var(--font-size-base);
+        font-weight: 600;
+    }
+
+    .protocol-summary {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+    }
+
+    /* Modal */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 2000;
+        display: flex;
+        align-items: flex-end;
+    }
+
+    .modal-content {
+        background: var(--bg-secondary);
+        width: 100%;
+        max-height: 80vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-md);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-header h2 {
+        font-size: var(--font-size-lg);
+    }
+
+    .modal-close {
+        width: 40px;
+        height: 40px;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    .modal-body {
+        padding: var(--spacing-md);
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .protocol-steps ol {
+        padding-left: var(--spacing-lg);
+    }
+
+    .protocol-steps li {
+        margin-bottom: var(--spacing-sm);
+        line-height: 1.5;
+    }
+
+    .protocol-warnings {
+        background: rgba(239, 68, 68, 0.1);
+        border-left: 3px solid var(--accent-danger);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-md);
+        border-radius: var(--radius-sm);
+    }
+
+    .protocol-warnings h4 {
+        color: var(--accent-danger);
+        margin-bottom: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+
+    .protocol-seek-help {
+        background: rgba(59, 130, 246, 0.1);
+        border-left: 3px solid var(--accent-secondary);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-md);
+        border-radius: var(--radius-sm);
+    }
+
+    .protocol-seek-help h4 {
+        color: var(--accent-secondary);
+        margin-bottom: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category filtering
+        const categoryBtns = document.querySelectorAll('.category-btn');
+        const protocolCards = document.querySelectorAll('.protocol-card');
+
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                categoryBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const category = this.dataset.category;
+
+                protocolCards.forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+            });
+        });
+
+        // Search filtering
+        const searchInput = document.getElementById('medical-search');
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+
+            protocolCards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const summary = card.querySelector('.protocol-summary').textContent.toLowerCase();
+
+                if (title.includes(query) || summary.includes(query)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        });
+
+        // Protocol card click - show modal
+        protocolCards.forEach(card => {
+            card.addEventListener('click', function() {
+                showProtocolModal(this);
+            });
+        });
+
+        // Modal close
+        document.querySelector('.modal-close').addEventListener('click', closeModal);
+        document.getElementById('protocol-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    });
+
+    const protocolData = {
+        'Minor Cut Treatment': {
+            steps: [
+                'Wash hands thoroughly with soap and water',
+                'Apply gentle pressure with a clean cloth to stop bleeding',
+                'Clean the wound with clean water',
+                'Apply antibiotic ointment if available',
+                'Cover with a sterile bandage',
+                'Change bandage daily and monitor for infection'
+            ],
+            warnings: ['Do not use dirty water', 'Watch for signs of infection (redness, swelling, pus)'],
+            seekHelp: 'Seek help if bleeding does not stop after 10 minutes of pressure, wound is deep, or signs of infection appear'
+        },
+        'CPR - Adult': {
+            steps: [
+                'Check for responsiveness - tap shoulders and shout "Are you okay?"',
+                'Call for help or activate emergency beacon',
+                'Check for normal breathing for no more than 10 seconds',
+                'If not breathing normally, begin chest compressions',
+                'Place the heel of one hand on the center of the chest',
+                'Place your other hand on top, interlace fingers',
+                'Push hard and fast - 100-120 compressions per minute',
+                'Push down at least 2 inches (5 cm)',
+                'Allow full chest recoil between compressions',
+                'After 30 compressions, give 2 rescue breaths',
+                'Continue 30:2 ratio until help arrives or person recovers'
+            ],
+            warnings: ['Do not stop CPR unless the person recovers or you are physically exhausted', 'Minimize interruptions to chest compressions'],
+            seekHelp: 'This is a medical emergency - activate SOS beacon immediately'
+        },
+        'Hypothermia Treatment': {
+            steps: [
+                'Move the person to a warm, dry location',
+                'Remove any wet clothing',
+                'Cover with dry blankets or sleeping bags',
+                'Apply warm compresses to neck, armpits, and groin',
+                'Give warm (not hot) drinks if conscious',
+                'Do not rub or massage the skin',
+                'Monitor breathing and pulse'
+            ],
+            warnings: ['Do not apply direct heat to skin', 'Do not give alcohol', 'Handle gently - sudden movements can cause heart problems'],
+            seekHelp: 'Seek medical help for severe hypothermia (confusion, slurred speech, loss of consciousness)'
+        }
+    };
+
+    function showProtocolModal(card) {
+        const title = card.querySelector('h3').textContent;
+        const modal = document.getElementById('protocol-modal');
+
+        document.getElementById('modal-title').textContent = title;
+
+        const data = protocolData[title] || {
+            steps: ['Protocol details loading...'],
+            warnings: [],
+            seekHelp: 'Consult a medical professional if symptoms persist'
+        };
+
+        // Render steps
+        const stepsHtml = '<ol>' + data.steps.map(step => `<li>${step}</li>`).join('') + '</ol>';
+        document.getElementById('modal-steps').innerHTML = stepsHtml;
+
+        // Render warnings
+        if (data.warnings.length > 0) {
+            const warningsHtml = '<h4>Warnings</h4><ul>' + data.warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
+            document.getElementById('modal-warnings').innerHTML = warningsHtml;
+            document.getElementById('modal-warnings').style.display = 'block';
+        } else {
+            document.getElementById('modal-warnings').style.display = 'none';
+        }
+
+        // Render seek help
+        document.getElementById('modal-seek-help').innerHTML = '<h4>When to Seek Help</h4><p>' + data.seekHelp + '</p>';
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('protocol-modal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

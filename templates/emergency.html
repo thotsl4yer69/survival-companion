@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Survival Companion - EMERGENCY SOS{% endblock %}
+{% block body_class %}emergency-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    .emergency-page #main-content {
+        background: var(--emergency-bg);
+    }
+
+    .emergency-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - var(--status-bar-height) - var(--nav-bar-height) - 40px);
+        text-align: center;
+        padding: var(--spacing-md);
+    }
+
+    .sos-button {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #ff0000, #cc0000);
+        border: 4px solid #ff3333;
+        color: white;
+        font-size: 48px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        cursor: pointer;
+        box-shadow: 0 8px 32px rgba(255, 0, 0, 0.4);
+        transition: transform 0.1s, box-shadow 0.2s;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .sos-button:active {
+        transform: scale(0.95);
+        box-shadow: 0 4px 16px rgba(255, 0, 0, 0.6);
+    }
+
+    .sos-button.active {
+        animation: sos-pulse 1s infinite;
+    }
+
+    @keyframes sos-pulse {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 8px 32px rgba(255, 0, 0, 0.4);
+        }
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 12px 48px rgba(255, 0, 0, 0.8);
+        }
+    }
+
+    .emergency-info {
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .emergency-info h2 {
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .emergency-status {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-md);
+        width: 100%;
+        max-width: 350px;
+    }
+
+    .status-item-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .status-item-row:last-child {
+        border-bottom: none;
+    }
+
+    .status-label {
+        color: var(--text-secondary);
+    }
+
+    .status-value {
+        font-weight: 600;
+        font-family: monospace;
+    }
+
+    .beacon-status {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-weight: 600;
+    }
+
+    .beacon-status.inactive {
+        background: rgba(100, 100, 100, 0.2);
+        color: var(--text-muted);
+    }
+
+    .beacon-status.active {
+        background: rgba(255, 0, 0, 0.2);
+        color: var(--emergency-red);
+        animation: blink 1s infinite;
+    }
+
+    .cancel-btn {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md) var(--spacing-xl);
+        background: var(--bg-secondary);
+        border: 2px solid var(--text-muted);
+        color: var(--text-primary);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-base);
+        cursor: pointer;
+    }
+
+    .cancel-btn.hidden {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="emergency-container">
+    <div class="emergency-info">
+        <h2>EMERGENCY SOS</h2>
+        <p>Press and hold to activate emergency beacon</p>
+    </div>
+
+    <button id="sos-button" class="sos-button">SOS</button>
+
+    <div class="emergency-status">
+        <div class="status-item-row">
+            <span class="status-label">Latitude</span>
+            <span class="status-value" id="emergency-lat">--.----°</span>
+        </div>
+        <div class="status-item-row">
+            <span class="status-label">Longitude</span>
+            <span class="status-value" id="emergency-lon">--.----°</span>
+        </div>
+        <div class="status-item-row">
+            <span class="status-label">Altitude</span>
+            <span class="status-value" id="emergency-alt">-- m</span>
+        </div>
+        <div class="status-item-row">
+            <span class="status-label">GPS Status</span>
+            <span class="status-value" id="emergency-gps">Searching...</span>
+        </div>
+
+        <div id="beacon-status" class="beacon-status inactive">
+            Beacon Inactive
+        </div>
+    </div>
+
+    <button id="cancel-btn" class="cancel-btn hidden">Cancel Emergency</button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let emergencyActive = false;
+    let holdTimer = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const sosBtn = document.getElementById('sos-button');
+        const cancelBtn = document.getElementById('cancel-btn');
+
+        // Load current GPS coordinates
+        loadEmergencyData();
+
+        // SOS button - hold to activate
+        sosBtn.addEventListener('mousedown', startHold);
+        sosBtn.addEventListener('touchstart', startHold);
+        sosBtn.addEventListener('mouseup', cancelHold);
+        sosBtn.addEventListener('touchend', cancelHold);
+        sosBtn.addEventListener('mouseleave', cancelHold);
+
+        // Cancel button
+        cancelBtn.addEventListener('click', cancelEmergency);
+    });
+
+    function startHold(e) {
+        e.preventDefault();
+        if (emergencyActive) return;
+
+        holdTimer = setTimeout(() => {
+            activateEmergencyMode();
+        }, 2000); // Hold for 2 seconds
+    }
+
+    function cancelHold() {
+        if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+        }
+    }
+
+    async function activateEmergencyMode() {
+        const result = await activateEmergency();
+        if (result) {
+            emergencyActive = true;
+
+            const sosBtn = document.getElementById('sos-button');
+            sosBtn.classList.add('active');
+            sosBtn.textContent = 'ACTIVE';
+
+            const beaconStatus = document.getElementById('beacon-status');
+            beaconStatus.textContent = 'BEACON ACTIVE - Broadcasting Position';
+            beaconStatus.className = 'beacon-status active';
+
+            document.getElementById('cancel-btn').classList.remove('hidden');
+
+            // Update status bar
+            document.getElementById('system-state').textContent = 'EMERGENCY';
+            document.getElementById('system-state').className = 'status-item state-emergency';
+        }
+    }
+
+    async function cancelEmergency() {
+        if (confirm('Are you sure you want to cancel the emergency beacon?')) {
+            const result = await deactivateEmergency();
+            if (result) {
+                emergencyActive = false;
+
+                const sosBtn = document.getElementById('sos-button');
+                sosBtn.classList.remove('active');
+                sosBtn.textContent = 'SOS';
+
+                const beaconStatus = document.getElementById('beacon-status');
+                beaconStatus.textContent = 'Beacon Inactive';
+                beaconStatus.className = 'beacon-status inactive';
+
+                document.getElementById('cancel-btn').classList.add('hidden');
+
+                // Update status bar
+                document.getElementById('system-state').textContent = 'READY';
+                document.getElementById('system-state').className = 'status-item state-ready';
+            }
+        }
+    }
+
+    async function loadEmergencyData() {
+        const sensors = await loadSensorData();
+        if (sensors && sensors.gps) {
+            document.getElementById('emergency-lat').textContent = sensors.gps.latitude.toFixed(4) + '°';
+            document.getElementById('emergency-lon').textContent = sensors.gps.longitude.toFixed(4) + '°';
+            document.getElementById('emergency-alt').textContent = sensors.gps.altitude + ' m';
+            document.getElementById('emergency-gps').textContent = sensors.gps.fix ? 'Fixed' : 'Searching...';
+        }
+    }
+</script>
+{% endblock %}
