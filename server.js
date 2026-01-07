@@ -3709,6 +3709,328 @@ app.post('/api/fire/search', (req, res) => {
     res.json(response);
 });
 
+// ==============================================================================
+// Water Purification Database
+// ==============================================================================
+
+const waterDatabase = {
+    methods: {
+        boiling: {
+            id: 'boiling',
+            name: 'Boiling',
+            category: 'heat',
+            difficulty: 'beginner',
+            effectiveness: 'Kills bacteria, viruses, and parasites. Does NOT remove chemical contaminants.',
+            description: 'Most reliable method to make water biologically safe. Works anywhere with fire/heat.',
+            steps: [
+                'Collect water in heat-safe container (metal pot, can)',
+                'Bring water to a ROLLING BOIL - not just simmering',
+                'Maintain rolling boil for 1 MINUTE at sea level',
+                'At elevations above 6,500 feet (2,000m), boil for 3 MINUTES',
+                'Let water cool before drinking',
+                'Store in clean container'
+            ],
+            tips: [
+                'Rolling boil = vigorous bubbles breaking surface',
+                'Clear water before boiling if possible (strain through cloth)',
+                'Boiling improves taste when water cools',
+                'Metal containers work best - plastic can melt',
+                'Hot rocks can boil water in non-metal containers'
+            ],
+            warnings: [
+                'Boiling does NOT remove chemical pollutants',
+                'Does NOT remove heavy metals or toxins',
+                'Do not boil water from industrial areas'
+            ],
+            time_required: '10-20 minutes (including heat-up and cool-down)'
+        },
+        filtration: {
+            id: 'filtration',
+            name: 'Filtration Methods',
+            category: 'physical',
+            difficulty: 'intermediate',
+            effectiveness: 'Removes particles, some bacteria, and parasites. Quality depends on filter type.',
+            description: 'Physical removal of contaminants through various filter media.',
+            techniques: [
+                {
+                    name: 'Commercial Filter (Sawyer, LifeStraw)',
+                    effectiveness: 'Removes 99.99% bacteria, 99.9% protozoa. Some remove viruses.',
+                    how_it_works: 'Hollow fiber membrane with microscopic pores',
+                    steps: [
+                        'Fill dirty water container',
+                        'Connect filter according to instructions',
+                        'Squeeze or suck water through filter',
+                        'Clean/backflush filter regularly'
+                    ],
+                    tips: ['Backflush after each use', 'Do not allow to freeze', 'Replace as directed']
+                },
+                {
+                    name: 'Improvised Sand/Charcoal Filter',
+                    effectiveness: 'Removes particles and improves taste. LIMITED pathogen removal.',
+                    how_it_works: 'Layers of material trap progressively smaller particles',
+                    materials: ['Container with hole in bottom', 'Gravel (bottom layer)', 'Sand (middle layer)', 'Charcoal (top layer)', 'Cloth/grass (top filter)'],
+                    steps: [
+                        'Cut/punch hole in bottom of container',
+                        'Add 2 inches of gravel at bottom',
+                        'Add 2 inches of sand above gravel',
+                        'Add 2 inches of crushed charcoal above sand',
+                        'Cover top with cloth or grass',
+                        'Pour water through slowly, collect filtered water',
+                        'STILL BOIL or treat filtered water'
+                    ],
+                    warning: 'Improvised filters improve clarity but DO NOT guarantee pathogen removal. Always combine with boiling or chemical treatment.'
+                },
+                {
+                    name: 'Cloth/Bandana Pre-Filter',
+                    effectiveness: 'Removes large particles only. NOT purification.',
+                    steps: [
+                        'Fold cloth into multiple layers',
+                        'Pour water through cloth into container',
+                        'Repeat if water still cloudy',
+                        'MUST treat filtered water'
+                    ],
+                    tip: 'Use as pre-filter to extend life of commercial filters'
+                }
+            ]
+        },
+        chemical: {
+            id: 'chemical',
+            name: 'Chemical Treatment',
+            category: 'chemical',
+            difficulty: 'beginner',
+            effectiveness: 'Kills most bacteria and viruses. Some methods work on parasites.',
+            description: 'Using chemicals to disinfect water. Lightweight backup to boiling.',
+            techniques: [
+                {
+                    name: 'Iodine Tablets',
+                    effectiveness: 'Effective against bacteria, viruses, and most parasites',
+                    steps: [
+                        'Add tablets per package directions (usually 2 tablets per liter)',
+                        'Wait 30 minutes before drinking',
+                        'Wait 4 hours if water is cold or cloudy',
+                        'Use vitamin C tablet after to improve taste'
+                    ],
+                    warnings: [
+                        'Not safe for pregnant women',
+                        'Not safe for those with thyroid conditions',
+                        'Do not use long-term (weeks)',
+                        'Less effective against Cryptosporidium'
+                    ]
+                },
+                {
+                    name: 'Chlorine Dioxide Tablets (Aquamira, Potable Aqua)',
+                    effectiveness: 'Highly effective against bacteria, viruses, AND Cryptosporidium',
+                    steps: [
+                        'Follow package directions exactly',
+                        'Typically wait 15-30 minutes for bacteria/viruses',
+                        'Wait 4 hours for Cryptosporidium'
+                    ],
+                    tips: ['Preferred over iodine for most situations', 'Safe for longer-term use']
+                },
+                {
+                    name: 'Household Bleach (Sodium Hypochlorite)',
+                    effectiveness: 'Kills most bacteria and viruses',
+                    steps: [
+                        'Use UNSCENTED household bleach (5-6% sodium hypochlorite)',
+                        'Add 2 drops per liter of CLEAR water',
+                        'Add 4 drops per liter if water is cloudy',
+                        'Stir and wait 30 minutes',
+                        'Should have slight chlorine smell - if not, repeat',
+                        'If strong bleach taste, let stand uncovered for a few hours'
+                    ],
+                    warning: 'Use only unscented bleach. Check concentration - newer bleach may be 8.25%.'
+                }
+            ]
+        },
+        uv: {
+            id: 'uv',
+            name: 'UV Treatment',
+            category: 'light',
+            difficulty: 'intermediate',
+            effectiveness: 'Kills bacteria, viruses, and parasites by disrupting DNA.',
+            description: 'Using ultraviolet light to disinfect water.',
+            techniques: [
+                {
+                    name: 'SteriPEN or UV Purifier',
+                    effectiveness: '99.9% of bacteria, viruses, and protozoa',
+                    steps: [
+                        'Pre-filter water to remove particles',
+                        'Fill clear container (not colored)',
+                        'Insert UV light, stir as directed',
+                        'Treatment time varies by volume (30-90 seconds)',
+                        'Water is safe to drink immediately'
+                    ],
+                    tips: ['Requires batteries', 'Water must be clear for UV to work', 'Keep backup purification method']
+                },
+                {
+                    name: 'SODIS (Solar Disinfection)',
+                    effectiveness: 'Kills most bacteria and viruses in 6+ hours of sun',
+                    steps: [
+                        'Fill clear PET plastic bottle (not glass)',
+                        'Pre-filter water to remove cloudiness',
+                        'Remove labels from bottle',
+                        'Lay bottle on reflective surface in direct sun',
+                        'Leave 6 hours minimum in full sun',
+                        'Leave 2 days if cloudy weather',
+                        'Shake periodically'
+                    ],
+                    tips: [
+                        'Works best between latitudes 35°N and 35°S',
+                        'Clear bottles only - no colored plastic',
+                        'Maximum 2-liter bottles (larger reduces effectiveness)',
+                        'Does not work through window glass'
+                    ],
+                    limitations: 'Slower than other methods. Less effective in cold or cloudy conditions.'
+                }
+            ]
+        }
+    },
+    sources: {
+        best: {
+            description: 'Prefer these water sources when available',
+            sources: [
+                { name: 'Running streams above human activity', warning: 'Still may contain animal pathogens' },
+                { name: 'Springs flowing from ground', warning: 'Collect at source, not downstream' },
+                { name: 'Rain collection', warning: 'Use clean collection surface' },
+                { name: 'Snow/ice (melted)', warning: 'Avoid colored snow, always purify' },
+                { name: 'Morning dew', warning: 'Collect before sunrise' }
+            ]
+        },
+        acceptable: {
+            description: 'Usable with proper treatment',
+            sources: [
+                { name: 'Lakes and ponds', warning: 'Collect away from shore, treat well' },
+                { name: 'Slow-moving streams', warning: 'Higher pathogen risk' },
+                { name: 'Plant sources (bamboo, vines)', warning: 'Identify correctly first' }
+            ]
+        },
+        dangerous: {
+            description: 'AVOID if possible - contamination risks',
+            sources: [
+                { name: 'Water near industrial areas', reason: 'Chemical contamination - purification won\'t help' },
+                { name: 'Agricultural runoff', reason: 'Pesticides, fertilizers, animal waste' },
+                { name: 'Standing water (stagnant)', reason: 'High pathogen load, algae toxins' },
+                { name: 'Water with algae blooms', reason: 'Blue-green algae produces deadly toxins' },
+                { name: 'Water with dead animals', reason: 'Extreme contamination' },
+                { name: 'Water with chemical odor/sheen', reason: 'Petroleum or chemical spill' },
+                { name: 'Ocean/salt water', reason: 'Increases dehydration, requires desalination' }
+            ],
+            critical_warning: 'NO purification method removes all chemical contaminants. When in doubt, find alternative source.'
+        }
+    },
+    dehydration: {
+        signs: ['Dark yellow urine', 'Dry mouth', 'Headache', 'Dizziness', 'Fatigue', 'Confusion (severe)'],
+        prevention: [
+            'Drink before you\'re thirsty in survival situations',
+            'Minimum 2 liters per day, more if active or hot',
+            'Ration sweat, not water',
+            'Rest in shade during hottest hours',
+            'Eat salty foods when drinking heavily'
+        ],
+        warning: 'Dehydration kills faster than hunger. Always prioritize finding water.'
+    }
+};
+
+// Get water purification guide
+app.get('/api/water', (req, res) => {
+    res.json({
+        success: true,
+        guide: waterDatabase
+    });
+});
+
+// Get specific water method
+app.get('/api/water/method/:method', (req, res) => {
+    const method = req.params.method.toLowerCase();
+    const methodData = waterDatabase.methods[method];
+
+    if (!methodData) {
+        return res.status(404).json({
+            success: false,
+            error: `Method '${method}' not found`,
+            available_methods: Object.keys(waterDatabase.methods)
+        });
+    }
+
+    res.json({
+        success: true,
+        method: methodData
+    });
+});
+
+// Search water purification info
+app.post('/api/water/search', (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    const response = {
+        success: true,
+        query: query,
+        results: []
+    };
+
+    // Check for method keywords
+    const methodKeywords = {
+        boiling: ['boil', 'heat', 'hot', 'rolling boil'],
+        filtration: ['filter', 'sand', 'charcoal', 'strain', 'sawyer', 'lifestraw'],
+        chemical: ['chemical', 'iodine', 'chlorine', 'bleach', 'tablet', 'purify'],
+        uv: ['uv', 'ultraviolet', 'solar', 'sodis', 'steripen', 'sun']
+    };
+
+    for (const [method, keywords] of Object.entries(methodKeywords)) {
+        if (keywords.some(k => queryLower.includes(k))) {
+            response.results.push({
+                type: 'method',
+                data: waterDatabase.methods[method]
+            });
+        }
+    }
+
+    // Check for source info
+    if (queryLower.includes('source') || queryLower.includes('where') || queryLower.includes('find water')) {
+        response.results.push({
+            type: 'sources',
+            data: waterDatabase.sources
+        });
+    }
+
+    // Check for unsafe water warnings
+    if (queryLower.includes('danger') || queryLower.includes('unsafe') || queryLower.includes('avoid') || queryLower.includes('warning')) {
+        response.results.push({
+            type: 'dangerous_sources',
+            data: waterDatabase.sources.dangerous
+        });
+    }
+
+    // Check for dehydration
+    if (queryLower.includes('dehydrat')) {
+        response.results.push({
+            type: 'dehydration',
+            data: waterDatabase.dehydration
+        });
+    }
+
+    // Default: return overview
+    if (response.results.length === 0) {
+        response.results.push({
+            type: 'overview',
+            methods: Object.values(waterDatabase.methods).map(m => ({
+                id: m.id,
+                name: m.name,
+                difficulty: m.difficulty,
+                effectiveness: m.effectiveness,
+                description: m.description
+            })),
+            best_sources: waterDatabase.sources.best.sources.map(s => s.name),
+            dangerous_sources: waterDatabase.sources.dangerous.sources.map(s => s.name),
+            critical_warning: waterDatabase.sources.dangerous.critical_warning,
+            dehydration_signs: waterDatabase.dehydration.signs
+        });
+    }
+
+    res.json(response);
+});
+
 // Generate contextually appropriate survival response
 function generateSurvivalResponse(query) {
     const queryLower = query.toLowerCase();
