@@ -907,29 +907,67 @@ const firstAidProtocolDatabase = [
         category: 'poison',
         name: 'Snake Bite Protocol',
         severity: 'critical',
-        keywords: ['snake', 'bite', 'snake bite', 'venom', 'venomous', 'serpent'],
-        summary: 'Emergency response for venomous and non-venomous snake bites',
+        keywords: ['snake', 'bite', 'snake bite', 'venom', 'venomous', 'serpent', 'rattlesnake', 'cobra', 'viper', 'coral snake'],
+        summary: 'Emergency response for venomous and non-venomous snake bites with regional venom information',
         steps: [
-            { step: 1, summary: 'Move away from snake', detail: 'Get the person and yourself to a safe distance. Do not try to capture or kill the snake - note its appearance if possible.' },
-            { step: 2, summary: 'Keep calm and still', detail: 'Have the person lie down and remain as still as possible. Movement spreads venom faster through the body.' },
-            { step: 3, summary: 'Remove constricting items', detail: 'Remove jewelry, watches, and tight clothing near the bite before swelling starts.' },
-            { step: 4, summary: 'Position the limb', detail: 'Keep the bitten area below heart level if possible. Do NOT elevate.' },
-            { step: 5, summary: 'Clean the wound gently', detail: 'If available, gently clean around the bite with water. Do not scrub or apply pressure.' },
-            { step: 6, summary: 'Immobilize the limb', detail: 'Splint the limb to prevent movement. Use bandages, sticks, or clothing to keep it still.' },
-            { step: 7, summary: 'Activate emergency', detail: 'ACTIVATE SOS BEACON. Time is critical - antivenom may be needed within hours.' },
-            { step: 8, summary: 'Monitor vital signs', detail: 'Watch for breathing difficulties, changes in consciousness, or severe swelling. Note the time of bite.' }
+            { step: 1, summary: 'Move away from snake', detail: 'Get the person and yourself to a safe distance. Do not try to capture or kill the snake - note its appearance if possible (color patterns, head shape, size).' },
+            { step: 2, summary: 'Keep calm and still', detail: 'Have the person lie down and remain as STILL as possible. Movement spreads venom faster through the body. Panic increases heart rate and venom spread.' },
+            { step: 3, summary: 'Remove constricting items', detail: 'QUICKLY remove jewelry, watches, rings, and tight clothing near the bite BEFORE swelling starts. Swelling can be severe.' },
+            { step: 4, summary: 'Position the limb', detail: 'Keep the bitten area BELOW heart level if possible. Do NOT elevate - this speeds venom to the heart.' },
+            { step: 5, summary: 'Immobilize the limb', detail: 'Splint the limb to prevent ALL movement. Use bandages, sticks, or clothing. Movement pumps venom through lymph system.' },
+            { step: 6, summary: 'Clean gently if possible', detail: 'If clean water available, GENTLY rinse around bite. Do NOT scrub, apply pressure, or try to squeeze out venom.' },
+            { step: 7, summary: 'Mark the swelling', detail: 'With pen or marker, circle the edge of any swelling and write the time. This helps track venom spread.' },
+            { step: 8, summary: 'ACTIVATE EMERGENCY SOS', detail: 'ACTIVATE SOS BEACON IMMEDIATELY. Time is critical - antivenom may be needed within hours. Note time of bite for medical team.' },
+            { step: 9, summary: 'Monitor and prepare', detail: 'Watch for: breathing difficulty, severe swelling, changes in consciousness, nausea/vomiting. Be ready for CPR. Keep person warm.' }
         ],
+        regional_venom_info: {
+            note: 'Snake identification helps medical teams prepare correct antivenom. Try to remember or photograph the snake safely.',
+            north_america: {
+                common_venomous: ['Rattlesnakes (pit vipers)', 'Copperheads', 'Cottonmouth/Water Moccasin', 'Coral Snakes'],
+                identification_tips: [
+                    'Pit vipers: triangular head, vertical pupils, heat-sensing pit between eye and nostril',
+                    'Rattlesnakes: rattle on tail (may be silent in young snakes)',
+                    'Coral snakes: red and yellow bands touch ("Red on yellow, kill a fellow")',
+                    'Harmless king snakes: red and black bands touch ("Red on black, friend of Jack")'
+                ],
+                venom_types: {
+                    pit_vipers: 'Hemotoxic - destroys blood cells and tissues. Causes severe swelling, pain, tissue damage.',
+                    coral_snakes: 'Neurotoxic - affects nervous system. May have delayed symptoms (hours). Causes paralysis, breathing failure.'
+                }
+            },
+            australia: {
+                common_venomous: ['Eastern Brown Snake', 'Inland Taipan', 'Tiger Snake', 'Death Adder', 'Red-bellied Black Snake'],
+                identification_tips: [
+                    'Most Australian venomous snakes have round pupils (not reliable ID)',
+                    'Brown snakes are most dangerous - can be various colors despite name',
+                    'Do NOT attempt to identify - treat ALL Australian snake bites as life-threatening'
+                ],
+                venom_types: {
+                    most_species: 'Neurotoxic and/or procoagulant - affects blood clotting and nervous system. Can cause collapse within minutes.'
+                },
+                special_note: 'Apply pressure immobilization bandage for Australian snakes - wrap firmly from bite toward heart.'
+            },
+            general: {
+                venom_effects: {
+                    hemotoxic: 'Blood and tissue damage: severe swelling, pain, bruising, bleeding, tissue death',
+                    neurotoxic: 'Nerve damage: drooping eyelids, difficulty speaking/swallowing, paralysis, breathing failure',
+                    cytotoxic: 'Cell damage: severe local tissue destruction, necrosis'
+                },
+                delayed_symptoms: 'Some snake venoms (especially neurotoxic) may show delayed effects. Continue monitoring for 12-24 hours.'
+            }
+        },
         warnings: [
             'ASSUME ALL SNAKE BITES ARE VENOMOUS until proven otherwise',
-            'Do NOT cut the wound or try to suck out venom',
-            'Do NOT apply tourniquet - this can cause tissue death',
-            'Do NOT apply ice or immerse in cold water',
-            'Do NOT give alcohol or caffeine',
-            'Do NOT apply electric shock',
-            'Time is critical - evacuate to medical care ASAP'
+            'Do NOT cut the wound or try to suck out venom - this does NOT work and causes infection',
+            'Do NOT apply a tourniquet - this traps venom and causes tissue death',
+            'Do NOT apply ice or cold - increases tissue damage',
+            'Do NOT give alcohol or caffeine - speeds venom spread',
+            'Do NOT try to catch or kill the snake - risk of second bite',
+            'Do NOT waste time - EVACUATE IMMEDIATELY',
+            'TIME IS CRITICAL - antivenom is most effective within 4-6 hours'
         ],
-        contraindications: ['No cutting the wound', 'No suction devices', 'No tourniquets', 'No ice/cold', 'No alcohol'],
-        when_to_seek_help: 'ALL snake bites require professional medical evaluation. Activate SOS immediately and evacuate to hospital. Antivenom is time-sensitive.'
+        contraindications: ['No cutting the wound', 'No suction devices', 'No tourniquets', 'No ice/cold', 'No alcohol', 'No attempting to catch snake'],
+        when_to_seek_help: 'ALL snake bites require IMMEDIATE emergency medical evacuation. Activate SOS immediately. Even "dry bites" (no venom) need evaluation. Antivenom is time-sensitive and must be given in hospital. Do NOT wait for symptoms - they may be delayed but still fatal.'
     },
     // HYPOTHERMIA
     {
