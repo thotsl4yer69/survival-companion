@@ -466,3 +466,119 @@ curl -s http://localhost:5000/api/cpr/guide
 # Test hypothermia lookup
 curl -s -X POST http://localhost:5000/api/protocols/lookup -H "Content-Type: application/json" -d '{"query": "hypothermia symptoms"}'
 ```
+
+# Session 5 Continued (Context Window Restored)
+# ================================================
+# Date: 2026-01-07
+
+## Summary
+Session 5 continued after context window restoration. Completed medical safety,
+forbidden output blocking, and survival skill databases (shelter, fire, water, knots).
+
+## Features Completed This Continuation
+
+### Feature #35: Allergic reaction protocol (PASSING)
+- Verified existing anaphylaxis protocol meets all requirements
+- EpiPen guidance, positioning, airway monitoring, SOS escalation
+
+### Feature #36: Personal medical profile (PASSING)
+- Verified profile API stores blood type, allergies, medical conditions
+- Emergency info display includes critical allergies
+
+### Feature #37: Allergy alert integration (PASSING)
+- Created allergyContraindications database with 9 allergy types
+- Added treatmentKeywords for matching queries to medications
+- checkAllergyConflicts() function flags penicillin-class antibiotics
+- New APIs: /api/allergy/check, /api/treatment/advice
+
+### Feature #38: Safety layer validation (PASSING)
+- Created dangerousPatterns array for harmful content detection
+- requiredSafetyElements with disclaimer patterns
+- validateMedicalSafety() function with compliance scoring
+- 8-scenario compliance report: 86.3% compliance, 100% safe responses
+- New APIs: /api/safety/validate, /api/safety/test, /api/safety/compliance-report
+
+### Feature #39: Forbidden output blocking (PASSING)
+- Added cancer diagnosis, death prediction, hopeless patterns
+- forbiddenQueryPatterns with safe alternative responses
+- concern_level for cancer queries, general_guidance for dosage
+- optimistic_actionable for death/fatal queries
+- 6/6 queries handled, 5/5 dangerous outputs blocked
+- New APIs: /api/safety/forbidden-test, /api/safety/forbidden-report
+
+### Feature #40: Shelter construction guidance (PASSING)
+- Created shelterDatabase with 4 shelter types:
+  - debris_hut: 10-step A-Frame with location selection
+  - lean_to: 6-step with fire reflector
+  - snow_cave: 8-step winter shelter with ventilation warnings
+  - tarp_shelter: 6-step quick setup with 4 configurations
+- New APIs: /api/shelter/:type, /api/shelters, /api/shelters/search
+
+### Feature #41: Fire starting methods (PASSING)
+- Created fireDatabase with 4 method categories:
+  - friction: Bow drill, hand drill, fire plough
+  - spark: Ferro rod, flint/steel, battery+steel wool
+  - solar: Magnifying lens, water container, ice lens
+  - chemical: Matches, lighter, potassium permanganate
+- 9 safety guidelines, 5 fire lay configurations
+- Material guide: tinder, kindling, fuel
+- New APIs: /api/fire, /api/fire/method/:method, /api/fire/search
+
+### Feature #42: Water purification methods (PASSING)
+- Created waterDatabase with 4 purification methods:
+  - boiling: Rolling boil 1 min (sea level), 3 min (elevation)
+  - filtration: Commercial, improvised sand/charcoal, cloth
+  - chemical: Iodine, chlorine dioxide, household bleach
+  - uv: SteriPEN, SODIS solar disinfection
+- Water source classifications (best, acceptable, dangerous)
+- 7 dangerous sources with critical chemical warning
+- New APIs: /api/water, /api/water/method/:method, /api/water/search
+
+### Feature #43: Knot tying instructions (PASSING)
+- Created knotDatabase with 8 essential survival knots:
+  - bowline: Fixed loop with one-handed version
+  - clove_hitch: Post/pole binding
+  - taut_line_hitch: Adjustable tent lines
+  - square_knot: Equal diameter joining
+  - trucker_hitch: 3:1 mechanical advantage
+  - figure_eight: Stopper knot
+  - prussik: Friction hitch for ascent
+  - sheet_bend: Different diameter joining
+- 7 knot categories, mnemonics, use cases
+- New APIs: /api/knots, /api/knots/:id, /api/knots/search
+
+## Current Status
+- **Features Passing: 42/260 (16.2%)**
+- 9 features implemented this continuation (#35-#43)
+- Major survival skill databases now complete
+
+## API Endpoints Added
+
+### Safety APIs
+- POST /api/allergy/check - Check treatment for allergy conflicts
+- POST /api/treatment/advice - Allergy-aware treatment advice
+- POST /api/safety/validate - Validate response for safety
+- POST /api/safety/test - Test query through safety layer
+- GET /api/safety/compliance-report - 8-scenario safety test
+- POST /api/safety/forbidden-test - Test forbidden queries
+- GET /api/safety/forbidden-report - 11-scenario forbidden test
+
+### Shelter APIs
+- GET /api/shelter/:type - Specific shelter guide
+- GET /api/shelters - List all shelters with filters
+- POST /api/shelters/search - Search shelters by keyword
+
+### Fire APIs
+- GET /api/fire - Full fire starting guide
+- GET /api/fire/method/:method - Specific method
+- POST /api/fire/search - Search fire info
+
+### Water APIs
+- GET /api/water - Full water purification guide
+- GET /api/water/method/:method - Specific method
+- POST /api/water/search - Search water info
+
+### Knot APIs
+- GET /api/knots - List all knots with filters
+- GET /api/knots/:id - Specific knot instructions
+- POST /api/knots/search - Search knots by query
