@@ -4031,6 +4031,323 @@ app.post('/api/water/search', (req, res) => {
     res.json(response);
 });
 
+// ==============================================================================
+// Knot Tying Database
+// ==============================================================================
+
+const knotDatabase = {
+    bowline: {
+        id: 'bowline',
+        name: 'Bowline Knot',
+        category: 'loop',
+        difficulty: 'beginner',
+        description: 'Creates a fixed loop that won\'t slip or tighten. "King of Knots" - reliable and easy to untie.',
+        uses: [
+            'Rescue loops for climbing out',
+            'Securing rope to anchor',
+            'Creating fixed loop in rope end',
+            'Tying rope around waist for rescue',
+            'Attaching rope to ring or post'
+        ],
+        mnemonic: '"The rabbit comes out of the hole, goes around the tree, and back down the hole."',
+        steps: [
+            { step: 1, instruction: 'Form a small loop near the end of the rope (this is the "rabbit hole")', tip: 'Hold the loop with your non-dominant hand' },
+            { step: 2, instruction: 'Pass the working end (the "rabbit") UP through the loop', tip: 'Leave enough tail for the final loop size you need' },
+            { step: 3, instruction: 'Bring the working end BEHIND the standing part (around the "tree")', tip: null },
+            { step: 4, instruction: 'Pass the working end back DOWN through the small loop', tip: 'Same direction it came up' },
+            { step: 5, instruction: 'Pull the standing part while holding the working end to tighten', tip: 'Ensure loop doesn\'t collapse' },
+            { step: 6, instruction: 'Leave at least 6 inches of tail for safety', tip: 'Add stopper knot if critical application' }
+        ],
+        one_handed_version: {
+            name: 'One-Handed Bowline',
+            use_case: 'Self-rescue when one hand is injured or holding something',
+            steps: [
+                { step: 1, instruction: 'Pass rope around your body or anchor' },
+                { step: 2, instruction: 'Hold the working end and standing part together' },
+                { step: 3, instruction: 'Flip/twist your wrist to create a loop over the standing part' },
+                { step: 4, instruction: 'Push working end through the loop from behind' },
+                { step: 5, instruction: 'Continue around standing part and back through loop' },
+                { step: 6, instruction: 'Tighten by pulling standing part' }
+            ],
+            practice_tip: 'Practice this knot many times with both hands before you need it one-handed'
+        },
+        strength: 'Retains about 60% of rope strength',
+        untying: 'Easy to untie even after heavy load by pushing the collar'
+    },
+    clove_hitch: {
+        id: 'clove_hitch',
+        name: 'Clove Hitch',
+        category: 'hitch',
+        difficulty: 'beginner',
+        description: 'Quick binding hitch for securing rope to post or pole. Easy to adjust.',
+        uses: [
+            'Starting and ending lashings',
+            'Securing rope to tree or pole',
+            'Temporary attachment to stakes',
+            'Clothesline attachment',
+            'Quick shelter tiedowns'
+        ],
+        steps: [
+            { step: 1, instruction: 'Wrap rope around pole from front to back' },
+            { step: 2, instruction: 'Cross over the first wrap, going around pole again' },
+            { step: 3, instruction: 'Tuck working end under the second wrap (creates X pattern)' },
+            { step: 4, instruction: 'Pull both ends to tighten' }
+        ],
+        warning: 'Can slip under variable load. Not for critical applications without backup.',
+        strength: 'About 60-65% of rope strength'
+    },
+    taut_line_hitch: {
+        id: 'taut_line_hitch',
+        name: 'Taut-Line Hitch',
+        category: 'adjustable',
+        difficulty: 'intermediate',
+        description: 'Adjustable loop that grips under tension but slides when slack. Perfect for tent lines.',
+        uses: [
+            'Tent guy lines',
+            'Tarp ridgelines',
+            'Adjustable anchor points',
+            'Clotheslines',
+            'Any adjustable tensioning need'
+        ],
+        steps: [
+            { step: 1, instruction: 'Pass working end around anchor and back toward standing part' },
+            { step: 2, instruction: 'Wrap working end around standing part TWICE, inside the loop (toward anchor)' },
+            { step: 3, instruction: 'Wrap once more OUTSIDE the first two wraps (away from anchor)' },
+            { step: 4, instruction: 'Pass working end through the last wrap' },
+            { step: 5, instruction: 'Tighten wraps snugly together' },
+            { step: 6, instruction: 'Slide to adjust tension, holds under load' }
+        ],
+        tip: 'The two inside wraps must be between the anchor and the outside wrap'
+    },
+    square_knot: {
+        id: 'square_knot',
+        name: 'Square Knot (Reef Knot)',
+        category: 'bend',
+        difficulty: 'beginner',
+        description: 'Simple knot for joining two ropes of EQUAL diameter. Not for critical loads.',
+        uses: [
+            'Tying bandages',
+            'Bundling items',
+            'First aid slings',
+            'Joining two cords',
+            'Reefing sails (origin of name)'
+        ],
+        steps: [
+            { step: 1, instruction: 'Hold one rope end in each hand' },
+            { step: 2, instruction: 'Right over left, wrap around' },
+            { step: 3, instruction: 'Left over right, wrap around' },
+            { step: 4, instruction: 'Pull both ends to tighten' },
+            { step: 5, instruction: 'Result: both tails exit on same side' }
+        ],
+        warning: 'Can slip with unequal rope sizes or synthetic rope. Not for life-safety applications.',
+        mnemonic: '"Right over left, left over right, makes a knot both tidy and tight"'
+    },
+    trucker_hitch: {
+        id: 'trucker_hitch',
+        name: "Trucker's Hitch",
+        category: 'mechanical_advantage',
+        difficulty: 'intermediate',
+        description: 'Creates 3:1 mechanical advantage for tight tensioning. Essential for securing loads.',
+        uses: [
+            'Tying down cargo',
+            'Tensioning ridgelines',
+            'Tightening tarp lines',
+            'Creating strong tie-downs',
+            'Any application needing high tension'
+        ],
+        steps: [
+            { step: 1, instruction: 'Tie rope to first anchor point (bowline or round turn)' },
+            { step: 2, instruction: 'Create a loop in the standing part (slipknot or figure-8 on bight)' },
+            { step: 3, instruction: 'Pass working end around second anchor' },
+            { step: 4, instruction: 'Thread working end through the loop' },
+            { step: 5, instruction: 'Pull down on working end - mechanical advantage!' },
+            { step: 6, instruction: 'Secure with two half-hitches on standing part' }
+        ],
+        tip: 'The loop acts as a pulley, multiplying your pulling force'
+    },
+    figure_eight: {
+        id: 'figure_eight',
+        name: 'Figure-Eight Knot',
+        category: 'stopper',
+        difficulty: 'beginner',
+        description: 'Reliable stopper knot. Also used as base for Figure-8 Follow-Through.',
+        uses: [
+            'Stopper knot at rope end',
+            'Preventing rope from running through hardware',
+            'Base for climbing knot (follow-through version)',
+            'Stopping lines in pulleys'
+        ],
+        steps: [
+            { step: 1, instruction: 'Make a loop in the rope' },
+            { step: 2, instruction: 'Pass working end under the standing part' },
+            { step: 3, instruction: 'Bring working end over and through the loop' },
+            { step: 4, instruction: 'Pull to tighten - should look like figure 8' }
+        ]
+    },
+    prussik: {
+        id: 'prussik',
+        name: 'Prusik Knot',
+        category: 'friction',
+        difficulty: 'advanced',
+        description: 'Friction hitch that grips when loaded but slides when unloaded. For ascending rope.',
+        uses: [
+            'Climbing rope ascent',
+            'Self-rescue',
+            'Rope backup/safety',
+            'Adjustable attachment to standing rope',
+            'Emergency ascending system'
+        ],
+        requirements: 'Requires cord/rope smaller diameter than main rope (typically 60-80% diameter)',
+        steps: [
+            { step: 1, instruction: 'Form a loop with cord (girth hitch base)' },
+            { step: 2, instruction: 'Wrap the loop around the main rope 3 times' },
+            { step: 3, instruction: 'Pass the free ends of loop through the girth' },
+            { step: 4, instruction: 'Pull loop ends to tighten' },
+            { step: 5, instruction: 'Dress the knot - wraps should be neat and parallel' },
+            { step: 6, instruction: 'Load tests: should grip when weighted, slide when unweighted' }
+        ],
+        warning: 'Critical life-safety knot. Practice extensively before relying on it.',
+        tip: 'More wraps = more grip but harder to move'
+    },
+    sheet_bend: {
+        id: 'sheet_bend',
+        name: 'Sheet Bend',
+        category: 'bend',
+        difficulty: 'beginner',
+        description: 'For joining two ropes of DIFFERENT diameters. More secure than square knot.',
+        uses: [
+            'Joining ropes of different sizes',
+            'Extending rope length',
+            'Attaching rope to loop/eye',
+            'Making longer clothesline'
+        ],
+        steps: [
+            { step: 1, instruction: 'Form a bight (U-shape) in the THICKER rope' },
+            { step: 2, instruction: 'Pass thinner rope up through the bight' },
+            { step: 3, instruction: 'Wrap thinner rope around back of both bight legs' },
+            { step: 4, instruction: 'Tuck thinner rope under itself (but over the bight)' },
+            { step: 5, instruction: 'Pull all four ends to tighten' }
+        ],
+        tip: 'Both working ends should exit on same side. Double the wraps for slippery rope.'
+    }
+};
+
+// Get all knots
+app.get('/api/knots', (req, res) => {
+    const { category, difficulty } = req.query;
+
+    let knots = Object.values(knotDatabase);
+
+    if (category) {
+        knots = knots.filter(k => k.category === category.toLowerCase());
+    }
+
+    if (difficulty) {
+        knots = knots.filter(k => k.difficulty === difficulty.toLowerCase());
+    }
+
+    const summary = knots.map(k => ({
+        id: k.id,
+        name: k.name,
+        category: k.category,
+        difficulty: k.difficulty,
+        description: k.description,
+        uses_count: k.uses.length,
+        steps_count: k.steps.length,
+        has_one_handed: !!k.one_handed_version
+    }));
+
+    res.json({
+        success: true,
+        count: summary.length,
+        knots: summary,
+        categories: [...new Set(Object.values(knotDatabase).map(k => k.category))]
+    });
+});
+
+// Get specific knot
+app.get('/api/knots/:id', (req, res) => {
+    const id = req.params.id.toLowerCase().replace(/-/g, '_');
+    const knot = knotDatabase[id];
+
+    if (!knot) {
+        return res.status(404).json({
+            success: false,
+            error: `Knot '${id}' not found`,
+            available_knots: Object.keys(knotDatabase)
+        });
+    }
+
+    res.json({
+        success: true,
+        knot: knot
+    });
+});
+
+// Search knots
+app.post('/api/knots/search', (req, res) => {
+    const { query } = req.body;
+    const queryLower = (query || '').toLowerCase();
+
+    // Find matching knots
+    const matches = [];
+
+    // Keyword mappings
+    const keywords = {
+        bowline: ['bowline', 'fixed loop', 'rescue loop', 'king'],
+        clove_hitch: ['clove', 'hitch', 'post', 'pole', 'bind'],
+        taut_line_hitch: ['taut', 'tent', 'adjustable', 'guy line', 'tension'],
+        square_knot: ['square', 'reef', 'bandage', 'join two', 'equal'],
+        trucker_hitch: ['trucker', 'mechanical', 'advantage', 'tight', 'cargo', 'load'],
+        figure_eight: ['figure eight', 'figure-8', 'stopper', 'climbing'],
+        prussik: ['prusik', 'prussik', 'ascend', 'friction', 'climbing rope'],
+        sheet_bend: ['sheet', 'bend', 'different size', 'unequal', 'extend']
+    };
+
+    for (const [knotId, knotKeywords] of Object.entries(keywords)) {
+        if (knotKeywords.some(k => queryLower.includes(k))) {
+            matches.push(knotDatabase[knotId]);
+        }
+    }
+
+    // Also check knot names and uses
+    for (const knot of Object.values(knotDatabase)) {
+        if (!matches.includes(knot)) {
+            if (knot.name.toLowerCase().includes(queryLower) ||
+                knot.uses.some(u => u.toLowerCase().includes(queryLower))) {
+                matches.push(knot);
+            }
+        }
+    }
+
+    if (matches.length === 0) {
+        return res.json({
+            success: true,
+            found: false,
+            query: query,
+            message: `No specific match for "${query}". Here are all available knots:`,
+            all_knots: Object.values(knotDatabase).map(k => ({
+                id: k.id,
+                name: k.name,
+                category: k.category,
+                description: k.description
+            }))
+        });
+    }
+
+    res.json({
+        success: true,
+        found: true,
+        query: query,
+        knot: matches[0],
+        other_matches: matches.slice(1).map(k => ({
+            id: k.id,
+            name: k.name,
+            description: k.description
+        }))
+    });
+});
+
 // Generate contextually appropriate survival response
 function generateSurvivalResponse(query) {
     const queryLower = query.toLowerCase();
