@@ -18768,7 +18768,7 @@ function recordTestBreadcrumbPoint() {
     return { recorded: false, reason: 'Not recording' };
 }
 
-function navigateToScreen(screenName) {
+function testNavigateToScreen(screenName) {
     breadcrumbRecordingState.current_screen = screenName;
     return { success: true, current_screen: screenName };
 }
@@ -18832,7 +18832,7 @@ app.get('/api/breadcrumb/test-recording-state', (req, res) => {
     recordTestBreadcrumbPoint();
 
     // Step 3: Navigate away from nav screen
-    navigateToScreen('settings');
+    testNavigateToScreen('settings');
     const navigatedAway = breadcrumbRecordingState.current_screen === 'settings';
     const stillRecordingAfterNav = breadcrumbRecordingState.is_recording;
     testResults.push({
@@ -18847,7 +18847,7 @@ app.get('/api/breadcrumb/test-recording-state', (req, res) => {
     recordTestBreadcrumbPoint();
 
     // Step 4: Return to nav screen
-    navigateToScreen('navigation');
+    testNavigateToScreen('navigation');
     const returnedToNav = breadcrumbRecordingState.current_screen === 'navigation';
     testResults.push({
         step: 4,
