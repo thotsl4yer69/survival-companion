@@ -1,6 +1,6 @@
 # ==============================================================================
 # Survival Companion - User Settings
-# Generated: 2026-01-07T21:44:43.264Z
+# Generated: 2026-01-08T00:16:22.901Z
 # ==============================================================================
 
 display:
@@ -22,3 +22,5 @@ notifications:
   storm_alerts: true
   health_alerts: true
   sensor_warnings: true
+theme: dark
+language: en

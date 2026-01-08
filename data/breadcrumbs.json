@@ -14,5 +14,21 @@
       }
     ],
     "total_distance_meters": 0
+  },
+  {
+    "id": 2,
+    "name": "Persistent Trail",
+    "started_at": "2026-01-08T00:18:30.008Z",
+    "ended_at": "2026-01-08T00:18:45.619Z",
+    "points": [
+      {
+        "latitude": -33.8688,
+        "longitude": 151.2093,
+        "altitude": 58,
+        "timestamp": "2026-01-08T00:18:30.008Z",
+        "accuracy": 3.5
+      }
+    ],
+    "total_distance_meters": 0
   }
 ]
