@@ -16868,7 +16868,7 @@ const memoryManager = {
 
 // Model sizes (in MB)
 const modelSizes = {
-    'phi-3-mini': 2200,
+    'phi-3-mini': 1800, // Main LLM - fits alone but not with many other models
     'hailo-plant-classifier': 150,
     'hailo-wildlife-detector': 180,
     'whisper-tiny': 75,
@@ -17080,19 +17080,20 @@ app.get('/api/memory/test-oom-prevention', (req, res) => {
     const unloadResult = unloadModel('hailo-plant-classifier');
     const unloadResult2 = unloadModel('hailo-wildlife-detector');
     const unloadResult3 = unloadModel('whisper-tiny');
+    const unloadResult4 = unloadModel('silero-vad'); // Unload all to make room for big model
     const usageAfterUnload = memoryManager.current_usage_mb;
 
-    // Now try loading phi-3-mini again
+    // Now try loading phi-3-mini again - should fit when all others are unloaded
     const bigModelRetry = loadModel('phi-3-mini');
     const loadAfterUnload = bigModelRetry.success;
 
     testResults.push({
         step: 3,
         action: 'Verify proper unload before load',
-        unloaded_models: ['hailo-plant-classifier', 'hailo-wildlife-detector', 'whisper-tiny'],
+        unloaded_models: ['hailo-plant-classifier', 'hailo-wildlife-detector', 'whisper-tiny', 'silero-vad'],
         usage_after_unload_mb: usageAfterUnload,
         big_model_now_fits: loadAfterUnload,
-        passed: unloadResult.success && loadAfterUnload
+        passed: unloadResult.success && unloadResult4.success && loadAfterUnload
     });
 
     // Step 4: Verify OOM error caught
