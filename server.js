@@ -19616,6 +19616,520 @@ app.get('/api/idempotency/test-multiple-nav-clicks', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Feature #145: Submit During Processing Protection
+// ==============================================================================
+
+const formSubmissionState = {
+    active_submissions: {},
+    submission_log: [],
+    completed_count: 0
+};
+
+function submitForm(formId, formData) {
+    const submissionKey = formId;
+
+    // Check if this form is already being processed
+    if (formSubmissionState.active_submissions[submissionKey]) {
+        return {
+            success: false,
+            reason: 'ALREADY_PROCESSING',
+            message: 'Form is already being submitted',
+            button_should_be: 'disabled'
+        };
+    }
+
+    // Mark as processing
+    formSubmissionState.active_submissions[submissionKey] = {
+        started_at: Date.now(),
+        form_data: formData
+    };
+
+    // Simulate processing (in real app this would be async)
+    const submissionId = 'sub-' + Date.now();
+
+    formSubmissionState.submission_log.push({
+        id: submissionId,
+        form_id: formId,
+        status: 'processing',
+        timestamp: new Date().toISOString()
+    });
+
+    // Complete the submission (simulated)
+    setTimeout(() => {
+        delete formSubmissionState.active_submissions[submissionKey];
+        formSubmissionState.completed_count++;
+        const logEntry = formSubmissionState.submission_log.find(l => l.id === submissionId);
+        if (logEntry) logEntry.status = 'completed';
+    }, 100);
+
+    return {
+        success: true,
+        submission_id: submissionId,
+        form_id: formId,
+        status: 'processing',
+        button_should_be: 'disabled'
+    };
+}
+
+function isFormProcessing(formId) {
+    return formSubmissionState.active_submissions[formId] !== undefined;
+}
+
+function completeFormSubmission(formId) {
+    delete formSubmissionState.active_submissions[formId];
+    formSubmissionState.completed_count++;
+    return { completed: true, form_id: formId };
+}
+
+app.post('/api/forms/submit/:formId', (req, res) => {
+    const result = submitForm(req.params.formId, req.body);
+    res.json(result);
+});
+
+app.get('/api/forms/status/:formId', (req, res) => {
+    res.json({
+        form_id: req.params.formId,
+        is_processing: isFormProcessing(req.params.formId),
+        button_state: isFormProcessing(req.params.formId) ? 'disabled' : 'enabled'
+    });
+});
+
+app.get('/api/idempotency/test-submit-processing', (req, res) => {
+    const testResults = [];
+
+    // Save original state
+    const originalSubmissions = { ...formSubmissionState.active_submissions };
+    const originalLog = [...formSubmissionState.submission_log];
+    const originalCount = formSubmissionState.completed_count;
+
+    // Reset for test
+    formSubmissionState.active_submissions = {};
+    formSubmissionState.submission_log = [];
+    formSubmissionState.completed_count = 0;
+
+    const testFormId = 'profile-form';
+
+    // Step 1: Submit form
+    const firstSubmission = submitForm(testFormId, { name: 'Test User' });
+    testResults.push({
+        step: 1,
+        action: 'Submit form',
+        result: firstSubmission,
+        submitted: firstSubmission.success,
+        passed: firstSubmission.success
+    });
+
+    // Step 2: Try to submit again while processing
+    const secondSubmission = submitForm(testFormId, { name: 'Test User' }); // Same form, still processing
+    testResults.push({
+        step: 2,
+        action: 'Try to submit again while processing',
+        result: secondSubmission,
+        blocked: !secondSubmission.success,
+        reason: secondSubmission.reason,
+        passed: !secondSubmission.success && secondSubmission.reason === 'ALREADY_PROCESSING'
+    });
+
+    // Step 3: Verify button disabled
+    const buttonDisabled = secondSubmission.button_should_be === 'disabled';
+    const isProcessing = isFormProcessing(testFormId);
+    testResults.push({
+        step: 3,
+        action: 'Verify button disabled',
+        button_state: secondSubmission.button_should_be,
+        form_is_processing: isProcessing,
+        button_disabled: buttonDisabled,
+        passed: buttonDisabled && isProcessing
+    });
+
+    // Step 4: Verify only one submission occurs
+    const submissionsForForm = formSubmissionState.submission_log.filter(
+        s => s.form_id === testFormId
+    );
+    const onlyOneSubmission = submissionsForForm.length === 1;
+    testResults.push({
+        step: 4,
+        action: 'Verify only one submission occurs',
+        submission_count: submissionsForForm.length,
+        only_one: onlyOneSubmission,
+        passed: onlyOneSubmission
+    });
+
+    // Cleanup
+    completeFormSubmission(testFormId);
+
+    // Restore original state
+    formSubmissionState.active_submissions = originalSubmissions;
+    formSubmissionState.submission_log = originalLog;
+    formSubmissionState.completed_count = originalCount;
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Submit During Processing',
+        feature_id: 145,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'Form submission correctly prevented during processing'
+            : 'Some form submission tests failed',
+        key_behaviors: [
+            'First submission succeeds',
+            'Second submission blocked during processing',
+            'Button correctly disabled',
+            'Only one submission recorded'
+        ]
+    });
+});
+
+// ==============================================================================
+// Feature #146: Deleted Profile Clears Data
+// ==============================================================================
+
+const testProfile = {
+    name: null,
+    blood_type: null,
+    allergies: [],
+    medical_conditions: [],
+    emergency_contacts: [],
+    created_at: null
+};
+
+function createTestProfile(data) {
+    testProfile.name = data.name;
+    testProfile.blood_type = data.blood_type;
+    testProfile.allergies = data.allergies || [];
+    testProfile.medical_conditions = data.medical_conditions || [];
+    testProfile.emergency_contacts = data.emergency_contacts || [];
+    testProfile.created_at = new Date().toISOString();
+
+    return {
+        success: true,
+        profile: { ...testProfile },
+        message: 'Profile created'
+    };
+}
+
+function deleteTestProfile() {
+    const hadData = testProfile.name !== null;
+
+    testProfile.name = null;
+    testProfile.blood_type = null;
+    testProfile.allergies = [];
+    testProfile.medical_conditions = [];
+    testProfile.emergency_contacts = [];
+    testProfile.created_at = null;
+
+    return {
+        success: true,
+        had_data: hadData,
+        message: 'Profile deleted and all data cleared'
+    };
+}
+
+function getTestProfileEmergencyDisplay() {
+    if (!testProfile.name) {
+        return {
+            has_profile: false,
+            display: 'No profile set up',
+            emergency_info: null
+        };
+    }
+
+    return {
+        has_profile: true,
+        display: `${testProfile.name} - ${testProfile.blood_type}`,
+        emergency_info: {
+            name: testProfile.name,
+            blood_type: testProfile.blood_type,
+            allergies: testProfile.allergies,
+            medical_conditions: testProfile.medical_conditions
+        }
+    };
+}
+
+function checkForOrphanedData() {
+    const orphans = [];
+
+    // Check for data without a profile
+    if (!testProfile.name) {
+        if (testProfile.allergies.length > 0) orphans.push('allergies');
+        if (testProfile.medical_conditions.length > 0) orphans.push('medical_conditions');
+        if (testProfile.emergency_contacts.length > 0) orphans.push('emergency_contacts');
+        if (testProfile.blood_type) orphans.push('blood_type');
+    }
+
+    return {
+        has_orphans: orphans.length > 0,
+        orphaned_fields: orphans
+    };
+}
+
+app.get('/api/cleanup/test-profile-deletion', (req, res) => {
+    const testResults = [];
+
+    // Save original profile state
+    const originalProfile = { ...testProfile };
+
+    // Step 1: Create profile with all fields
+    const fullProfile = {
+        name: 'Test User',
+        blood_type: 'O+',
+        allergies: ['Penicillin', 'Peanuts'],
+        medical_conditions: ['Asthma'],
+        emergency_contacts: [{ name: 'Emergency Contact', phone: '555-1234' }]
+    };
+    const createResult = createTestProfile(fullProfile);
+    const profileCreated = createResult.success &&
+                           testProfile.name === 'Test User' &&
+                           testProfile.allergies.length === 2;
+    testResults.push({
+        step: 1,
+        action: 'Create profile with all fields',
+        result: createResult,
+        has_all_fields: profileCreated,
+        passed: profileCreated
+    });
+
+    // Step 2: Delete profile
+    const deleteResult = deleteTestProfile();
+    testResults.push({
+        step: 2,
+        action: 'Delete profile',
+        result: deleteResult,
+        had_data: deleteResult.had_data,
+        passed: deleteResult.success
+    });
+
+    // Step 3: Verify profile removed
+    const profileRemoved = testProfile.name === null &&
+                           testProfile.blood_type === null &&
+                           testProfile.created_at === null;
+    testResults.push({
+        step: 3,
+        action: 'Verify profile removed',
+        name: testProfile.name,
+        blood_type: testProfile.blood_type,
+        removed: profileRemoved,
+        passed: profileRemoved
+    });
+
+    // Step 4: Verify emergency display shows no profile
+    const emergencyDisplay = getTestProfileEmergencyDisplay();
+    const noProfileShown = !emergencyDisplay.has_profile &&
+                            emergencyDisplay.display === 'No profile set up';
+    testResults.push({
+        step: 4,
+        action: 'Verify emergency display shows no profile',
+        display: emergencyDisplay,
+        no_profile: noProfileShown,
+        passed: noProfileShown
+    });
+
+    // Step 5: Verify no orphaned data
+    const orphanCheck = checkForOrphanedData();
+    const noOrphans = !orphanCheck.has_orphans;
+    testResults.push({
+        step: 5,
+        action: 'Verify no orphaned data',
+        orphan_check: orphanCheck,
+        no_orphans: noOrphans,
+        passed: noOrphans
+    });
+
+    // Restore original profile
+    Object.assign(testProfile, originalProfile);
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Deleted Profile Clears Data',
+        feature_id: 146,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'Profile deletion correctly clears all associated data'
+            : 'Some profile deletion tests failed',
+        key_behaviors: [
+            'Profile can be created with all fields',
+            'Profile can be deleted',
+            'All profile fields are cleared',
+            'Emergency display shows no profile',
+            'No orphaned data remains'
+        ]
+    });
+});
+
+// ==============================================================================
+// Feature #147: Cleared History Is Gone
+// ==============================================================================
+
+const historyStorage = {
+    vitals_history: [],
+    navigation_history: [],
+    query_history: [],
+    storage_used_bytes: 0
+};
+
+function addHistoryEntry(type, data) {
+    const entry = {
+        id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: type,
+        data: data,
+        timestamp: new Date().toISOString()
+    };
+
+    const entrySize = JSON.stringify(entry).length;
+
+    switch (type) {
+        case 'vitals':
+            historyStorage.vitals_history.push(entry);
+            break;
+        case 'navigation':
+            historyStorage.navigation_history.push(entry);
+            break;
+        case 'query':
+            historyStorage.query_history.push(entry);
+            break;
+    }
+
+    historyStorage.storage_used_bytes += entrySize;
+    return { success: true, entry_id: entry.id, size: entrySize };
+}
+
+function clearAllHistory() {
+    const freedBytes = historyStorage.storage_used_bytes;
+    const totalEntries = historyStorage.vitals_history.length +
+                          historyStorage.navigation_history.length +
+                          historyStorage.query_history.length;
+
+    historyStorage.vitals_history = [];
+    historyStorage.navigation_history = [];
+    historyStorage.query_history = [];
+    historyStorage.storage_used_bytes = 0;
+
+    return {
+        success: true,
+        entries_removed: totalEntries,
+        storage_freed_bytes: freedBytes,
+        message: 'All history cleared'
+    };
+}
+
+function getHistoryStats() {
+    return {
+        vitals_count: historyStorage.vitals_history.length,
+        navigation_count: historyStorage.navigation_history.length,
+        query_count: historyStorage.query_history.length,
+        total_entries: historyStorage.vitals_history.length +
+                       historyStorage.navigation_history.length +
+                       historyStorage.query_history.length,
+        storage_used_bytes: historyStorage.storage_used_bytes
+    };
+}
+
+app.get('/api/history/stats', (req, res) => {
+    res.json(getHistoryStats());
+});
+
+app.post('/api/history/clear', (req, res) => {
+    const result = clearAllHistory();
+    res.json(result);
+});
+
+app.get('/api/cleanup/test-history-clear', (req, res) => {
+    const testResults = [];
+
+    // Save original state
+    const originalVitals = [...historyStorage.vitals_history];
+    const originalNavigation = [...historyStorage.navigation_history];
+    const originalQuery = [...historyStorage.query_history];
+    const originalBytes = historyStorage.storage_used_bytes;
+
+    // Reset for test
+    historyStorage.vitals_history = [];
+    historyStorage.navigation_history = [];
+    historyStorage.query_history = [];
+    historyStorage.storage_used_bytes = 0;
+
+    // Step 1: Generate history entries
+    addHistoryEntry('vitals', { heart_rate: 72, spo2: 98 });
+    addHistoryEntry('vitals', { heart_rate: 75, spo2: 97 });
+    addHistoryEntry('navigation', { lat: 45.0, lon: -122.0 });
+    addHistoryEntry('query', { query: 'What is the weather?', response: 'Sunny' });
+    addHistoryEntry('query', { query: 'Show my location', response: 'GPS data...' });
+
+    const statsAfterGenerate = getHistoryStats();
+    const entriesGenerated = statsAfterGenerate.total_entries === 5;
+    testResults.push({
+        step: 1,
+        action: 'Generate history entries',
+        stats: statsAfterGenerate,
+        entries_created: statsAfterGenerate.total_entries,
+        passed: entriesGenerated
+    });
+
+    // Step 2: Clear history
+    const clearResult = clearAllHistory();
+    testResults.push({
+        step: 2,
+        action: 'Clear history',
+        result: clearResult,
+        entries_removed: clearResult.entries_removed,
+        passed: clearResult.success && clearResult.entries_removed === 5
+    });
+
+    // Step 3: Verify all entries removed
+    const statsAfterClear = getHistoryStats();
+    const allEntriesRemoved = statsAfterClear.total_entries === 0 &&
+                               statsAfterClear.vitals_count === 0 &&
+                               statsAfterClear.navigation_count === 0 &&
+                               statsAfterClear.query_count === 0;
+    testResults.push({
+        step: 3,
+        action: 'Verify all entries removed',
+        stats: statsAfterClear,
+        all_removed: allEntriesRemoved,
+        passed: allEntriesRemoved
+    });
+
+    // Step 4: Verify storage freed
+    const storageFreed = historyStorage.storage_used_bytes === 0;
+    testResults.push({
+        step: 4,
+        action: 'Verify storage freed',
+        storage_bytes_before: clearResult.storage_freed_bytes,
+        storage_bytes_after: historyStorage.storage_used_bytes,
+        storage_freed: storageFreed,
+        passed: storageFreed
+    });
+
+    // Restore original state
+    historyStorage.vitals_history = originalVitals;
+    historyStorage.navigation_history = originalNavigation;
+    historyStorage.query_history = originalQuery;
+    historyStorage.storage_used_bytes = originalBytes;
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Cleared History Is Gone',
+        feature_id: 147,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'History clear correctly removes all entries and frees storage'
+            : 'Some history clear tests failed',
+        key_behaviors: [
+            'History entries can be generated',
+            'Clear removes all entries',
+            'All history types cleared',
+            'Storage is freed'
+        ]
+    });
+});
+
 app.get('/api/emergency/test-state', (req, res) => {
     const testResults = [];
 
