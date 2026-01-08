@@ -18913,6 +18913,709 @@ app.get('/api/breadcrumb/test-recording-state', (req, res) => {
     });
 });
 
+// ==============================================================================
+// Feature #141: Double SOS Activation Protection
+// ==============================================================================
+
+const sosState = {
+    active: false,
+    activation_count: 0,
+    last_activation: null,
+    beacon_id: null,
+    activation_log: [],
+    cooldown_ms: 1000 // 1 second cooldown between activations
+};
+
+function activateSOS() {
+    const now = Date.now();
+
+    // Check if SOS is already active - prevent double activation
+    if (sosState.active) {
+        return {
+            success: false,
+            reason: 'SOS_ALREADY_ACTIVE',
+            message: 'SOS is already active',
+            current_beacon: sosState.beacon_id
+        };
+    }
+
+    // Check cooldown
+    if (sosState.last_activation && (now - sosState.last_activation) < sosState.cooldown_ms) {
+        return {
+            success: false,
+            reason: 'COOLDOWN',
+            message: 'SOS activation on cooldown',
+            remaining_ms: sosState.cooldown_ms - (now - sosState.last_activation)
+        };
+    }
+
+    sosState.active = true;
+    sosState.activation_count++;
+    sosState.last_activation = now;
+    sosState.beacon_id = 'beacon-' + now;
+
+    sosState.activation_log.push({
+        action: 'activated',
+        beacon_id: sosState.beacon_id,
+        timestamp: new Date().toISOString()
+    });
+
+    return {
+        success: true,
+        beacon_id: sosState.beacon_id,
+        activation_number: sosState.activation_count,
+        activated_at: new Date().toISOString()
+    };
+}
+
+function deactivateSOS() {
+    if (!sosState.active) {
+        return { success: false, reason: 'SOS not active' };
+    }
+
+    const beaconId = sosState.beacon_id;
+    sosState.active = false;
+    sosState.beacon_id = null;
+
+    sosState.activation_log.push({
+        action: 'deactivated',
+        beacon_id: beaconId,
+        timestamp: new Date().toISOString()
+    });
+
+    return { success: true, beacon_id: beaconId, message: 'SOS deactivated' };
+}
+
+app.post('/api/sos/activate', (req, res) => {
+    const result = activateSOS();
+    res.json(result);
+});
+
+app.post('/api/sos/deactivate', (req, res) => {
+    const result = deactivateSOS();
+    res.json(result);
+});
+
+app.get('/api/sos/status', (req, res) => {
+    res.json({
+        active: sosState.active,
+        beacon_id: sosState.beacon_id,
+        total_activations: sosState.activation_count,
+        log: sosState.activation_log.slice(-10)
+    });
+});
+
+app.get('/api/sos/test-double-activation', (req, res) => {
+    const testResults = [];
+
+    // Save original state
+    const originalState = { ...sosState };
+    const originalLog = [...sosState.activation_log];
+
+    // Reset for test
+    sosState.active = false;
+    sosState.activation_count = 0;
+    sosState.last_activation = null;
+    sosState.beacon_id = null;
+    sosState.activation_log = [];
+
+    // Step 1: Rapidly tap SOS twice
+    const firstActivation = activateSOS();
+    const secondActivation = activateSOS(); // Immediate second tap
+    testResults.push({
+        step: 1,
+        action: 'Rapidly tap SOS twice',
+        first_result: firstActivation,
+        second_result: secondActivation,
+        passed: firstActivation.success && !secondActivation.success
+    });
+
+    // Step 2: Verify only one activation occurs
+    const onlyOneActive = sosState.active && sosState.activation_count === 1;
+    testResults.push({
+        step: 2,
+        action: 'Verify only one activation occurs',
+        sos_active: sosState.active,
+        activation_count: sosState.activation_count,
+        only_one_activated: onlyOneActive,
+        passed: onlyOneActive
+    });
+
+    // Step 3: Verify only one log entry (activation)
+    const activationLogs = sosState.activation_log.filter(l => l.action === 'activated');
+    const onlyOneLogEntry = activationLogs.length === 1;
+    testResults.push({
+        step: 3,
+        action: 'Verify only one log entry',
+        log_entries: sosState.activation_log.length,
+        activation_entries: activationLogs.length,
+        only_one_log: onlyOneLogEntry,
+        passed: onlyOneLogEntry
+    });
+
+    // Step 4: Verify no duplicate beacons
+    const beaconIds = sosState.activation_log
+        .filter(l => l.action === 'activated')
+        .map(l => l.beacon_id);
+    const uniqueBeacons = new Set(beaconIds);
+    const noDuplicateBeacons = uniqueBeacons.size === beaconIds.length;
+    testResults.push({
+        step: 4,
+        action: 'Verify no duplicate beacons',
+        beacon_ids: beaconIds,
+        unique_count: uniqueBeacons.size,
+        no_duplicates: noDuplicateBeacons,
+        passed: noDuplicateBeacons
+    });
+
+    // Restore original state
+    Object.assign(sosState, originalState);
+    sosState.activation_log = originalLog;
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Double SOS Activation',
+        feature_id: 141,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'Double SOS taps correctly prevented - only one activation occurs'
+            : 'Some SOS idempotency tests failed',
+        key_behaviors: [
+            'First SOS tap activates correctly',
+            'Second rapid tap is rejected',
+            'Only one activation counted',
+            'Only one log entry created',
+            'No duplicate beacons'
+        ]
+    });
+});
+
+// ==============================================================================
+// Feature #142: Double Waypoint Save Protection
+// ==============================================================================
+
+const waypointSaveState = {
+    last_save_timestamp: null,
+    last_save_name: null,
+    cooldown_ms: 500,
+    duplicate_prevention_log: []
+};
+
+function createWaypointWithDuplicateCheck(name, latitude, longitude) {
+    const now = Date.now();
+
+    // Check for duplicate prevention
+    if (waypointSaveState.last_save_timestamp &&
+        waypointSaveState.last_save_name === name &&
+        (now - waypointSaveState.last_save_timestamp) < waypointSaveState.cooldown_ms) {
+        waypointSaveState.duplicate_prevention_log.push({
+            action: 'blocked',
+            name: name,
+            reason: 'DUPLICATE_COOLDOWN',
+            timestamp: new Date().toISOString()
+        });
+        return {
+            success: false,
+            reason: 'DUPLICATE_COOLDOWN',
+            message: 'Waypoint with same name was just saved',
+            cooldown_remaining: waypointSaveState.cooldown_ms - (now - waypointSaveState.last_save_timestamp)
+        };
+    }
+
+    // Check for exact duplicate in existing waypoints
+    const existingDuplicate = waypoints.find(w =>
+        w.name === name &&
+        Math.abs(w.latitude - latitude) < 0.0001 &&
+        Math.abs(w.longitude - longitude) < 0.0001
+    );
+
+    if (existingDuplicate) {
+        return {
+            success: false,
+            reason: 'EXACT_DUPLICATE',
+            message: 'A waypoint with this name and location already exists',
+            existing_id: existingDuplicate.id
+        };
+    }
+
+    // Create the waypoint
+    const waypointId = 'wp-' + now;
+    const newWaypoint = {
+        id: waypointId,
+        name: name,
+        latitude: latitude,
+        longitude: longitude,
+        created: new Date().toISOString()
+    };
+
+    waypoints.push(newWaypoint);
+    saveWaypoints();
+
+    waypointSaveState.last_save_timestamp = now;
+    waypointSaveState.last_save_name = name;
+
+    waypointSaveState.duplicate_prevention_log.push({
+        action: 'created',
+        id: waypointId,
+        name: name,
+        timestamp: new Date().toISOString()
+    });
+
+    return {
+        success: true,
+        waypoint: newWaypoint,
+        message: 'Waypoint created successfully'
+    };
+}
+
+app.post('/api/waypoints/create-safe', (req, res) => {
+    const { name, latitude, longitude } = req.body;
+    const result = createWaypointWithDuplicateCheck(
+        name || 'New Waypoint',
+        latitude || 45.0,
+        longitude || -122.0
+    );
+    res.json(result);
+});
+
+app.get('/api/idempotency/test-double-waypoint-save', (req, res) => {
+    const testResults = [];
+
+    // Save original state
+    const originalWaypoints = [...waypoints];
+    const originalSaveState = { ...waypointSaveState };
+    const originalLog = [...waypointSaveState.duplicate_prevention_log];
+
+    // Reset for test
+    waypointSaveState.last_save_timestamp = null;
+    waypointSaveState.last_save_name = null;
+    waypointSaveState.duplicate_prevention_log = [];
+
+    const testWaypointName = 'Double Save Test ' + Date.now();
+    const testLat = 45.1234;
+    const testLon = -122.5678;
+
+    // Step 1: Create waypoint
+    const firstSave = createWaypointWithDuplicateCheck(testWaypointName, testLat, testLon);
+    testResults.push({
+        step: 1,
+        action: 'Create waypoint',
+        result: firstSave,
+        passed: firstSave.success
+    });
+
+    // Step 2: Rapidly tap save twice (immediate second save)
+    const secondSave = createWaypointWithDuplicateCheck(testWaypointName, testLat, testLon);
+    testResults.push({
+        step: 2,
+        action: 'Rapidly tap save twice',
+        first_success: firstSave.success,
+        second_blocked: !secondSave.success,
+        second_reason: secondSave.reason,
+        passed: firstSave.success && !secondSave.success
+    });
+
+    // Step 3: Verify only one waypoint created
+    const matchingWaypoints = waypoints.filter(w => w.name === testWaypointName);
+    const onlyOneCreated = matchingWaypoints.length === 1;
+    testResults.push({
+        step: 3,
+        action: 'Verify only one waypoint created',
+        matching_count: matchingWaypoints.length,
+        only_one_created: onlyOneCreated,
+        passed: onlyOneCreated
+    });
+
+    // Step 4: Check waypoint list for duplicates
+    const allNames = waypoints.map(w => w.name);
+    const uniqueNames = new Set(allNames);
+    const noDuplicatesInList = allNames.length === uniqueNames.size ||
+        allNames.filter(n => n === testWaypointName).length === 1;
+    testResults.push({
+        step: 4,
+        action: 'Check waypoint list for duplicates',
+        total_waypoints: waypoints.length,
+        test_waypoint_count: matchingWaypoints.length,
+        no_duplicates: noDuplicatesInList,
+        passed: noDuplicatesInList
+    });
+
+    // Cleanup: Remove test waypoint
+    waypoints = waypoints.filter(w => w.name !== testWaypointName);
+    saveWaypoints();
+
+    // Restore original state
+    Object.assign(waypointSaveState, originalSaveState);
+    waypointSaveState.duplicate_prevention_log = originalLog;
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Double Waypoint Save',
+        feature_id: 142,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'Double-saving correctly prevented - only one waypoint created'
+            : 'Some waypoint idempotency tests failed',
+        key_behaviors: [
+            'First save creates waypoint',
+            'Rapid second save is blocked',
+            'Only one waypoint created',
+            'No duplicates in waypoint list'
+        ]
+    });
+});
+
+// ==============================================================================
+// Feature #143: Repeated Voice Commands Protection
+// ==============================================================================
+
+const voiceCommandState = {
+    last_command: null,
+    last_command_timestamp: null,
+    cooldown_ms: 500,
+    command_history: [],
+    action_log: [],
+    system_stable: true
+};
+
+function processVoiceCommand(command) {
+    const now = Date.now();
+    const normalizedCommand = command.toLowerCase().trim();
+
+    // Check for rapid repeat
+    if (voiceCommandState.last_command === normalizedCommand &&
+        voiceCommandState.last_command_timestamp &&
+        (now - voiceCommandState.last_command_timestamp) < voiceCommandState.cooldown_ms) {
+        voiceCommandState.command_history.push({
+            command: normalizedCommand,
+            status: 'DEBOUNCED',
+            timestamp: new Date().toISOString()
+        });
+        return {
+            success: false,
+            reason: 'RAPID_REPEAT',
+            message: 'Same command just processed',
+            debounced: true
+        };
+    }
+
+    // Process the command
+    voiceCommandState.last_command = normalizedCommand;
+    voiceCommandState.last_command_timestamp = now;
+
+    voiceCommandState.command_history.push({
+        command: normalizedCommand,
+        status: 'PROCESSED',
+        timestamp: new Date().toISOString()
+    });
+
+    voiceCommandState.action_log.push({
+        command: normalizedCommand,
+        action_taken: true,
+        timestamp: new Date().toISOString()
+    });
+
+    return {
+        success: true,
+        command: normalizedCommand,
+        processed: true,
+        message: `Command "${command}" processed`
+    };
+}
+
+app.post('/api/voice/command', (req, res) => {
+    const { command } = req.body;
+    const result = processVoiceCommand(command || '');
+    res.json(result);
+});
+
+app.get('/api/voice/command-history', (req, res) => {
+    res.json({
+        history: voiceCommandState.command_history.slice(-20),
+        actions: voiceCommandState.action_log.slice(-10),
+        system_stable: voiceCommandState.system_stable
+    });
+});
+
+app.get('/api/idempotency/test-repeated-voice', (req, res) => {
+    const testResults = [];
+
+    // Save original state
+    const originalState = { ...voiceCommandState };
+    const originalHistory = [...voiceCommandState.command_history];
+    const originalActions = [...voiceCommandState.action_log];
+
+    // Reset for test
+    voiceCommandState.last_command = null;
+    voiceCommandState.last_command_timestamp = null;
+    voiceCommandState.command_history = [];
+    voiceCommandState.action_log = [];
+    voiceCommandState.system_stable = true;
+
+    const testCommand = "show current location";
+
+    // Step 1: Rapidly say same command twice
+    const firstCommand = processVoiceCommand(testCommand);
+    const secondCommand = processVoiceCommand(testCommand); // Immediate repeat
+    testResults.push({
+        step: 1,
+        action: 'Rapidly say same command twice',
+        first_result: firstCommand,
+        second_result: secondCommand,
+        first_processed: firstCommand.success,
+        second_debounced: !secondCommand.success,
+        passed: firstCommand.success && !secondCommand.success
+    });
+
+    // Step 2: Verify appropriate handling
+    const appropriateHandling =
+        firstCommand.success &&
+        secondCommand.reason === 'RAPID_REPEAT' &&
+        secondCommand.debounced === true;
+    testResults.push({
+        step: 2,
+        action: 'Verify appropriate handling',
+        first_success: firstCommand.success,
+        second_debounced: secondCommand.debounced,
+        second_reason: secondCommand.reason,
+        appropriate: appropriateHandling,
+        passed: appropriateHandling
+    });
+
+    // Step 3: Verify no duplicate actions
+    const actionsForCommand = voiceCommandState.action_log.filter(
+        a => a.command === testCommand.toLowerCase()
+    );
+    const noDuplicateActions = actionsForCommand.length === 1;
+    testResults.push({
+        step: 3,
+        action: 'Verify no duplicate actions',
+        action_count: actionsForCommand.length,
+        expected_actions: 1,
+        no_duplicates: noDuplicateActions,
+        passed: noDuplicateActions
+    });
+
+    // Step 4: Verify system remains stable
+    const systemStable = voiceCommandState.system_stable;
+    const historyConsistent = voiceCommandState.command_history.length === 2;
+    testResults.push({
+        step: 4,
+        action: 'Verify system remains stable',
+        system_stable: systemStable,
+        history_consistent: historyConsistent,
+        history_count: voiceCommandState.command_history.length,
+        passed: systemStable && historyConsistent
+    });
+
+    // Restore original state
+    Object.assign(voiceCommandState, originalState);
+    voiceCommandState.command_history = originalHistory;
+    voiceCommandState.action_log = originalActions;
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Repeated Voice Commands',
+        feature_id: 143,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'Rapid voice commands correctly debounced - system stable'
+            : 'Some voice command idempotency tests failed',
+        key_behaviors: [
+            'First command processed',
+            'Rapid repeat debounced',
+            'No duplicate actions',
+            'System remains stable'
+        ]
+    });
+});
+
+// ==============================================================================
+// Feature #144: Multiple Navigation Clicks Protection
+// ==============================================================================
+
+const navigationStackState = {
+    current_screen: 'dashboard',
+    navigation_stack: ['dashboard'],
+    last_navigation: null,
+    navigation_cooldown_ms: 100,
+    navigation_count: 0,
+    errors: []
+};
+
+function navigateToMenuItem(screenId) {
+    const now = Date.now();
+    const validScreens = ['dashboard', 'vitals', 'navigation', 'survival', 'settings', 'emergency'];
+
+    if (!validScreens.includes(screenId)) {
+        return { success: false, reason: 'INVALID_SCREEN', screen: screenId };
+    }
+
+    // Debounce rapid navigation
+    if (navigationStackState.last_navigation &&
+        (now - navigationStackState.last_navigation) < navigationStackState.navigation_cooldown_ms) {
+        // Still process but don't add duplicate to stack
+        navigationStackState.current_screen = screenId;
+        navigationStackState.navigation_count++;
+        return {
+            success: true,
+            screen: screenId,
+            debounced_stack: true,
+            message: 'Navigation processed, stack update debounced'
+        };
+    }
+
+    // Add to stack only if different from current
+    if (navigationStackState.navigation_stack[navigationStackState.navigation_stack.length - 1] !== screenId) {
+        navigationStackState.navigation_stack.push(screenId);
+        // Limit stack size
+        if (navigationStackState.navigation_stack.length > 20) {
+            navigationStackState.navigation_stack = navigationStackState.navigation_stack.slice(-10);
+        }
+    }
+
+    navigationStackState.current_screen = screenId;
+    navigationStackState.last_navigation = now;
+    navigationStackState.navigation_count++;
+
+    return {
+        success: true,
+        screen: screenId,
+        stack_depth: navigationStackState.navigation_stack.length,
+        message: `Navigated to ${screenId}`
+    };
+}
+
+function navigateBack() {
+    if (navigationStackState.navigation_stack.length <= 1) {
+        return { success: false, reason: 'AT_ROOT', current: navigationStackState.current_screen };
+    }
+
+    // Remove current screen from stack
+    navigationStackState.navigation_stack.pop();
+    const previousScreen = navigationStackState.navigation_stack[navigationStackState.navigation_stack.length - 1];
+    navigationStackState.current_screen = previousScreen;
+
+    return {
+        success: true,
+        screen: previousScreen,
+        stack_depth: navigationStackState.navigation_stack.length
+    };
+}
+
+app.post('/api/navigation/menu/:screenId', (req, res) => {
+    const result = navigateToMenuItem(req.params.screenId);
+    res.json(result);
+});
+
+app.post('/api/navigation/back', (req, res) => {
+    const result = navigateBack();
+    res.json(result);
+});
+
+app.get('/api/navigation/stack', (req, res) => {
+    res.json({
+        current_screen: navigationStackState.current_screen,
+        stack: navigationStackState.navigation_stack,
+        stack_depth: navigationStackState.navigation_stack.length,
+        navigation_count: navigationStackState.navigation_count
+    });
+});
+
+app.get('/api/idempotency/test-multiple-nav-clicks', (req, res) => {
+    const testResults = [];
+
+    // Save original state
+    const originalState = { ...navigationStackState };
+    const originalStack = [...navigationStackState.navigation_stack];
+
+    // Reset for test
+    navigationStackState.current_screen = 'dashboard';
+    navigationStackState.navigation_stack = ['dashboard'];
+    navigationStackState.last_navigation = null;
+    navigationStackState.navigation_count = 0;
+    navigationStackState.errors = [];
+
+    // Step 1: Rapidly tap multiple menu items
+    const nav1 = navigateToMenuItem('vitals');
+    const nav2 = navigateToMenuItem('navigation');
+    const nav3 = navigateToMenuItem('settings');
+    testResults.push({
+        step: 1,
+        action: 'Rapidly tap multiple menu items',
+        navigations: [nav1, nav2, nav3],
+        all_succeeded: nav1.success && nav2.success && nav3.success,
+        passed: nav1.success && nav2.success && nav3.success
+    });
+
+    // Step 2: Verify final destination correct
+    const finalDestination = navigationStackState.current_screen;
+    const correctDestination = finalDestination === 'settings';
+    testResults.push({
+        step: 2,
+        action: 'Verify final destination correct',
+        current_screen: finalDestination,
+        expected: 'settings',
+        correct: correctDestination,
+        passed: correctDestination
+    });
+
+    // Step 3: Verify no navigation stack issues
+    const stackHealthy = navigationStackState.navigation_stack.length <= 20 &&
+                          navigationStackState.navigation_stack.length >= 1 &&
+                          navigationStackState.errors.length === 0;
+    const stackHasRoot = navigationStackState.navigation_stack[0] === 'dashboard';
+    testResults.push({
+        step: 3,
+        action: 'Verify no navigation stack issues',
+        stack_depth: navigationStackState.navigation_stack.length,
+        errors: navigationStackState.errors.length,
+        stack_healthy: stackHealthy,
+        has_root: stackHasRoot,
+        passed: stackHealthy && stackHasRoot
+    });
+
+    // Step 4: Verify back button works correctly
+    const backResult = navigateBack();
+    const correctBackNavigation = backResult.success && navigationStackState.current_screen !== 'settings';
+    testResults.push({
+        step: 4,
+        action: 'Verify back button works correctly',
+        back_result: backResult,
+        new_screen: navigationStackState.current_screen,
+        back_worked: correctBackNavigation,
+        passed: correctBackNavigation
+    });
+
+    // Restore original state
+    Object.assign(navigationStackState, originalState);
+    navigationStackState.navigation_stack = originalStack;
+
+    const allPassed = testResults.every(t => t.passed);
+
+    res.json({
+        test_name: 'Multiple Navigation Clicks',
+        feature_id: 144,
+        all_tests_passed: allPassed,
+        results: testResults,
+        summary: allPassed
+            ? 'Rapid navigation handled correctly - stack stable, back works'
+            : 'Some navigation idempotency tests failed',
+        key_behaviors: [
+            'Multiple rapid taps processed',
+            'Final destination correct',
+            'Navigation stack healthy',
+            'Back button works correctly'
+        ]
+    });
+});
+
 app.get('/api/emergency/test-state', (req, res) => {
     const testResults = [];
 

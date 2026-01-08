@@ -42,5 +42,34 @@
     "category": "test",
     "created_at": "2026-01-08T00:15:01.615Z",
     "updated_at": "2026-01-08T00:15:01.615Z"
+  },
+  {
+    "id": 5,
+    "name": "DOUBLE_SAVE_TEST",
+    "latitude": -34.0001,
+    "longitude": 152.0001,
+    "altitude": 58,
+    "notes": "",
+    "category": "general",
+    "created_at": "2026-01-08T00:22:47.974Z",
+    "updated_at": "2026-01-08T00:22:47.974Z"
+  },
+  {
+    "id": 6,
+    "name": "DOUBLE_SAVE_TEST",
+    "latitude": -34.0001,
+    "longitude": 152.0001,
+    "altitude": 58,
+    "notes": "",
+    "category": "general",
+    "created_at": "2026-01-08T00:22:47.988Z",
+    "updated_at": "2026-01-08T00:22:47.988Z"
+  },
+  {
+    "id": "wp-1767831799919",
+    "name": "SAFE_SAVE_TEST",
+    "latitude": -34.1111,
+    "longitude": 152.1111,
+    "created": "2026-01-08T00:23:19.919Z"
   }
 ]
