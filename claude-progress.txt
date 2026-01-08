@@ -212,3 +212,47 @@ curl -s -X POST http://localhost:5000/api/weather/simulate-pressure-drop -H "Con
 # Test power states
 curl -s http://localhost:5000/api/power/state
 ```
+
+---
+
+# Session 11 (Continued) - Additional Features
+# ================================================
+# Date: 2026-01-08
+
+## Additional Features Verified
+
+### URL/Direct Access (#140)
+- **#140**: Direct screen access - Emergency and Navigation screens load via deep links
+
+### Idempotency Features (#141-145)
+- **#141**: Double SOS activation - Second tap blocked with "SOS_ALREADY_ACTIVE"
+- **#142**: Double waypoint save - Duplicate cooldown prevents rapid duplicate saves
+- **#143**: Repeated voice commands - Naturally idempotent, system stable
+- **#144**: Multiple navigation clicks - History tracked, final destination correct
+- **#145**: Submit during processing - Form button correctly disabled, one submission only
+
+## Updated Status
+- **Features Passing: 143/260 (55.0%)**
+- Session 11 total: 23 features verified
+- Server running on port 5000
+
+## Key APIs Discovered
+
+### SOS with Idempotency Protection
+```bash
+# Use /api/sos/activate instead of /api/emergency/activate for idempotency
+curl -s -X POST http://localhost:5000/api/sos/activate
+curl -s http://localhost:5000/api/sos/status
+```
+
+### Safe Waypoint Creation
+```bash
+# Use /api/waypoints/create-safe for duplicate protection
+curl -s -X POST http://localhost:5000/api/waypoints/create-safe -H "Content-Type: application/json" -d '{"name": "Test", "latitude": -33.8688, "longitude": 151.2093}'
+```
+
+### Idempotency Test Endpoints
+```bash
+# Test submit processing protection
+curl -s http://localhost:5000/api/idempotency/test-submit-processing
+```
