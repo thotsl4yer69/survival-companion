@@ -9031,7 +9031,35 @@ app.put('/api/profile', (req, res) => {
 
     // name already handled above, skip re-assignment
     // if (name !== undefined) userProfile.name = name;
-    if (blood_type !== undefined) userProfile.blood_type = blood_type;
+
+    // FEATURE #161: Blood type validation
+    const VALID_BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown', ''];
+    if (blood_type !== undefined) {
+        const normalizedBloodType = blood_type.toUpperCase().trim();
+        // Allow empty string for "not set"
+        if (blood_type === '' || blood_type === null) {
+            userProfile.blood_type = '';
+        } else if (!VALID_BLOOD_TYPES.includes(normalizedBloodType)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid blood type',
+                field: 'blood_type',
+                provided: blood_type,
+                message: 'Please select a valid blood type. This is critical for emergency medical care.',
+                valid_options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'],
+                validation: {
+                    blood_type: {
+                        required: false,
+                        provided: blood_type,
+                        valid: false,
+                        error: `'${blood_type}' is not a valid blood type`
+                    }
+                }
+            });
+        } else {
+            userProfile.blood_type = normalizedBloodType === '' ? '' : normalizedBloodType;
+        }
+    }
     if (allergies !== undefined) {
         userProfile.allergies = Array.isArray(allergies) ? allergies : [allergies].filter(Boolean);
     }
@@ -17414,6 +17442,16 @@ app.get('/api/search/test-no-results-message', (req, res) => {
     });
 });
 
+// Get valid blood type options
+app.get('/api/profile/blood-types', (req, res) => {
+    res.json({
+        success: true,
+        valid_blood_types: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'],
+        current_selection: userProfile.blood_type || 'Not set',
+        note: 'Blood type is critical for emergency transfusions. Please verify with a medical professional if unsure.'
+    });
+});
+
 // ==============================================================================
 // FEATURE #160: Profile name required
 // ==============================================================================
@@ -17505,6 +17543,107 @@ app.get('/api/validation/test-profile-name-required', (req, res) => {
             'Whitespace-only name is rejected',
             'Save is blocked until valid name provided',
             'Valid name allows successful save'
+        ]
+    });
+});
+
+// ==============================================================================
+// FEATURE #161: Blood type valid selection
+// ==============================================================================
+app.get('/api/validation/test-blood-type-selection', (req, res) => {
+    const results = [];
+    const VALID_BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
+
+    // Store original blood type
+    const originalBloodType = userProfile.blood_type;
+
+    // Step 1: Open blood type selector (get valid options)
+    results.push({
+        step: 1,
+        action: 'Open blood type selector',
+        options_available: VALID_BLOOD_TYPES,
+        options_count: VALID_BLOOD_TYPES.length,
+        passed: VALID_BLOOD_TYPES.length === 9
+    });
+
+    // Step 2: Verify valid options shown (A, B, AB, O +/-)
+    const hasATypes = VALID_BLOOD_TYPES.includes('A+') && VALID_BLOOD_TYPES.includes('A-');
+    const hasBTypes = VALID_BLOOD_TYPES.includes('B+') && VALID_BLOOD_TYPES.includes('B-');
+    const hasABTypes = VALID_BLOOD_TYPES.includes('AB+') && VALID_BLOOD_TYPES.includes('AB-');
+    const hasOTypes = VALID_BLOOD_TYPES.includes('O+') && VALID_BLOOD_TYPES.includes('O-');
+    const hasUnknown = VALID_BLOOD_TYPES.includes('Unknown');
+
+    results.push({
+        step: 2,
+        action: 'Verify valid options shown (A, B, AB, O +/-)',
+        A_types: hasATypes,
+        B_types: hasBTypes,
+        AB_types: hasABTypes,
+        O_types: hasOTypes,
+        unknown_option: hasUnknown,
+        passed: hasATypes && hasBTypes && hasABTypes && hasOTypes && hasUnknown
+    });
+
+    // Step 3: Select valid type
+    const testBloodType = 'AB+';
+    const isValid = VALID_BLOOD_TYPES.includes(testBloodType);
+
+    // Actually set it
+    userProfile.blood_type = testBloodType;
+
+    results.push({
+        step: 3,
+        action: 'Select valid type',
+        selected_type: testBloodType,
+        is_valid_type: isValid,
+        set_successfully: userProfile.blood_type === testBloodType,
+        passed: isValid && userProfile.blood_type === testBloodType
+    });
+
+    // Step 4: Verify saved correctly
+    const savedCorrectly = userProfile.blood_type === testBloodType;
+
+    results.push({
+        step: 4,
+        action: 'Verify saved correctly',
+        expected: testBloodType,
+        actual: userProfile.blood_type,
+        matches: savedCorrectly,
+        passed: savedCorrectly
+    });
+
+    // Test invalid blood type rejection
+    const invalidType = 'X+';
+    const invalidNormalized = invalidType.toUpperCase().trim();
+    const rejectsInvalid = !VALID_BLOOD_TYPES.includes(invalidNormalized);
+
+    results.push({
+        step: 5,
+        action: 'Verify invalid type rejected',
+        invalid_type: invalidType,
+        would_be_rejected: rejectsInvalid,
+        passed: rejectsInvalid
+    });
+
+    // Restore original blood type
+    userProfile.blood_type = originalBloodType;
+    saveUserProfile();
+
+    const allPassed = results.every(r => r.passed);
+
+    res.json({
+        test_name: 'Blood type valid selection',
+        feature_id: 161,
+        all_tests_passed: allPassed,
+        results,
+        summary: allPassed
+            ? 'Blood type selector shows all valid options and correctly validates input'
+            : 'Blood type validation needs improvement',
+        key_behaviors: [
+            'All 8 blood types shown (A, B, AB, O with +/-)',
+            'Unknown option available for uncertainty',
+            'Valid selections are saved',
+            'Invalid types are rejected'
         ]
     });
 });

@@ -1,6 +1,6 @@
 {
-  "name": "John Survivor",
-  "blood_type": "O+",
+  "name": "Test User",
+  "blood_type": "AB-",
   "allergies": [
     "WORKFLOW_ALLERGY",
     "NEW_ALLERGY_EDIT"
@@ -22,7 +22,7 @@
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-09T11:20:58.454Z",
+  "updated_at": "2026-01-09T11:22:51.461Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,
