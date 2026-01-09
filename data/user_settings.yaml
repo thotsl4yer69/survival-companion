@@ -1,14 +1,14 @@
 # ==============================================================================
 # Survival Companion - User Settings
-# Generated: 2026-01-08T00:16:22.901Z
+# Generated: 2026-01-09T10:58:16.063Z
 # ==============================================================================
 
 display:
-  night_mode: true
-  font_size: large
+  night_mode: false
+  font_size: medium
   screen_timeout: 60
 voice:
-  volume: 50
+  volume: 80
   voice_feedback: true
 power:
   low_power_warning: true
@@ -22,5 +22,3 @@ notifications:
   storm_alerts: true
   health_alerts: true
   sensor_warnings: true
-theme: dark
-language: en
