@@ -19,10 +19,25 @@
       "name": "WORKFLOW_CONTACT",
       "phone": "+1-555-WORKFLOW",
       "relationship": "Test"
+    },
+    {
+      "name": "John",
+      "phone": "notaphone",
+      "relationship": "Friend"
+    },
+    {
+      "name": "Test Person",
+      "phone": "notaphone",
+      "relationship": "Friend"
+    },
+    {
+      "name": "Mom",
+      "phone": "+1-555-123-4567",
+      "relationship": "Family"
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-09T11:22:51.461Z",
+  "updated_at": "2026-01-09T11:26:44.119Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,
