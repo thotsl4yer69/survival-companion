@@ -30,5 +30,21 @@
       }
     ],
     "total_distance_meters": 0
+  },
+  {
+    "id": 3,
+    "name": "TEST_TIMESTAMP_TRAIL",
+    "started_at": "2026-01-11T23:48:20.376Z",
+    "ended_at": "2026-01-11T23:48:31.847Z",
+    "points": [
+      {
+        "latitude": -33.8688,
+        "longitude": 151.2093,
+        "altitude": 58,
+        "timestamp": "2026-01-11T23:48:20.376Z",
+        "accuracy": 3.5
+      }
+    ],
+    "total_distance_meters": 0
   }
 ]
