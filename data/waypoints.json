@@ -93,5 +93,38 @@
     "category": "general",
     "created_at": "2026-01-09T11:24:34.227Z",
     "updated_at": "2026-01-09T11:24:34.227Z"
+  },
+  {
+    "id": null,
+    "name": "Test",
+    "latitude": "invalid",
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "",
+    "category": "general",
+    "created_at": "2026-01-11T23:15:32.001Z",
+    "updated_at": "2026-01-11T23:15:32.001Z"
+  },
+  {
+    "id": null,
+    "name": "Test",
+    "latitude": -200,
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "",
+    "category": "general",
+    "created_at": "2026-01-11T23:15:33.055Z",
+    "updated_at": "2026-01-11T23:15:33.055Z"
+  },
+  {
+    "id": null,
+    "name": "TEST_SAVE_CONFIRM",
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "",
+    "category": "general",
+    "created_at": "2026-01-11T23:18:14.050Z",
+    "updated_at": "2026-01-11T23:18:14.050Z"
   }
 ]

@@ -1,10 +1,10 @@
 # ==============================================================================
 # Survival Companion - User Settings
-# Generated: 2026-01-09T10:58:16.063Z
+# Generated: 2026-01-11T23:19:03.866Z
 # ==============================================================================
 
 display:
-  night_mode: false
+  night_mode: true
   font_size: medium
   screen_timeout: 60
 voice:
