@@ -2,9 +2,11 @@
   "name": "Regression Test User",
   "blood_type": "O+",
   "allergies": [
-    "Test Allergy"
+    "Regression Test Allergy"
   ],
-  "medical_conditions": [],
+  "medical_conditions": [
+    "Test Condition"
+  ],
   "medications": [
     "WORKFLOW_MED"
   ],
@@ -36,7 +38,7 @@
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-12T02:01:21.550Z",
+  "updated_at": "2026-01-12T02:37:59.535Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,
