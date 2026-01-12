@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Survival Companion"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>Session51 Export Test - Trail Export</name>
+    <time>2026-01-12T03:51:14.089Z</time>
+    <desc>Breadcrumb trail exported from Survival Companion</desc>
+  </metadata>
+  <trk>
+    <name>Session51 Export Test</name>
+    <desc>Started: 2026-01-12T03:51:05.444Z, Points: 1</desc>
+    <trkseg>
+      <trkpt lat="-33.8688" lon="151.2093">
+        <ele>58</ele>
+        <time>2026-01-12T03:51:05.444Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

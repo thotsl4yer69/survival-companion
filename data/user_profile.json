@@ -1,11 +1,12 @@
 {
-  "name": "Session50 Test User",
-  "blood_type": "AB-",
+  "name": "Session51 Regression Test",
+  "blood_type": "O+",
   "allergies": [
-    "Sulfa drugs"
+    "Peanuts",
+    "Shellfish"
   ],
   "medical_conditions": [
-    "Mild asthma"
+    "Type 2 Diabetes"
   ],
   "medications": [
     "WORKFLOW_MED"
@@ -18,7 +19,7 @@
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-12T03:47:21.674Z",
+  "updated_at": "2026-01-12T03:50:55.259Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,

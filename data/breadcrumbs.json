@@ -62,5 +62,21 @@
       }
     ],
     "total_distance_meters": 0
+  },
+  {
+    "id": 5,
+    "name": "Session51 Export Test",
+    "started_at": "2026-01-12T03:51:05.444Z",
+    "ended_at": "2026-01-12T03:51:09.334Z",
+    "points": [
+      {
+        "latitude": -33.8688,
+        "longitude": 151.2093,
+        "altitude": 58,
+        "timestamp": "2026-01-12T03:51:05.444Z",
+        "accuracy": 3.5
+      }
+    ],
+    "total_distance_meters": 0
   }
 ]
