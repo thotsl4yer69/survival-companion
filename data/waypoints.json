@@ -44,17 +44,6 @@
     "updated_at": "2026-01-08T00:15:01.615Z"
   },
   {
-    "id": 5,
-    "name": "DOUBLE_SAVE_TEST",
-    "latitude": -34.0001,
-    "longitude": 152.0001,
-    "altitude": 58,
-    "notes": "",
-    "category": "general",
-    "created_at": "2026-01-08T00:22:47.974Z",
-    "updated_at": "2026-01-08T00:22:47.974Z"
-  },
-  {
     "id": 6,
     "name": "DOUBLE_SAVE_TEST",
     "latitude": -34.0001,
@@ -167,5 +156,38 @@
     "category": "poi",
     "created_at": "2026-01-12T02:31:03.044Z",
     "updated_at": "2026-01-12T02:31:03.044Z"
+  },
+  {
+    "id": null,
+    "name": "REGRESSION_TEST_96_SESSION38",
+    "latitude": -33.9123,
+    "longitude": 151.2567,
+    "altitude": 42,
+    "notes": "Regression test for feature 96",
+    "category": "test",
+    "created_at": "2026-01-12T02:47:25.961Z",
+    "updated_at": "2026-01-12T02:47:25.961Z"
+  },
+  {
+    "id": null,
+    "name": "DELETE_TEST_SESSION38",
+    "latitude": -33.95,
+    "longitude": 151.3,
+    "altitude": 35,
+    "notes": "Deletion test",
+    "category": "test",
+    "created_at": "2026-01-12T02:47:42.676Z",
+    "updated_at": "2026-01-12T02:47:42.676Z"
+  },
+  {
+    "id": null,
+    "name": "DELETE_TEST_SESSION38_v2",
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "Deletion test with proper ID",
+    "category": "test",
+    "created_at": "2026-01-12T02:48:27.517Z",
+    "updated_at": "2026-01-12T02:48:27.517Z"
   }
 ]
