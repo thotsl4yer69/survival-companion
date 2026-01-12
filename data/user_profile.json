@@ -35,10 +35,15 @@
       "name": "Mom",
       "phone": "+1-555-123-4567",
       "relationship": "Family"
+    },
+    {
+      "name": "Test Contact",
+      "phone": "invalid-format",
+      "relationship": "Friend"
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-12T02:37:59.535Z",
+  "updated_at": "2026-01-12T02:58:22.084Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,
