@@ -126,5 +126,35 @@
     "category": "general",
     "created_at": "2026-01-11T23:18:14.050Z",
     "updated_at": "2026-01-11T23:18:14.050Z"
+  },
+  {
+    "id": null,
+    "name": "TestExport_Base",
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "Test waypoint 1 for export",
+    "category": "test",
+    "created_at": "2026-01-12T00:05:31.284Z"
+  },
+  {
+    "id": null,
+    "name": "TestExport_Camp",
+    "latitude": -33.8588,
+    "longitude": 151.2193,
+    "altitude": 68,
+    "notes": "Test waypoint 2 for export",
+    "category": "test",
+    "created_at": "2026-01-12T00:05:31.284Z"
+  },
+  {
+    "id": null,
+    "name": "TestExport_Water",
+    "latitude": -33.8488,
+    "longitude": 151.22930000000002,
+    "altitude": 78,
+    "notes": "Test waypoint 3 for export",
+    "category": "test",
+    "created_at": "2026-01-12T00:05:31.284Z"
   }
 ]
