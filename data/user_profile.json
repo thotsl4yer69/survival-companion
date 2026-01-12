@@ -1,47 +1,24 @@
 {
-  "name": "Regression Test User",
-  "blood_type": "O+",
+  "name": "Session50 Test User",
+  "blood_type": "AB-",
   "allergies": [
-    "Regression Test Allergy"
+    "Sulfa drugs"
   ],
-  "medical_conditions": [],
+  "medical_conditions": [
+    "Mild asthma"
+  ],
   "medications": [
     "WORKFLOW_MED"
   ],
   "emergency_contacts": [
     {
-      "name": "CONTACT_TEST_001",
-      "phone": "+1-555-987-6543",
-      "relationship": "Friend"
-    },
-    {
-      "name": "WORKFLOW_CONTACT",
-      "phone": "+1-555-WORKFLOW",
-      "relationship": "Test"
-    },
-    {
-      "name": "John",
-      "phone": "notaphone",
-      "relationship": "Friend"
-    },
-    {
-      "name": "Test Person",
-      "phone": "notaphone",
-      "relationship": "Friend"
-    },
-    {
-      "name": "Mom",
+      "name": "Emergency Mom",
       "phone": "+1-555-123-4567",
-      "relationship": "Family"
-    },
-    {
-      "name": "Test Contact",
-      "phone": "invalid-format",
-      "relationship": "Friend"
+      "relationship": "Mother"
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-12T03:08:06.593Z",
+  "updated_at": "2026-01-12T03:47:21.674Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,

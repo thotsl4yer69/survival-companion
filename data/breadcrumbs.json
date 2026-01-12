@@ -46,5 +46,21 @@
       }
     ],
     "total_distance_meters": 0
+  },
+  {
+    "id": 4,
+    "name": "Session50 Test Trail",
+    "started_at": "2026-01-12T03:48:00.040Z",
+    "ended_at": "2026-01-12T03:48:25.467Z",
+    "points": [
+      {
+        "latitude": -33.8688,
+        "longitude": 151.2093,
+        "altitude": 58,
+        "timestamp": "2026-01-12T03:48:00.040Z",
+        "accuracy": 3.5
+      }
+    ],
+    "total_distance_meters": 0
   }
 ]
