@@ -4,9 +4,7 @@
   "allergies": [
     "Regression Test Allergy"
   ],
-  "medical_conditions": [
-    "Test Condition"
-  ],
+  "medical_conditions": [],
   "medications": [
     "WORKFLOW_MED"
   ],
@@ -43,7 +41,7 @@
     }
   ],
   "notes": "",
-  "updated_at": "2026-01-12T02:58:22.084Z",
+  "updated_at": "2026-01-12T03:08:06.593Z",
   "baseline_vitals": {
     "heart_rate": 72,
     "spo2": 98,
