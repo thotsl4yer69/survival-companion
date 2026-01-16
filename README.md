@@ -1,227 +1,137 @@
 # Survival Companion
 
-A portable, offline AI survival expert system designed for Raspberry Pi 5 that provides medical guidance, plant/wildlife identification, navigation, weather awareness, and emergency assistance.
+**Offline AI survival expert system for Raspberry Pi 5 with Hailo-8 accelerator**
+
+[![Status](https://img.shields.io/badge/status-deployed-success)](http://192.168.1.219:5000)
+[![Features](https://img.shields.io/badge/features-260%2F260-brightgreen)](./api/features.db)
+[![Production](https://img.shields.io/badge/production-25%25-yellow)](./DEPLOYMENT_STATUS.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+> 🚨 **Critical Update:** All fake/simulated data has been removed. System now returns truthful "not available" messages when sensors aren't connected.
+
+---
 
 ## Overview
 
-Survival Companion is an autonomous tactical AI companion that operates completely offline in wilderness environments where professional medical help is unavailable. It integrates as a persona module within the sentient-core-v4 framework, providing life-critical assistance through voice interaction, computer vision, and real-time sensor monitoring.
+An autonomous survival companion providing:
+- 🏥 **Medical AI** - 12 first aid protocols with step-by-step guidance
+- 🗺️ **GPS Navigation** - Waypoints, breadcrumb trails, position tracking
+- 🌤️ **Weather Monitoring** - Real-time environmental data and storm alerts
+- 👁️ **Vision AI** - Plant/animal identification, wound assessment, skin screening
+- 📊 **Vitals Monitoring** - SpO2, heart rate, body temperature tracking
+- 🚨 **Emergency SOS** - Audio beacon, position broadcast, emergency info
+- 🎤 **Voice Interface** - Wake word activation, natural language queries
+- 🧠 **Dual LLM System** - Phi-3 (general) + BioMistral (medical) queries
 
-## Key Features
+**Built for:** Remote wilderness survival, disaster scenarios, off-grid medical support
 
-- **Voice Interface**: Hands-free operation with wake word detection, speech-to-text (Whisper), and text-to-speech (Piper)
-- **Medical First Aid**: SQLite-backed protocol database with 45+ medical scenarios, safety-validated outputs
-- **Plant/Wildlife ID**: Camera-based identification with edibility/toxicity warnings
-- **Navigation**: GPS tracking, offline maps (MBTiles), waypoints, breadcrumb trails
-- **Weather Monitoring**: BME280 environmental sensors with storm prediction
-- **Emergency SOS**: Audio beacon, position display, medical info for rescuers
-- **Vitals Monitoring**: SpO2, heart rate, temperature, ECG screening
-
-## Hardware Requirements
-
-| Component | Specification | Purpose |
-|-----------|--------------|---------|
-| Raspberry Pi 5 | 8GB RAM | Main compute |
-| Hailo-8L | 26 TOPS, PCIe M.2 | Vision AI acceleration |
-| Display | 3.5-5" SPI TFT (ili9486) | Touch interface |
-| Camera | OV5647 or IMX219 (CSI) | Vision identification |
-| MAX30102 | I2C 0x57 | SpO2 and heart rate |
-| MLX90614 | I2C 0x5A | IR skin temperature |
-| BME280 | I2C 0x76 | Environmental sensors |
-| GPS | u-blox NEO-6M (UART) | Position tracking |
-| Piezo | GPIO18 PWM | SOS audio beacon |
-| MCP3008 | SPI1 | ECG ADC |
-
-## Software Stack
-
-- **Python 3.9+** with llama.cpp bindings
-- **LLM Fast**: Phi-3-mini-4k-instruct Q4_K_M (2.5GB)
-- **LLM Medical**: BioMistral-7B-DARE Q4_K_M (4GB)
-- **STT**: whisper.cpp (ggml-base.en.bin)
-- **TTS**: Piper (en_US-lessac-medium)
-- **Wake Word**: OpenWakeWord
-- **Vision**: Hailo-compiled HEF models (MobileNetV2/EfficientNet)
-- **Database**: SQLite for protocols, species, user data
-- **Maps**: OpenMapTiles MBTiles format
+---
 
 ## Quick Start
 
-```bash
-# Clone and enter the project
-cd survival-companion
+### Access Web Dashboard
 
-# Run the setup script
-./init.sh
+http://192.168.1.219:5000
 
-# Activate virtual environment
-source .venv/bin/activate
+**Available now:**
+- ✅ Medical protocols (12 first aid guides)
+- ✅ System status and configuration
+- ✅ API endpoints (100+)
+- ⚠️ Sensor data (shows "not available" - hardware pending)
 
-# Run tests
-pytest tests/ -v
+### Hardware Requirements
 
-# Start the application (requires models)
-python personas/survival/survival_persona.py
-```
+**Minimum System (~$55-75):**
+- Raspberry Pi 5 (16GB RAM recommended)
+- BME280 sensor (weather) - $5-10
+- GPS NEO-6M module - $15-25
+- Camera OV5647/IMX219 - $15-30
+- ili9486 TFT display (3.5-5") - $20-40
 
-## Memory Management
+**Full System (~$80-100):**
+- Add MAX30102 (vitals) - $8-15
+- Add MLX90614 (temperature) - $15-25
+- Add Piezo buzzer (SOS) - $2-5
 
-The Raspberry Pi 5 has 8GB RAM - **only one LLM can be loaded at a time**.
+**AI Accelerator:**
+- Hailo-8 (26 TOPS) - Optional but recommended for vision AI
 
-| State | RAM Usage | Description |
-|-------|-----------|-------------|
-| Idle Listening | ~2GB | Wake word + VAD only |
-| Fast LLM Active | ~5.5GB | Phi-3-mini + voice pipeline |
-| Medical LLM Active | ~7.5GB | BioMistral + voice pipeline |
-| Vision Inference | ~3GB | Hailo models (LLM unloaded) |
+---
 
-The ModelManager class handles automatic model swapping based on query classification.
+## Documentation
 
-## Implementation Phases
+**Essential Guides:**
+- [API Reference](./API_REFERENCE.md) - All 100+ endpoints
+- [Deployment Status](./DEPLOYMENT_STATUS.md) - Current progress (25%)
+- [Hardware Setup](./HARDWARE_SETUP_GUIDE.md) - Complete wiring diagrams
+- [Hardware FAQ](./HARDWARE_FAQ.md) - Sensor requirements, Hailo usage
+- [Session 53 Summary](./SESSION_53_SUMMARY.md) - Latest deployment
 
-### Phase 1: Core MVP (80 features)
-- Voice interface (wake word, STT, TTS)
-- Phi-3 general LLM
-- GPS navigation and offline maps
-- Weather monitoring
-- Emergency SOS beacon
-- Basic medical protocol lookup
+---
 
-### Phase 2: Medical Intelligence (60 features)
-- BioMistral medical LLM
-- Vitals monitoring (SpO2, HR, temp, ECG)
-- Advanced medical protocol database
-- Safety layer validation
+## API Examples
 
-### Phase 3: Advanced Vision (40 features)
-- Skin lesion/melanoma screening
-- Plant and wildlife identification
-- Wound assessment
-- Vision pipeline routing
-
-### Phase 4: Polish (25 features)
-- Vitals dashboards and trends
-- Regional species packs
-- Multi-language support
-- Hardware expansion (LoRa, e-ink)
-
-## Project Structure
-
-```
-survival-companion/
-├── init.sh                 # Environment setup script
-├── README.md               # This file
-├── app_spec.txt            # Full project specification
-├── config/
-│   └── survival_config.yaml    # Main configuration
-├── personas/survival/
-│   ├── __init__.py
-│   ├── survival_persona.py     # Main persona class
-│   ├── model_manager.py        # LLM swapping logic
-│   ├── medical/
-│   │   ├── protocols.db        # Medical protocol database
-│   │   ├── advisor.py          # Protocol lookup
-│   │   ├── safety_layer.py     # Output validation
-│   │   └── vitals_analyzer.py  # Vitals processing
-│   ├── vision/
-│   │   ├── pipeline.py         # Triage routing
-│   │   ├── skin_analyzer.py
-│   │   ├── plant_identifier.py
-│   │   └── wildlife_identifier.py
-│   ├── navigation/
-│   │   ├── navigator.py
-│   │   ├── gps_handler.py
-│   │   └── maps/               # MBTiles storage
-│   ├── emergency/
-│   │   ├── beacon.py           # SOS activation
-│   │   └── protocols.py
-│   ├── voice/
-│   │   ├── wake_word.py
-│   │   ├── stt.py
-│   │   └── tts.py
-│   ├── sensors/
-│   │   ├── vitals.py
-│   │   ├── environment.py
-│   │   └── gps.py
-│   ├── ui/
-│   │   ├── display.py
-│   │   └── touch.py
-│   ├── data/
-│   │   ├── species.db
-│   │   ├── user_data.db
-│   │   └── regional/
-│   └── models/
-│       ├── phi-3-mini.gguf
-│       ├── biomistral.gguf
-│       └── *.hef
-└── tests/
-    ├── unit/
-    ├── integration/
-    └── safety/
-```
-
-## Safety Architecture
-
-All medical outputs pass through a safety layer that:
-
-1. **Blocks forbidden patterns**: No definitive diagnoses, specific dosing, or death predictions
-2. **Requires disclaimers**: All medical advice includes appropriate caveats
-3. **Uses verified data**: LLM formats responses; databases provide facts
-4. **Assumes dangerous**: Uncertain wildlife/plant IDs default to dangerous
-
-### Forbidden Output Patterns
-- "you have [disease] cancer"
-- "definitely [condition] disease"
-- "take [number] mg of"
-- "you will die"
-
-### Required Disclaimers
-- **Skin analysis**: "This is a screening tool only. See a dermatologist for diagnosis."
-- **Medication**: "Consult a medical professional before taking any medication."
-- **Emergency**: "If symptoms worsen, activate emergency beacon immediately."
-
-## Testing
+### Get Medical Protocol
 
 ```bash
-# Run all tests
-pytest tests/ -v
+# List all protocols
+curl http://192.168.1.219:5000/api/protocols
 
-# Run safety tests (critical)
-pytest tests/safety/ -v
-
-# Run with coverage
-pytest tests/ --cov=personas/survival --cov-report=html
+# Get specific protocol (CPR)
+curl http://192.168.1.219:5000/api/protocols/12 | json_pp
 ```
 
-## Power Budget
+### Check Vitals (requires sensors)
 
-| State | Power Draw | Runtime (20Ah) |
-|-------|------------|----------------|
-| Idle Listening | 2W | 40h |
-| Active Voice | 7W | 11h |
-| Vision Analysis | 8W | 10h |
-| Emergency Beacon | 3W | 26h |
+```bash
+curl http://192.168.1.219:5000/api/vitals/current
+# Returns: {"error": "SENSORS_NOT_AVAILABLE"} until hardware connected
+```
 
-## Model Downloads
+### GPS Position (requires GPS)
 
-Before deployment, download and place models in `personas/survival/models/`:
+```bash
+curl http://192.168.1.219:5000/api/gps/position
+# Returns: {"error": "GPS_NOT_AVAILABLE"} until GPS connected
+```
 
-1. **Phi-3-mini**: [HuggingFace](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf)
-2. **BioMistral**: [HuggingFace](https://huggingface.co/BioMistral/BioMistral-7B-DARE)
-3. **Whisper.cpp**: [GitHub](https://github.com/ggerganov/whisper.cpp/tree/master/models)
-4. **Piper voices**: [GitHub](https://github.com/rhasspy/piper/releases)
+See [API_REFERENCE.md](./API_REFERENCE.md) for complete documentation.
 
-## Contributing
+---
 
-This is a life-critical system. All contributions must:
+## Current Status
 
-1. Include comprehensive tests
-2. Pass safety layer validation
-3. Work completely offline
-4. Be field-tested in actual wilderness conditions
+**Deployment Phase:** 1 of 4 (Software Deployment)
+
+**Production Readiness:** 25% (3/12 milestones)
+
+- ✅ Application deployed to Pi5
+- ✅ Hailo-8 drivers installed
+- ✅ All fake data removed
+- 🔴 Physical sensors (0/7 connected)
+- 🔴 Display configured
+- 🔴 Vision models compiled (.hef)
+
+**Next:** Connect physical sensors and verify real data collection.
+
+See [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) for complete checklist.
+
+---
 
 ## License
 
-[License to be determined]
+MIT License
 
-## Disclaimer
+---
 
-This system is designed to assist in emergency situations but is not a replacement for professional medical care. Always seek professional help when available. The developers are not liable for outcomes resulting from use of this system.
+## Contact
+
+**Repository:** https://github.com/thotsl4yer69/survival-companion
+
+**Live Demo:** http://192.168.1.219:5000 (local network only)
+
+---
+
+**Status:** Deployed - Awaiting Hardware Assembly 🚀
+
+**Last Updated:** 2026-01-16
