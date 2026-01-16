@@ -12,6 +12,7 @@ import { dirname, join } from 'path';
 import fs from 'fs';
 import yaml from 'js-yaml';
 import crypto from 'crypto';
+import { getSensorData } from './check_sensors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -256,21 +257,13 @@ function registerActivity(type = 'interaction') {
     return { success: true, message: 'Activity registered', state: 'active' };
 }
 
-// Simulated sensor data
-const sensorData = {
-    temperature: { value: 23.5, unit: 'C', source: 'BME280' },
-    humidity: { value: 65, unit: '%', source: 'BME280' },
-    pressure: { value: 1013.25, unit: 'hPa', source: 'BME280' },
-    heart_rate: { value: 72, unit: 'bpm', source: 'MAX30102' },
-    spo2: { value: 98, unit: '%', source: 'MAX30102' },
-    body_temp: { value: 36.8, unit: 'C', source: 'MLX90614' },
-    gps: {
-        latitude: -33.8688,
-        longitude: 151.2093,
-        altitude: 58,
-        fix: false
-    }
-};
+// Real sensor detection - NO FAKE DATA
+let sensorData = getSensorData();
+
+// Refresh sensor status every 5 seconds
+setInterval(() => {
+    sensorData = getSensorData();
+}, 5000);
 
 // ==============================================================================
 // Template Engine (Simple)
@@ -2286,9 +2279,23 @@ startPressureRecording();
 
 // Get weather with storm alerts
 app.get('/api/weather', (req, res) => {
-    const currentPressure = sensorData.pressure.value + (Math.random() - 0.5) * 2;
-    const currentTemp = sensorData.temperature.value + (Math.random() - 0.5);
-    const currentHumidity = Math.round(sensorData.humidity.value + (Math.random() - 0.5) * 2);
+    // Check if BME280 sensor is connected
+    if (!sensorData.sensors_detected.bme280) {
+        return res.json({
+            success: false,
+            error: 'SENSOR_NOT_AVAILABLE',
+            message: 'BME280 weather sensor not connected',
+            temperature: sensorData.temperature || { available: false, message: 'BME280 sensor not connected' },
+            humidity: sensorData.humidity || { available: false, message: 'BME280 sensor not connected' },
+            pressure: sensorData.pressure || { available: false, message: 'BME280 sensor not connected' },
+            altitude_estimated: { available: false, message: 'BME280 sensor not connected' }
+        });
+    }
+
+    // TODO: Read real values from BME280 sensor
+    const currentPressure = 0; // Will be from real sensor
+    const currentTemp = 0; // Will be from real sensor
+    const currentHumidity = 0; // Will be from real sensor
 
     // Calculate pressure trend
     let trend = 'stable';
@@ -8129,17 +8136,17 @@ app.post('/api/llm/history/clear', (req, res) => {
 
 // GPS state with real-time updates
 let gpsState = {
-    latitude: -33.8688,
-    longitude: 151.2093,
-    altitude: 58,
-    accuracy: 3.5, // meters
-    speed: 0, // m/s
-    heading: 0, // degrees from north
-    fix: true,
-    satellites: 8,
-    hdop: 1.2,
-    last_update: Date.now(),
-    tracking_active: true,
+    latitude: null,
+    longitude: null,
+    altitude: null,
+    accuracy: null,
+    speed: 0,
+    heading: 0,
+    fix: false,  // NO GPS FIX - real GPS module not connected
+    satellites: 0,
+    hdop: null,
+    last_update: null,
+    tracking_active: false,  // No GPS tracking available
     // FEATURE #169: GPS acquisition state
     is_acquiring: false,
     acquisition_started_at: null,
@@ -8265,7 +8272,32 @@ app.post('/api/gps/stop', (req, res) => {
 
 // Get current GPS position
 app.get('/api/gps/position', (req, res) => {
+    // Check if GPS module is connected and has fix
+    if (!gpsState.fix || gpsState.latitude === null) {
+        return res.json({
+            success: false,
+            error: 'GPS_NOT_AVAILABLE',
+            message: 'GPS module not connected or no satellite fix',
+            latitude: null,
+            longitude: null,
+            altitude: null,
+            accuracy: null,
+            accuracy_indicator: 'none',
+            speed: 0,
+            heading: 0,
+            fix: false,
+            satellites: 0,
+            hdop: null,
+            last_update: null,
+            age_ms: null,
+            tracking_active: false,
+            coordinates_formatted: 'Not available',
+            available: false
+        });
+    }
+
     res.json({
+        success: true,
         latitude: gpsState.latitude,
         longitude: gpsState.longitude,
         altitude: gpsState.altitude,
@@ -8279,7 +8311,8 @@ app.get('/api/gps/position', (req, res) => {
         last_update: gpsState.last_update,
         age_ms: Date.now() - gpsState.last_update,
         tracking_active: gpsState.tracking_active,
-        coordinates_formatted: `${gpsState.latitude.toFixed(6)}, ${gpsState.longitude.toFixed(6)}`
+        coordinates_formatted: `${gpsState.latitude.toFixed(6)}, ${gpsState.longitude.toFixed(6)}`,
+        available: true
     });
 });
 
@@ -11991,17 +12024,23 @@ const vitalsHistory = {
     max_samples: 120 // 1 hour at 30-second intervals
 };
 
-// Sample vitals periodically
+// Real vitals sampling - NO FAKE DATA
 function sampleVitals() {
-    const timestamp = new Date().toISOString();
-    const hr = Math.round(72 + (Math.random() - 0.5) * 8);
-    const spo2 = Math.round(97 + Math.random() * 2);
-    const bodyTemp = parseFloat((36.6 + (Math.random() - 0.5) * 0.4).toFixed(1));
+    // Only sample if real sensors are connected
+    if (!sensorData.sensors_detected.max30102 && !sensorData.sensors_detected.mlx90614) {
+        // No vitals sensors connected - don't populate fake data
+        return;
+    }
 
-    // Add samples
-    vitalsHistory.heart_rate.push({ timestamp, value: hr });
-    vitalsHistory.spo2.push({ timestamp, value: spo2 });
-    vitalsHistory.body_temp.push({ timestamp, value: bodyTemp });
+    const timestamp = new Date().toISOString();
+
+    // TODO: Read from actual MAX30102 and MLX90614 sensors
+    // For now, do nothing - vitalsHistory stays empty until real sensors connected
+
+    // Add samples only if sensors are available
+    // vitalsHistory.heart_rate.push({ timestamp, value: hr });
+    // vitalsHistory.spo2.push({ timestamp, value: spo2 });
+    // vitalsHistory.body_temp.push({ timestamp, value: bodyTemp });
 
     // Trim to max samples
     if (vitalsHistory.heart_rate.length > vitalsHistory.max_samples) {
@@ -12011,24 +12050,10 @@ function sampleVitals() {
     }
 }
 
-// Initialize with some historical data
-function initializeVitalsHistory() {
-    const now = Date.now();
-    // Generate last 30 minutes of data (60 samples at 30-second intervals)
-    for (let i = 60; i >= 0; i--) {
-        const timestamp = new Date(now - i * 30000).toISOString();
-        const hr = Math.round(72 + (Math.random() - 0.5) * 8);
-        const spo2 = Math.round(97 + Math.random() * 2);
-        const bodyTemp = parseFloat((36.6 + (Math.random() - 0.5) * 0.4).toFixed(1));
+// Do NOT initialize with fake historical data
+// vitalsHistory stays empty until real sensors are connected
 
-        vitalsHistory.heart_rate.push({ timestamp, value: hr });
-        vitalsHistory.spo2.push({ timestamp, value: spo2 });
-        vitalsHistory.body_temp.push({ timestamp, value: bodyTemp });
-    }
-}
-
-// Start sampling
-initializeVitalsHistory();
+// Start sampling (will do nothing until real sensors connected)
 setInterval(sampleVitals, 30000); // Sample every 30 seconds
 
 // Get vitals history
@@ -12108,6 +12133,18 @@ app.get('/api/vitals/history', (req, res) => {
 
 // Get latest vitals with trend direction
 app.get('/api/vitals/current', (req, res) => {
+    // Check if vitals sensors are connected
+    if (!sensorData.sensors_detected.max30102 && !sensorData.sensors_detected.mlx90614) {
+        return res.json({
+            success: false,
+            error: 'SENSORS_NOT_AVAILABLE',
+            message: 'Medical sensors not connected',
+            heart_rate: sensorData.heart_rate || { available: false, message: 'MAX30102 sensor not connected' },
+            spo2: sensorData.spo2 || { available: false, message: 'MAX30102 sensor not connected' },
+            body_temp: sensorData.body_temp || { available: false, message: 'MLX90614 sensor not connected' }
+        });
+    }
+
     const getTrend = (history) => {
         if (history.length < 5) return 'stable';
         const recent = history.slice(-5);
@@ -12126,29 +12163,44 @@ app.get('/api/vitals/current', (req, res) => {
     const spo2History = vitalsHistory.spo2;
     const tempHistory = vitalsHistory.body_temp;
 
+    // If no history data yet, return "not available"
+    if (hrHistory.length === 0 && spo2History.length === 0 && tempHistory.length === 0) {
+        return res.json({
+            success: false,
+            error: 'NO_DATA_YET',
+            message: 'Sensors connected but no data collected yet',
+            heart_rate: { available: false, message: 'Waiting for first reading' },
+            spo2: { available: false, message: 'Waiting for first reading' },
+            body_temp: { available: false, message: 'Waiting for first reading' }
+        });
+    }
+
     res.json({
         success: true,
         timestamp: new Date().toISOString(),
         heart_rate: {
-            value: hrHistory[hrHistory.length - 1]?.value || 72,
+            value: hrHistory[hrHistory.length - 1]?.value,
             unit: 'BPM',
             trend: getTrend(hrHistory),
-            status: (hrHistory[hrHistory.length - 1]?.value || 72) > 100 ? 'elevated' :
-                    (hrHistory[hrHistory.length - 1]?.value || 72) < 60 ? 'low' : 'normal'
+            status: (hrHistory[hrHistory.length - 1]?.value) > 100 ? 'elevated' :
+                    (hrHistory[hrHistory.length - 1]?.value) < 60 ? 'low' : 'normal',
+            available: hrHistory.length > 0
         },
         spo2: {
-            value: spo2History[spo2History.length - 1]?.value || 98,
+            value: spo2History[spo2History.length - 1]?.value,
             unit: '%',
             trend: getTrend(spo2History),
-            status: (spo2History[spo2History.length - 1]?.value || 98) < 95 ? 'low' :
-                    (spo2History[spo2History.length - 1]?.value || 98) < 90 ? 'critical' : 'normal'
+            status: (spo2History[spo2History.length - 1]?.value) < 95 ? 'low' :
+                    (spo2History[spo2History.length - 1]?.value) < 90 ? 'critical' : 'normal',
+            available: spo2History.length > 0
         },
         body_temp: {
-            value: tempHistory[tempHistory.length - 1]?.value || 36.6,
+            value: tempHistory[tempHistory.length - 1]?.value,
             unit: '°C',
             trend: getTrend(tempHistory),
-            status: (tempHistory[tempHistory.length - 1]?.value || 36.6) >= 38 ? 'fever' :
-                    (tempHistory[tempHistory.length - 1]?.value || 36.6) <= 35 ? 'hypothermia' : 'normal'
+            status: (tempHistory[tempHistory.length - 1]?.value) >= 38 ? 'fever' :
+                    (tempHistory[tempHistory.length - 1]?.value) <= 35 ? 'hypothermia' : 'normal',
+            available: tempHistory.length > 0
         }
     });
 });

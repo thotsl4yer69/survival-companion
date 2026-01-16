@@ -211,5 +211,16 @@
     "category": "general",
     "created_at": "2026-01-12T03:12:38.130Z",
     "updated_at": "2026-01-12T03:12:38.130Z"
+  },
+  {
+    "id": null,
+    "name": "REGRESSION_TEST_WAYPOINT_001",
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "altitude": 58,
+    "notes": "Regression test waypoint",
+    "category": "general",
+    "created_at": "2026-01-12T03:59:13.658Z",
+    "updated_at": "2026-01-12T03:59:13.658Z"
   }
 ]
