@@ -3,7 +3,7 @@
 {% block title %}Survival Companion - Dashboard{% endblock %}
 
 {% block content %}
-<!-- Boot Screen (shown during boot sequence) -->
+<!-- Boot Screen -->
 <div id="boot-screen">
     <div class="boot-logo">
         <svg viewBox="0 0 100 100" class="boot-icon">
@@ -14,339 +14,886 @@
         <h1>SURVIVAL COMPANION</h1>
         <p class="version">v1.0.0</p>
     </div>
-
     <div id="boot-progress">
-        <div class="boot-step" data-step="config">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Loading configuration</span>
-        </div>
-        <div class="boot-step" data-step="display">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Initializing display</span>
-        </div>
-        <div class="boot-step" data-step="i2c">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Scanning I2C devices</span>
-        </div>
-        <div class="boot-step" data-step="sensors">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Initializing sensors</span>
-        </div>
-        <div class="boot-step" data-step="gps">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Initializing GPS</span>
-        </div>
-        <div class="boot-step" data-step="llm">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Warming up LLM</span>
-        </div>
-        <div class="boot-step" data-step="wake">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Activating wake word</span>
-        </div>
-        <div class="boot-step" data-step="dashboard">
-            <span class="step-icon pending"></span>
-            <span class="step-text">Loading dashboard</span>
-        </div>
+        <div class="boot-step" data-step="config"><span class="step-icon pending"></span><span class="step-text">Loading configuration</span></div>
+        <div class="boot-step" data-step="display"><span class="step-icon pending"></span><span class="step-text">Initializing display</span></div>
+        <div class="boot-step" data-step="i2c"><span class="step-icon pending"></span><span class="step-text">Scanning I2C devices</span></div>
+        <div class="boot-step" data-step="sensors"><span class="step-icon pending"></span><span class="step-text">Initializing sensors</span></div>
+        <div class="boot-step" data-step="gps"><span class="step-icon pending"></span><span class="step-text">Initializing GPS</span></div>
+        <div class="boot-step" data-step="llm"><span class="step-icon pending"></span><span class="step-text">Warming up LLM</span></div>
+        <div class="boot-step" data-step="wake"><span class="step-icon pending"></span><span class="step-text">Activating wake word</span></div>
+        <div class="boot-step" data-step="dashboard"><span class="step-icon pending"></span><span class="step-text">Loading dashboard</span></div>
     </div>
-
     <div id="boot-status-text">Initializing...</div>
-
     <button id="start-boot-btn" class="btn btn-primary">Start System</button>
 </div>
 
-<!-- Main Dashboard (shown after boot complete) -->
+<!-- Main Dashboard -->
 <div id="dashboard" class="hidden">
-    <div class="dashboard-grid">
-        <!-- Quick Actions -->
-        <div class="card quick-actions">
-            <h2>Quick Actions</h2>
-            <div class="action-grid">
-                <a href="/medical" class="action-btn medical">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                    </svg>
-                    <span>First Aid</span>
-                </a>
-                <a href="/navigation" class="action-btn navigation">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                    </svg>
-                    <span>I'm Lost</span>
-                </a>
-                <a href="/survival" class="action-btn survival">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 3L4 9v12h16V9l-8-6zm6 16H6v-9.5l6-4.5 6 4.5V19z"/>
-                        <path d="M10 14h4v5h-4z"/>
-                    </svg>
-                    <span>Survival</span>
-                </a>
-                <a href="/weather" class="action-btn weather">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z"/>
-                    </svg>
-                    <span>Weather</span>
-                </a>
-                <a href="/emergency" class="action-btn emergency">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                    <span>SOS</span>
-                </a>
-            </div>
-        </div>
 
-        <!-- Current Conditions -->
-        <div class="card conditions">
-            <h2>Conditions</h2>
-            <div class="conditions-grid">
-                <div class="condition-item">
-                    <span class="condition-value" id="temp-value">--</span>
-                    <span class="condition-unit">°C</span>
-                    <span class="condition-label">Temp</span>
-                </div>
-                <div class="condition-item">
-                    <span class="condition-value" id="humidity-value">--</span>
-                    <span class="condition-unit">%</span>
-                    <span class="condition-label">Humidity</span>
-                </div>
-                <div class="condition-item">
-                    <span class="condition-value" id="pressure-value">--</span>
-                    <span class="condition-unit">hPa</span>
-                    <span class="condition-label">Pressure</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vitals (if sensors active) -->
-        <div class="card vitals">
-            <h2>Vitals</h2>
-            <div class="vitals-grid">
-                <div class="vital-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="vital-icon heart">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                    <span class="vital-value" id="hr-value">--</span>
-                    <span class="vital-label">BPM</span>
-                </div>
-                <div class="vital-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="vital-icon oxygen">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    <span class="vital-value" id="spo2-value">--</span>
-                    <span class="vital-label">SpO2 %</span>
-                </div>
-                <div class="vital-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="vital-icon temp">
-                        <path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/>
-                    </svg>
-                    <span class="vital-value" id="body-temp-value">--</span>
-                    <span class="vital-label">Body °C</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- GPS/Location -->
-        <div class="card location">
-            <h2>Location</h2>
-            <div class="location-info">
-                <div class="coords">
-                    <span id="lat-value">---.----</span>°
-                    <span id="lon-value">---.----</span>°
-                </div>
-                <div class="altitude">
-                    <span id="alt-value">--</span>m elevation
-                </div>
-                <div id="gps-fix-status" class="gps-status searching">
-                    Searching for GPS fix...
-                </div>
-            </div>
-        </div>
-
-        <!-- System Status -->
-        <div class="card system-status">
-            <h2>System</h2>
-            <div class="status-grid">
-                <div class="status-row">
-                    <span class="status-label">LLM</span>
-                    <span id="llm-status" class="status-indicator ready">Ready</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">Voice</span>
-                    <span id="voice-status" class="status-indicator ready">Listening</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">Sensors</span>
-                    <span id="sensors-status" class="status-indicator ready">3/3 OK</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Voice Command Button -->
-        <div class="card voice-card">
-            <button id="voice-btn" class="voice-button">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
-                <span>Tap to speak</span>
-            </button>
+    <!-- Quick Actions -->
+    <div class="dash-section">
+        <div class="action-grid-5">
+            <a href="/medical" class="action-btn medical" id="btn-medical">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                <span>First Aid</span>
+            </a>
+            <a href="/navigation" class="action-btn navigation" id="btn-navigation">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <span>Navigate</span>
+            </a>
+            <a href="/survival" class="action-btn survival" id="btn-survival">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 8C8 10 5.9 16.17 3.82 21h3.4c.46-1.22 1.01-2.38 1.74-3.4C11.46 15.34 14.12 14 17 14v4l5-5-5-5v4z"/></svg>
+                <span>Survival</span>
+            </a>
+            <a href="/weather" class="action-btn weather" id="btn-weather">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2v2.95zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8z"/></svg>
+                <span>Weather</span>
+            </a>
+            <a href="/emergency" class="action-btn emergency" id="btn-emergency">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span>SOS</span>
+            </a>
         </div>
     </div>
+
+    <!-- Live Sensor Strip -->
+    <div class="dash-section sensor-strip-section">
+        <div class="sensor-strip">
+            <div class="sensor-pill" id="pill-temp">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4z"/></svg>
+                <span class="pill-value" id="strip-temp">--</span>
+                <span class="pill-unit">°C</span>
+            </div>
+            <div class="sensor-pill" id="pill-humidity">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></svg>
+                <span class="pill-value" id="strip-humidity">--</span>
+                <span class="pill-unit">%</span>
+            </div>
+            <div class="sensor-pill" id="pill-pressure">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                <span class="pill-value" id="strip-pressure">--</span>
+                <span class="pill-unit">hPa</span>
+            </div>
+            <div class="sensor-pill" id="pill-hr">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon heart-icon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span class="pill-value" id="strip-hr">--</span>
+                <span class="pill-unit">BPM</span>
+            </div>
+            <div class="sensor-pill" id="pill-spo2">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <span class="pill-value" id="strip-spo2">--</span>
+                <span class="pill-unit">SpO2%</span>
+            </div>
+            <div class="sensor-pill" id="pill-gps">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <span class="pill-value gps-pill-text" id="strip-gps">No Fix</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle row: Location + System Health -->
+    <div class="dash-section dash-row">
+        <div class="dash-card location-card">
+            <div class="card-label">LOCATION</div>
+            <div class="coords-block">
+                <span id="lat-value">---.----</span>°
+                <span id="lon-value"> ---.----</span>°
+            </div>
+            <div class="alt-block"><span id="alt-value">--</span>m elev</div>
+            <div id="gps-fix-status" class="gps-pill searching">Searching...</div>
+        </div>
+        <div class="dash-card system-health-card">
+            <div class="card-label">SYSTEM</div>
+            <div class="health-rings">
+                <div class="health-ring-item">
+                    <svg class="ring-svg" viewBox="0 0 36 36">
+                        <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+                        <circle class="ring-fill llm-ring" cx="18" cy="18" r="15.9" id="ring-llm"/>
+                    </svg>
+                    <span class="ring-label">LLM</span>
+                    <span class="ring-status" id="health-llm">–</span>
+                </div>
+                <div class="health-ring-item">
+                    <svg class="ring-svg" viewBox="0 0 36 36">
+                        <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+                        <circle class="ring-fill voice-ring" cx="18" cy="18" r="15.9" id="ring-voice"/>
+                    </svg>
+                    <span class="ring-label">Voice</span>
+                    <span class="ring-status" id="health-voice">–</span>
+                </div>
+                <div class="health-ring-item">
+                    <svg class="ring-svg" viewBox="0 0 36 36">
+                        <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+                        <circle class="ring-fill sensor-ring" cx="18" cy="18" r="15.9" id="ring-sensors"/>
+                    </svg>
+                    <span class="ring-label">Sensors</span>
+                    <span class="ring-status" id="health-sensors">–</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat Panel -->
+    <div class="dash-section chat-section">
+        <div class="chat-panel" id="chat-panel">
+            <div class="chat-history" id="chat-history">
+                <div class="chat-empty" id="chat-empty">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    <span>Say "Hey Companion" or tap the mic</span>
+                </div>
+            </div>
+            <div class="chat-input-row">
+                <button id="voice-btn" class="voice-btn-main" aria-label="Tap to speak">
+                    <div class="voice-ripple" id="voice-ripple"></div>
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                    <span id="voice-btn-label">Tap to speak</span>
+                </button>
+                <div class="text-input-wrap">
+                    <input type="text" id="chat-text-input" placeholder="Type a question..." autocomplete="off">
+                    <button id="chat-send-btn" aria-label="Send">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Dashboard Layout ─────────────────────────────────────── */
+#dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 4px;
+}
+
+.dash-section { width: 100%; }
+
+.dash-row {
+    display: flex;
+    gap: 10px;
+}
+
+.dash-row .dash-card {
+    flex: 1;
+}
+
+/* ── Quick Actions ────────────────────────────────────────── */
+.action-grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 6px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-primary);
+    min-height: 72px;
+    transition: transform 0.12s, background 0.15s, box-shadow 0.15s;
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.15s;
+}
+
+.action-btn:active { transform: scale(0.94); }
+.action-btn:active::after { background: rgba(255,255,255,0.06); }
+
+.action-btn svg {
+    width: 26px;
+    height: 26px;
+    margin-bottom: 5px;
+}
+
+.action-btn span {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.action-btn.medical    svg { color: #22c55e; }
+.action-btn.navigation svg { color: #3b82f6; }
+.action-btn.survival   svg { color: #a3e635; }
+.action-btn.weather    svg { color: #f59e0b; }
+.action-btn.emergency  svg { color: #ef4444; }
+
+.action-btn.medical:hover    { background: rgba(34,197,94,0.12); box-shadow: 0 0 0 1px rgba(34,197,94,0.3); }
+.action-btn.navigation:hover { background: rgba(59,130,246,0.12); box-shadow: 0 0 0 1px rgba(59,130,246,0.3); }
+.action-btn.survival:hover   { background: rgba(163,230,53,0.12); box-shadow: 0 0 0 1px rgba(163,230,53,0.3); }
+.action-btn.weather:hover    { background: rgba(245,158,11,0.12); box-shadow: 0 0 0 1px rgba(245,158,11,0.3); }
+.action-btn.emergency:hover  { background: rgba(239,68,68,0.12);   box-shadow: 0 0 0 1px rgba(239,68,68,0.3); }
+
+/* ── Sensor Strip ─────────────────────────────────────────── */
+.sensor-strip-section { }
+
+.sensor-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+.sensor-strip::-webkit-scrollbar { display: none; }
+
+.sensor-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 7px 12px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: border-color 0.3s;
+}
+
+.sensor-pill.warning { border-color: rgba(245,158,11,0.5); }
+.sensor-pill.danger  { border-color: rgba(239,68,68,0.5); }
+.sensor-pill.ok      { border-color: rgba(34,197,94,0.25); }
+
+.pill-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.heart-icon { color: #ef4444; }
+
+.pill-value {
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--text-primary);
+    min-width: 28px;
+}
+
+.pill-unit {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.gps-pill-text {
+    font-size: 12px;
+    min-width: auto;
+}
+
+/* ── Card Base ────────────────────────────────────────────── */
+.dash-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+.card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+/* ── Location Card ────────────────────────────────────────── */
+.location-card { }
+
+.coords-block {
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3b82f6;
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+}
+
+.alt-block {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.gps-pill {
+    display: inline-flex;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.gps-pill.searching {
+    background: rgba(245,158,11,0.15);
+    color: #f59e0b;
+}
+
+.gps-pill.fixed {
+    background: rgba(34,197,94,0.15);
+    color: #22c55e;
+}
+
+/* ── System Health Rings ──────────────────────────────────── */
+.system-health-card { }
+
+.health-rings {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 4px;
+}
+
+.health-ring-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.ring-svg {
+    width: 44px;
+    height: 44px;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.07);
+    stroke-width: 3;
+}
+
+.ring-fill {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 100;
+    transition: stroke-dashoffset 0.6s ease, stroke 0.3s;
+}
+
+.llm-ring    { stroke: #3b82f6; }
+.voice-ring  { stroke: #22c55e; }
+.sensor-ring { stroke: #f59e0b; }
+
+.ring-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.ring-status {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+/* ── Chat Panel ───────────────────────────────────────────── */
+.chat-section { flex: 1; }
+
+.chat-panel {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 180px;
+}
+
+.chat-history {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 220px;
+    min-height: 120px;
+}
+
+.chat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    gap: 8px;
+    font-size: 13px;
+    text-align: center;
+    padding: 16px;
+}
+
+.chat-empty svg {
+    width: 28px;
+    height: 28px;
+    opacity: 0.4;
+}
+
+/* Chat bubbles */
+.chat-bubble {
+    max-width: 85%;
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.chat-bubble.user {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.assistant {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.chat-bubble.assistant .model-badge {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.chat-bubble.thinking {
+    background: var(--bg-secondary);
+    align-self: flex-start;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.chat-bubble.thinking span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: dotBounce 1.2s infinite;
+}
+.chat-bubble.thinking span:nth-child(2) { animation-delay: 0.2s; }
+.chat-bubble.thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotBounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Chat input row */
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    align-items: center;
+}
+
+.voice-btn-main {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex-shrink: 0;
+    transition: transform 0.12s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(59,130,246,0.35);
+}
+
+.voice-btn-main svg { width: 22px; height: 22px; }
+.voice-btn-main span { font-size: 8px; font-weight: 600; letter-spacing: 0.3px; }
+.voice-btn-main:active { transform: scale(0.93); }
+
+.voice-btn-main.listening {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    box-shadow: 0 4px 20px rgba(34,197,94,0.5);
+    animation: voicePulse 1.5s infinite;
+}
+
+@keyframes voicePulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(34,197,94,0.4); }
+    50% { box-shadow: 0 4px 32px rgba(34,197,94,0.7); }
+}
+
+.voice-ripple {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(59,130,246,0.4);
+    animation: rippleOut 2s infinite;
+    pointer-events: none;
+}
+
+@keyframes rippleOut {
+    0% { transform: scale(0.85); opacity: 0.7; }
+    100% { transform: scale(1.3); opacity: 0; }
+}
+
+.voice-btn-main.listening .voice-ripple {
+    border-color: rgba(34,197,94,0.5);
+}
+
+.text-input-wrap {
+    flex: 1;
+    display: flex;
+    background: var(--bg-secondary);
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.07);
+}
+
+.text-input-wrap input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+}
+
+.text-input-wrap input::placeholder { color: var(--text-muted); }
+
+#chat-send-btn {
+    background: transparent;
+    border: none;
+    color: #3b82f6;
+    padding: 8px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+}
+#chat-send-btn:hover { color: #60a5fa; }
+#chat-send-btn svg { width: 18px; height: 18px; }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Boot sequence management
-    document.addEventListener('DOMContentLoaded', function() {
-        const startBtn = document.getElementById('start-boot-btn');
-        const bootScreen = document.getElementById('boot-screen');
-        const dashboard = document.getElementById('dashboard');
+document.addEventListener('DOMContentLoaded', function() {
+    const startBtn = document.getElementById('start-boot-btn');
+    startBtn.addEventListener('click', startBootSequence);
+    checkSystemStatus();
 
-        // Check if system already booted
-        checkSystemStatus();
+    // Chat input
+    const chatInput = document.getElementById('chat-text-input');
+    const sendBtn = document.getElementById('chat-send-btn');
+    sendBtn.addEventListener('click', () => sendChatMessage());
+    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) sendChatMessage(); });
 
-        startBtn.addEventListener('click', function() {
-            startBootSequence();
-        });
-    });
+    // Voice button
+    const voiceBtn = document.getElementById('voice-btn');
+    voiceBtn.addEventListener('click', handleVoiceClick);
+});
 
-    function checkSystemStatus() {
-        fetch('/api/status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.is_ready) {
-                    showDashboard();
-                    updateDashboard(data);
-                }
-            })
-            .catch(err => console.log('System not started yet'));
-    }
+function checkSystemStatus() {
+    fetch('/api/status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.is_ready) {
+                showDashboard();
+                updateDashboard(data);
+                startSensorPolling();
+            }
+        })
+        .catch(() => {});
+}
 
-    function startBootSequence() {
-        const startBtn = document.getElementById('start-boot-btn');
-        startBtn.disabled = true;
-        startBtn.textContent = 'Booting...';
+function startBootSequence() {
+    const btn = document.getElementById('start-boot-btn');
+    btn.disabled = true;
+    btn.textContent = 'Booting...';
+    fetch('/api/boot', { method: 'POST' })
+        .then(r => r.json())
+        .then(() => pollBootStatus());
+}
 
-        fetch('/api/boot', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                pollBootStatus();
-            });
-    }
-
-    function pollBootStatus() {
-        const stepMapping = {
-            'Loading configuration': 'config',
-            'Initializing display': 'display',
-            'Scanning I2C devices': 'i2c',
-            'Initializing sensors': 'sensors',
-            'Initializing GPS': 'gps',
-            'Warming up LLM': 'llm',
-            'Activating wake word': 'wake',
-            'Loading dashboard': 'dashboard'
-        };
-
-        let completedSteps = new Set();
-
-        const poll = setInterval(() => {
-            fetch('/api/boot/status')
-                .then(response => response.json())
-                .then(data => {
-                    // Update boot log display
-                    if (data.boot_log) {
-                        data.boot_log.forEach(log => {
-                            const stepKey = stepMapping[log.step];
-                            if (stepKey && !completedSteps.has(stepKey)) {
-                                updateBootStep(stepKey, 'active');
-                                setTimeout(() => {
-                                    updateBootStep(stepKey, 'complete');
-                                    completedSteps.add(stepKey);
-                                }, 300);
-                            }
-                        });
-                    }
-
-                    document.getElementById('boot-status-text').textContent =
-                        data.boot_log && data.boot_log.length > 0
-                            ? data.boot_log[data.boot_log.length - 1].step
-                            : 'Initializing...';
-
-                    // Check if boot complete
-                    if (data.dashboard_ready) {
-                        clearInterval(poll);
-                        updateBootStep('dashboard', 'complete');
-                        setTimeout(() => {
-                            showDashboard();
-                            loadSensorData();
-                        }, 500);
+function pollBootStatus() {
+    const stepMapping = {
+        'Loading configuration': 'config', 'Initializing display': 'display',
+        'Scanning I2C devices': 'i2c', 'Initializing sensors': 'sensors',
+        'Initializing GPS': 'gps', 'Warming up LLM': 'llm',
+        'Activating wake word': 'wake', 'Loading dashboard': 'dashboard'
+    };
+    const completedSteps = new Set();
+    const poll = setInterval(() => {
+        fetch('/api/boot/status').then(r => r.json()).then(data => {
+            if (data.boot_log) {
+                data.boot_log.forEach(log => {
+                    const key = stepMapping[log.step];
+                    if (key && !completedSteps.has(key)) {
+                        updateBootStep(key, 'active');
+                        setTimeout(() => { updateBootStep(key, 'complete'); completedSteps.add(key); }, 300);
                     }
                 });
-        }, 500);
-    }
+            }
+            document.getElementById('boot-status-text').textContent =
+                data.boot_log?.length ? data.boot_log[data.boot_log.length - 1].step : 'Initializing...';
+            if (data.dashboard_ready) {
+                clearInterval(poll);
+                updateBootStep('dashboard', 'complete');
+                setTimeout(() => { showDashboard(); startSensorPolling(); }, 500);
+            }
+        });
+    }, 500);
+}
 
-    function updateBootStep(step, status) {
-        const stepEl = document.querySelector(`.boot-step[data-step="${step}"] .step-icon`);
-        if (stepEl) {
-            stepEl.className = 'step-icon ' + status;
-        }
-    }
+function updateBootStep(step, status) {
+    const el = document.querySelector(`.boot-step[data-step="${step}"] .step-icon`);
+    if (el) el.className = 'step-icon ' + status;
+}
 
-    function showDashboard() {
-        document.getElementById('boot-screen').classList.add('hidden');
-        document.getElementById('dashboard').classList.remove('hidden');
-        document.getElementById('system-state').textContent = 'READY';
-        document.getElementById('system-state').className = 'status-item state-ready';
-    }
+function showDashboard() {
+    document.getElementById('boot-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    const state = document.getElementById('system-state');
+    state.textContent = 'READY';
+    state.className = 'status-item state-ready';
+}
 
-    function loadSensorData() {
-        fetch('/api/sensors')
-            .then(response => response.json())
-            .then(data => {
-                if (data.temperature) {
-                    document.getElementById('temp-value').textContent = data.temperature.value.toFixed(1);
-                }
-                if (data.humidity) {
-                    document.getElementById('humidity-value').textContent = data.humidity.value;
-                }
-                if (data.pressure) {
-                    document.getElementById('pressure-value').textContent = data.pressure.value.toFixed(0);
-                }
-                if (data.heart_rate) {
-                    document.getElementById('hr-value').textContent = data.heart_rate.value;
-                }
-                if (data.spo2) {
-                    document.getElementById('spo2-value').textContent = data.spo2.value;
-                }
-                if (data.body_temp) {
-                    document.getElementById('body-temp-value').textContent = data.body_temp.value.toFixed(1);
-                }
-                if (data.gps) {
+function updateDashboard(data) {
+    if (data.boot_status?.battery !== undefined)
+        document.getElementById('battery-percent').textContent = data.boot_status.battery + '%';
+    if (data.boot_status?.gps_fix)
+        document.getElementById('gps-status').className = 'status-item gps-fixed';
+
+    // System health rings
+    setRing('ring-llm', data.is_ready ? 100 : 0, 'health-llm', data.is_ready ? 'Ready' : 'Off');
+    setRing('ring-voice', 100, 'health-voice', 'Active');
+    setRing('ring-sensors', 100, 'health-sensors', 'OK');
+}
+
+function setRing(ringId, percent, labelId, text) {
+    const ring = document.getElementById(ringId);
+    if (ring) {
+        const circ = 2 * Math.PI * 15.9;
+        const dashoffset = circ - (circ * percent / 100);
+        ring.style.strokeDasharray = `${circ} ${circ}`;
+        ring.style.strokeDashoffset = dashoffset;
+    }
+    const label = document.getElementById(labelId);
+    if (label) label.textContent = text;
+}
+
+function startSensorPolling() {
+    loadSensorData();
+    setInterval(loadSensorData, 3000);
+
+    // Also poll system status for health rings
+    fetch('/api/status').then(r => r.json()).then(updateDashboard).catch(() => {});
+    setInterval(() => {
+        fetch('/api/status').then(r => r.json()).then(updateDashboard).catch(() => {});
+    }, 10000);
+}
+
+function loadSensorData() {
+    fetch('/api/sensors')
+        .then(r => r.json())
+        .then(data => {
+            if (data.temperature) updatePill('strip-temp', 'pill-temp', data.temperature.value.toFixed(1), data.temperature.value > 35 ? 'danger' : 'ok');
+            if (data.humidity) updatePill('strip-humidity', 'pill-humidity', data.humidity.value, 'ok');
+            if (data.pressure) updatePill('strip-pressure', 'pill-pressure', data.pressure.value.toFixed(0), 'ok');
+            if (data.heart_rate) {
+                const hr = data.heart_rate.value;
+                updatePill('strip-hr', 'pill-hr', hr, (hr > 100 || hr < 50) ? 'warning' : 'ok');
+            }
+            if (data.spo2) {
+                const spo2 = data.spo2.value;
+                updatePill('strip-spo2', 'pill-spo2', spo2 || '--', (spo2 && spo2 < 95) ? 'danger' : 'ok');
+            }
+            if (data.gps) {
+                const gpsEl = document.getElementById('strip-gps');
+                const pillEl = document.getElementById('pill-gps');
+                if (data.gps.fix) {
+                    gpsEl.textContent = 'Fix';
+                    pillEl.className = 'sensor-pill ok';
                     document.getElementById('lat-value').textContent = data.gps.latitude.toFixed(4);
                     document.getElementById('lon-value').textContent = data.gps.longitude.toFixed(4);
                     document.getElementById('alt-value').textContent = data.gps.altitude;
-
                     const fixStatus = document.getElementById('gps-fix-status');
-                    if (data.gps.fix) {
-                        fixStatus.textContent = 'GPS Fix Acquired';
-                        fixStatus.className = 'gps-status fixed';
-                    }
+                    fixStatus.textContent = 'GPS Fixed';
+                    fixStatus.className = 'gps-pill fixed';
+                    document.getElementById('gps-status').className = 'status-item gps-fixed';
+                } else {
+                    gpsEl.textContent = 'Searching';
+                    pillEl.className = 'sensor-pill warning';
                 }
-            });
+            }
+
+            // Update body temp in vitals if available
+            if (data.body_temp && data.body_temp.value) {
+                const bt = data.body_temp.value;
+                // Could show somewhere else, kept in sensor strip via existing temp pill color
+            }
+        })
+        .catch(() => {});
+}
+
+function updatePill(valueId, pillId, value, status) {
+    const valEl = document.getElementById(valueId);
+    const pillEl = document.getElementById(pillId);
+    if (valEl) valEl.textContent = value;
+    if (pillEl) pillEl.className = `sensor-pill ${status}`;
+}
+
+// ── Chat ──────────────────────────────────────────────
+let isListening = false;
+
+function handleVoiceClick() {
+    if (isListening) return;
+    const btn = document.getElementById('voice-btn');
+    const label = document.getElementById('voice-btn-label');
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            isListening = true;
+            btn.classList.add('listening');
+            label.textContent = 'Listening...';
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            sendChatMessage(transcript);
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            btn.classList.remove('listening');
+            label.textContent = 'Tap to speak';
+        };
+
+        recognition.onerror = () => {
+            isListening = false;
+            btn.classList.remove('listening');
+            label.textContent = 'Tap to speak';
+        };
+
+        recognition.start();
+    } else {
+        // No speech API — focus text input
+        document.getElementById('chat-text-input').focus();
     }
+}
 
-    function updateDashboard(data) {
-        // Update status bar
-        document.getElementById('battery-percent').textContent = data.boot_status.battery + '%';
+async function sendChatMessage(text) {
+    const input = document.getElementById('chat-text-input');
+    const msg = text || input.value.trim();
+    if (!msg) return;
+    input.value = '';
 
-        // Update GPS indicator
-        const gpsStatus = document.getElementById('gps-status');
-        if (data.boot_status.gps_fix) {
-            gpsStatus.className = 'status-item gps-fixed';
+    // Hide empty state
+    document.getElementById('chat-empty')?.remove();
+
+    addChatBubble('user', msg);
+    const thinkingId = addThinkingBubble();
+
+    try {
+        const resp = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg, mode: 'auto' })
+        });
+        const data = await resp.json();
+        removeThinkingBubble(thinkingId);
+
+        if (data.success) {
+            addChatBubble('assistant', data.response, data.model);
+            // If TTS response provided, could play via /api/tts
+        } else {
+            addChatBubble('assistant', 'Sorry, I could not process that request. Please try again.');
         }
-
-        loadSensorData();
+    } catch (e) {
+        removeThinkingBubble(thinkingId);
+        addChatBubble('assistant', 'System unavailable. Check that the AI model is loaded.');
     }
+}
+
+function addChatBubble(role, text, model) {
+    const history = document.getElementById('chat-history');
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role}`;
+
+    if (role === 'assistant' && model) {
+        bubble.innerHTML = `<span class="model-badge">${model.toUpperCase()}</span>${escapeHtml(text)}`;
+    } else {
+        bubble.textContent = text;
+    }
+
+    history.appendChild(bubble);
+    history.scrollTop = history.scrollHeight;
+    return bubble;
+}
+
+function addThinkingBubble() {
+    const history = document.getElementById('chat-history');
+    const bubble = document.createElement('div');
+    const id = 'thinking-' + Date.now();
+    bubble.id = id;
+    bubble.className = 'chat-bubble thinking';
+    bubble.innerHTML = '<span></span><span></span><span></span>';
+    history.appendChild(bubble);
+    history.scrollTop = history.scrollHeight;
+    return id;
+}
+
+function removeThinkingBubble(id) {
+    document.getElementById(id)?.remove();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
 </script>
 {% endblock %}

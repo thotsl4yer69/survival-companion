@@ -114,6 +114,9 @@ class SurvivalPersona:
         self.boot_status = BootStatus()
         self.sensor_status = SensorStatus()
 
+        # Load Australian Survival Rules
+        self.system_prompt = self._load_system_prompt()
+
         # Component references (initialized during boot)
         self.display = None
         self.voice = None
@@ -131,6 +134,17 @@ class SurvivalPersona:
 
         # Development mode detection
         self.is_pi_hardware = self._detect_pi_hardware()
+
+    def _load_system_prompt(self) -> str:
+        """Load the strict Australian Survival system base prompt."""
+        prompt_path = Path("prompts/AUSTRALIAN_SURVIVAL.md")
+        try:
+            if prompt_path.exists():
+                with open(prompt_path, "r", encoding="utf-8") as f:
+                    return f.read()
+        except Exception as e:
+            self.logger.error(f"Error loading system prompt: {e}")
+        return "You are a generic survival assistant. Keep responses brief."
 
     def _detect_pi_hardware(self) -> bool:
         """Detect if running on actual Raspberry Pi hardware."""

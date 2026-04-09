@@ -13,6 +13,12 @@
     "express": "^4.18.2",
     "js-yaml": "^4.1.1"
   },
+  "optionalDependencies": {
+    "bme280-sensor": "^1.1.5",
+    "i2c-bus": "^5.2.3",
+    "serialport": "^12.0.0",
+    "@serialport/parser-readline": "^12.0.0"
+  },
   "author": "Survival Companion Team",
   "license": "MIT"
 }

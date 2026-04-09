@@ -6,11 +6,6 @@ import pytest
 import os
 
 
-def test_placeholder():
-    """Placeholder test - remove when real tests are added."""
-    assert True
-
-
 class TestProjectStructure:
     """Tests verifying project structure exists."""
 
@@ -53,8 +48,8 @@ class TestSafetyLayer:
         import re
 
         forbidden_patterns = [
-            r"you have .* cancer",
-            r"definitely .* disease",
+            r"you have.*cancer",
+            r"definitely.*disease",
             r"take \d+ mg of",
             r"you will die",
         ]

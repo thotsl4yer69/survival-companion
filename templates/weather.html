@@ -3,579 +3,567 @@
 {% block title %}Survival Companion - Weather{% endblock %}
 
 {% block content %}
-<div class="weather-container">
-    <div class="current-conditions card">
-        <h2>Current Conditions</h2>
-        <div class="conditions-grid">
-            <div class="condition-main">
-                <span class="temp-large" id="weather-temp">23.5</span>
-                <span class="temp-unit">°C</span>
+<div class="weather-page">
+
+    <!-- Current Conditions Hero -->
+    <div class="wx-hero">
+        <div class="wx-temp-block">
+            <span class="wx-temp-val" id="weather-temp">--</span>
+            <span class="wx-temp-unit">°C</span>
+            <span class="wx-feels" id="weather-feels-like"></span>
+        </div>
+        <div class="wx-meta">
+            <div class="wx-meta-row">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></svg>
+                <span id="weather-humidity">--%</span>
+                <span class="wx-meta-label">Humidity</span>
             </div>
-            <div class="condition-secondary">
-                <div class="condition-row">
-                    <span class="label">Humidity</span>
-                    <span class="value" id="weather-humidity">65%</span>
-                </div>
-                <div class="condition-row">
-                    <span class="label">Pressure</span>
-                    <span class="value" id="weather-pressure">1013 hPa</span>
-                </div>
-                <div class="condition-row">
-                    <span class="label">Altitude</span>
-                    <span class="value" id="weather-altitude">58 m</span>
-                </div>
+            <div class="wx-meta-row">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                <span id="weather-pressure">-- hPa</span>
+                <span class="wx-meta-label">Pressure</span>
+            </div>
+            <div class="wx-meta-row">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 6l-1-2H5v17h2v-7h5l1 2h7V6h-6zm4 8h-4l-1-2H7V6h5l1 2h5v6z"/></svg>
+                <span id="weather-altitude">-- m</span>
+                <span class="wx-meta-label">Elevation</span>
             </div>
         </div>
     </div>
 
-    <div class="pressure-trend card">
-        <h2>Pressure Trend (3hr)</h2>
-        <div class="trend-indicator" id="pressure-trend">
-            <div class="trend-arrow stable">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22 12l-4-4v3H3v2h15v3z"/>
-                </svg>
-            </div>
-            <div class="trend-text">
-                <span class="trend-label">Stable</span>
-                <span class="trend-change">+0.2 hPa</span>
+    <!-- Pressure chart -->
+    <div class="wx-card">
+        <div class="wx-card-header">
+            <span class="wx-card-title">Pressure Trend</span>
+            <div class="wx-trend-badge" id="trend-badge">
+                <span id="trend-arrow-char">→</span>
+                <span id="trend-label-text">Stable</span>
+                <span id="trend-change-text">+0.0 hPa</span>
             </div>
         </div>
-        <div class="trend-graph">
-            <div class="graph-bars">
-                <div class="bar" style="height: 60%"></div>
-                <div class="bar" style="height: 62%"></div>
-                <div class="bar" style="height: 61%"></div>
-                <div class="bar" style="height: 63%"></div>
-                <div class="bar" style="height: 64%"></div>
-                <div class="bar" style="height: 63%"></div>
-                <div class="bar active" style="height: 63%"></div>
+        <canvas id="pressure-canvas" class="pressure-canvas"></canvas>
+        <div class="pressure-axis">
+            <span id="pressure-axis-min">--</span>
+            <span>3 hours ago → Now</span>
+            <span id="pressure-axis-max">--</span>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="wx-card" id="wx-alerts-card">
+        <div class="wx-card-header">
+            <span class="wx-card-title">Alerts</span>
+            <span class="wx-badge-ok hidden" id="wx-ok-badge">All Clear</span>
+        </div>
+        <div id="wx-alert-content" class="wx-alert-ok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>No severe weather alerts</span>
+        </div>
+    </div>
+
+    <!-- Activity recommendations -->
+    <div class="wx-card">
+        <div class="wx-card-header">
+            <span class="wx-card-title">Field Assessment</span>
+        </div>
+        <div class="wx-recs" id="wx-recs">
+            <div class="wx-rec ok"><span class="wx-rec-icon">✓</span><span id="rec-travel">Safe to travel</span></div>
+            <div class="wx-rec info"><span class="wx-rec-icon">💧</span><span id="rec-hydration">Stay hydrated</span></div>
+            <div class="wx-rec info"><span class="wx-rec-icon">🧥</span><span id="rec-clothing">Light layers recommended</span></div>
+        </div>
+    </div>
+
+    <!-- Body vitals (cross-referenced) -->
+    <div class="wx-card wx-vitals-card">
+        <div class="wx-card-header">
+            <span class="wx-card-title">Your Body Vitals</span>
+            <span class="wx-last-updated" id="vitals-updated">Updating...</span>
+        </div>
+        <div class="wx-vitals-row">
+            <div class="wx-vital">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="wx-vital-icon heart"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span class="wx-vital-val" id="vit-hr">--</span>
+                <span class="wx-vital-unit">BPM</span>
             </div>
-            <div class="graph-labels">
-                <span>-3h</span>
-                <span>Now</span>
+            <div class="wx-vital">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="wx-vital-icon spo2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <span class="wx-vital-val" id="vit-spo2">--</span>
+                <span class="wx-vital-unit">SpO2%</span>
+            </div>
+            <div class="wx-vital">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="wx-vital-icon temp"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4z"/></svg>
+                <span class="wx-vital-val" id="vit-btemp">--</span>
+                <span class="wx-vital-unit">°C Body</span>
             </div>
         </div>
     </div>
 
-    <div class="alerts card">
-        <h2>Weather Alerts</h2>
-        <div id="weather-alerts">
-            <div id="no-alerts" class="alert-item success">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span>No severe weather expected</span>
-            </div>
-            <div id="storm-alert" class="alert-item danger hidden">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-                </svg>
-                <div class="storm-alert-content">
-                    <span class="storm-alert-severity" id="storm-severity">SEVERE</span>
-                    <span class="storm-alert-message" id="storm-message">Storm warning</span>
-                    <span class="storm-alert-action" id="storm-action">Take shelter</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="recommendations card">
-        <h2>Activity Recommendations</h2>
-        <div class="recommendation-list">
-            <div class="recommendation good">
-                <span class="rec-icon">👍</span>
-                <span class="rec-text">Safe to travel</span>
-            </div>
-            <div class="recommendation info">
-                <span class="rec-icon">💧</span>
-                <span class="rec-text">Stay hydrated</span>
-            </div>
-            <div class="recommendation info">
-                <span class="rec-icon">🧥</span>
-                <span class="rec-text">Light layers recommended</span>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    .weather-container {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-md);
-    }
+.weather-page {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
-    .current-conditions .conditions-grid {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+/* Hero */
+.wx-hero {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(34,197,94,0.08) 100%);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
 
-    .condition-main {
-        display: flex;
-        align-items: flex-start;
-    }
+.wx-temp-block {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px;
+}
 
-    .temp-large {
-        font-size: var(--font-size-3xl);
-        font-weight: 700;
-        line-height: 1;
-    }
+.wx-temp-val {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -2px;
+}
 
-    .temp-unit {
-        font-size: var(--font-size-xl);
-        color: var(--text-secondary);
-        margin-left: var(--spacing-xs);
-    }
+.wx-temp-unit {
+    font-size: 24px;
+    color: #94a3b8;
+    margin-top: 6px;
+}
 
-    .condition-secondary {
-        text-align: right;
-    }
+.wx-feels {
+    display: block;
+    width: 100%;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
 
-    .condition-row {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-xs);
-    }
+.wx-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
 
-    .condition-row .label {
-        color: var(--text-muted);
-        font-size: var(--font-size-sm);
-    }
+.wx-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: 600;
+}
 
-    .condition-row .value {
-        font-weight: 600;
-        font-size: var(--font-size-sm);
-    }
+.wx-meta-row svg {
+    width: 14px;
+    height: 14px;
+    color: #64748b;
+}
 
-    .pressure-trend .trend-indicator {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-    }
+.wx-meta-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 400;
+    margin-left: 2px;
+}
 
-    .trend-arrow {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+/* Card */
+.wx-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
 
-    .trend-arrow svg {
-        width: 24px;
-        height: 24px;
-    }
+.wx-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
 
-    .trend-arrow.stable {
-        background: rgba(34, 197, 94, 0.2);
-        color: var(--accent-primary);
-    }
+.wx-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
 
-    .trend-arrow.rising {
-        background: rgba(245, 158, 11, 0.2);
-        color: var(--accent-warning);
-        transform: rotate(-45deg);
-    }
+/* Pressure trend badge */
+.wx-trend-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(34,197,94,0.12);
+    color: #22c55e;
+    border: 1px solid rgba(34,197,94,0.25);
+}
 
-    .trend-arrow.falling {
-        background: rgba(239, 68, 68, 0.2);
-        color: var(--accent-danger);
-        transform: rotate(45deg);
-    }
+.wx-trend-badge.rising { background: rgba(245,158,11,0.12); color: #f59e0b; border-color: rgba(245,158,11,0.25); }
+.wx-trend-badge.falling { background: rgba(239,68,68,0.12); color: #ef4444; border-color: rgba(239,68,68,0.25); }
 
-    .trend-label {
-        display: block;
-        font-weight: 600;
-    }
+/* Canvas sparkline */
+.pressure-canvas {
+    width: 100%;
+    height: 80px;
+    display: block;
+    border-radius: 6px;
+}
 
-    .trend-change {
-        font-size: var(--font-size-sm);
-        color: var(--text-secondary);
-    }
+.pressure-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 5px;
+}
 
-    .trend-graph {
-        background: var(--bg-secondary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-    }
+/* Alerts */
+.wx-badge-ok {
+    font-size: 11px;
+    color: #22c55e;
+    background: rgba(34,197,94,0.12);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+}
 
-    .graph-bars {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        height: 60px;
-        gap: var(--spacing-sm);
-    }
+.wx-alert-ok {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #22c55e;
+    font-size: 14px;
+}
+.wx-alert-ok svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-    .bar {
-        flex: 1;
-        background: var(--text-muted);
-        border-radius: var(--radius-sm);
-        opacity: 0.5;
-    }
+.wx-alert-danger {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #ef4444;
+    font-size: 14px;
+    animation: alertPulse 1.5s infinite;
+}
+@keyframes alertPulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.75; }
+}
+.wx-alert-danger svg { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+.wx-alert-danger-content { display: flex; flex-direction: column; gap: 3px; }
+.wx-alert-severity { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; }
+.wx-alert-msg { font-size: 13px; }
+.wx-alert-action { font-size: 11px; color: var(--text-secondary); background: rgba(239,68,68,0.1); padding: 3px 8px; border-radius: 4px; margin-top: 2px; }
 
-    .bar.active {
-        background: var(--accent-secondary);
-        opacity: 1;
-    }
+/* Recommendations */
+.wx-recs {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
 
-    .graph-labels {
-        display: flex;
-        justify-content: space-between;
-        margin-top: var(--spacing-xs);
-        font-size: var(--font-size-xs);
-        color: var(--text-muted);
-    }
+.wx-rec {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+}
 
-    .alerts .alert-item {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-sm);
-        border-radius: var(--radius-md);
-    }
+.wx-rec.ok { border-left: 3px solid #22c55e; }
+.wx-rec.info { border-left: 3px solid #3b82f6; }
+.wx-rec.caution { border-left: 3px solid #f59e0b; }
+.wx-rec.danger { border-left: 3px solid #ef4444; color: #ef4444; }
 
-    .alert-item svg {
-        width: 20px;
-        height: 20px;
-    }
+.wx-rec-icon { font-size: 16px; }
 
-    .alert-item.success {
-        background: rgba(34, 197, 94, 0.1);
-        color: var(--accent-primary);
-    }
+/* Vitals row */
+.wx-vitals-card { }
 
-    .alert-item.warning {
-        background: rgba(245, 158, 11, 0.1);
-        color: var(--accent-warning);
-    }
+.wx-vitals-row {
+    display: flex;
+    justify-content: space-around;
+}
 
-    .alert-item.danger {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--accent-danger);
-    }
+.wx-vital {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
 
-    .recommendation-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-    }
+.wx-vital-icon { width: 16px; height: 16px; }
+.wx-vital-icon.heart { color: #ef4444; }
+.wx-vital-icon.spo2 { color: #3b82f6; }
+.wx-vital-icon.temp { color: #f59e0b; }
 
-    .recommendation {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-sm);
-        background: var(--bg-secondary);
-        border-radius: var(--radius-md);
-    }
+.wx-vital-val {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: 'SF Mono', monospace;
+    line-height: 1.1;
+}
 
-    .rec-icon {
-        font-size: 20px;
-    }
+.wx-vital-unit {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
 
-    .rec-text {
-        font-size: var(--font-size-sm);
-    }
-
-    .recommendation.good {
-        border-left: 3px solid var(--accent-primary);
-    }
-
-    .recommendation.info {
-        border-left: 3px solid var(--accent-secondary);
-    }
-
-    .recommendation.caution {
-        border-left: 3px solid var(--accent-warning);
-    }
-
-    /* Storm Alert Styles */
-    #storm-alert {
-        flex-direction: column;
-        align-items: flex-start;
-        animation: storm-pulse 1s infinite;
-    }
-
-    #storm-alert.hidden {
-        display: none;
-    }
-
-    #storm-alert svg {
-        align-self: flex-start;
-    }
-
-    @keyframes storm-pulse {
-        0%, 100% {
-            background: rgba(239, 68, 68, 0.1);
-        }
-        50% {
-            background: rgba(239, 68, 68, 0.25);
-        }
-    }
-
-    .storm-alert-content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        width: 100%;
-    }
-
-    .storm-alert-severity {
-        font-weight: 700;
-        font-size: var(--font-size-lg);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .storm-alert-message {
-        font-size: var(--font-size-base);
-    }
-
-    .storm-alert-action {
-        font-size: var(--font-size-sm);
-        background: rgba(0, 0, 0, 0.3);
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-sm);
-        margin-top: var(--spacing-xs);
-    }
-
-    /* Severity-specific colors */
-    #storm-alert.minor {
-        background: rgba(245, 158, 11, 0.1);
-        color: var(--accent-warning);
-        animation: none;
-    }
-
-    #storm-alert.moderate {
-        background: rgba(245, 158, 11, 0.2);
-        color: var(--accent-warning);
-    }
-
-    #storm-alert.severe {
-        background: rgba(239, 68, 68, 0.15);
-        color: var(--accent-danger);
-    }
-
-    #storm-alert.extreme {
-        background: rgba(239, 68, 68, 0.25);
-        color: var(--accent-danger);
-        animation: storm-pulse-extreme 0.5s infinite;
-    }
-
-    @keyframes storm-pulse-extreme {
-        0%, 100% {
-            background: rgba(239, 68, 68, 0.25);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
-        }
-        50% {
-            background: rgba(239, 68, 68, 0.4);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-        }
-    }
+.wx-last-updated {
+    font-size: 10px;
+    color: var(--text-muted);
+}
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Storm alert audio
-    let stormAlertAudio = null;
+let pressureHistory = [];
+let pressureCanvas = null;
+let pressureCtx = null;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        loadWeatherData();
+document.addEventListener('DOMContentLoaded', function() {
+    pressureCanvas = document.getElementById('pressure-canvas');
+    pressureCtx = pressureCanvas.getContext('2d');
 
-        // Refresh every 30 seconds
-        setInterval(loadWeatherData, 30000);
-    });
+    // Set canvas resolution
+    pressureCanvas.width = pressureCanvas.offsetWidth * window.devicePixelRatio;
+    pressureCanvas.height = pressureCanvas.offsetHeight * window.devicePixelRatio;
+    pressureCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    async function loadWeatherData() {
+    loadWeatherData();
+    loadVitals();
+    setInterval(loadWeatherData, 15000); // refresh every 15s
+    setInterval(loadVitals, 5000);
+});
+
+async function loadWeatherData() {
+    try {
+        const response = await fetch('/api/weather');
+        const weather = await response.json();
+
+        if (weather) {
+            if (weather.temperature) {
+                document.getElementById('weather-temp').textContent = weather.temperature.value.toFixed(1);
+                if (weather.temperature.feels_like != null)
+                    document.getElementById('weather-feels-like').textContent = `Feels like ${weather.temperature.feels_like.toFixed(1)}°C`;
+            }
+            if (weather.humidity)
+                document.getElementById('weather-humidity').textContent = weather.humidity.value + '%';
+            if (weather.pressure) {
+                document.getElementById('weather-pressure').textContent = weather.pressure.value.toFixed(0) + ' hPa';
+                updatePressureTrend(weather.pressure.trend || 'stable', weather.pressure.trend_change || 0);
+                if (weather.pressure.history) {
+                    pressureHistory = weather.pressure.history.map(h => h.pressure);
+                    drawPressureChart();
+                }
+            }
+            if (weather.altitude !== undefined)
+                document.getElementById('weather-altitude').textContent = weather.altitude + ' m';
+
+            handleAlerts(weather.storm_alert);
+            updateRecommendations(weather);
+        }
+    } catch (error) {
+        // Fallback to /api/sensors
         try {
-            // Use the new weather API instead of sensors
-            const response = await fetch('/api/weather');
-            const weather = await response.json();
-
-            if (weather) {
-                // Update temperature
-                if (weather.temperature) {
-                    document.getElementById('weather-temp').textContent = weather.temperature.value.toFixed(1);
-                }
-
-                // Update humidity
-                if (weather.humidity) {
-                    document.getElementById('weather-humidity').textContent = weather.humidity.value + '%';
-                }
-
-                // Update pressure
-                if (weather.pressure) {
-                    document.getElementById('weather-pressure').textContent = weather.pressure.value.toFixed(0) + ' hPa';
-
-                    // Update pressure trend
-                    updatePressureTrend(weather.pressure.trend, weather.pressure.trend_change);
-
-                    // Update pressure graph
-                    if (weather.pressure.history) {
-                        updatePressureGraph(weather.pressure.history);
-                    }
-                }
-
-                // Update altitude
-                if (weather.altitude !== undefined) {
-                    document.getElementById('weather-altitude').textContent = weather.altitude + ' m';
-                }
-
-                // Handle storm alerts
-                handleStormAlert(weather.storm_alert);
+            const r = await fetch('/api/sensors');
+            const s = await r.json();
+            if (s.temperature) document.getElementById('weather-temp').textContent = s.temperature.value.toFixed(1);
+            if (s.humidity) document.getElementById('weather-humidity').textContent = s.humidity.value + '%';
+            if (s.pressure) {
+                document.getElementById('weather-pressure').textContent = s.pressure.value.toFixed(0) + ' hPa';
+                // Add current reading to local history for chart
+                pressureHistory.push(s.pressure.value);
+                if (pressureHistory.length > 18) pressureHistory.shift();
+                drawPressureChart();
             }
-        } catch (error) {
-            console.error('Failed to load weather data:', error);
-            // Fallback to sensors API
-            const sensors = await loadSensorData();
-            if (sensors) {
-                if (sensors.temperature) {
-                    document.getElementById('weather-temp').textContent = sensors.temperature.value.toFixed(1);
-                }
-                if (sensors.humidity) {
-                    document.getElementById('weather-humidity').textContent = sensors.humidity.value + '%';
-                }
-                if (sensors.pressure) {
-                    document.getElementById('weather-pressure').textContent = sensors.pressure.value.toFixed(0) + ' hPa';
-                }
-                if (sensors.gps) {
-                    document.getElementById('weather-altitude').textContent = sensors.gps.altitude + ' m';
-                }
-            }
-        }
+            if (s.gps) document.getElementById('weather-altitude').textContent = (s.gps.altitude || '--') + ' m';
+        } catch(e) {}
+    }
+}
+
+async function loadVitals() {
+    try {
+        const r = await fetch('/api/sensors');
+        const s = await r.json();
+        if (s.heart_rate) document.getElementById('vit-hr').textContent = s.heart_rate.value || '--';
+        if (s.spo2) document.getElementById('vit-spo2').textContent = s.spo2.value || '--';
+        if (s.body_temp) document.getElementById('vit-btemp').textContent = s.body_temp.value?.toFixed(1) || '--';
+        document.getElementById('vitals-updated').textContent = new Date().toLocaleTimeString();
+    } catch(e) {}
+}
+
+function drawPressureChart() {
+    if (!pressureCtx || pressureHistory.length < 2) return;
+
+    const w = pressureCanvas.offsetWidth;
+    const h = pressureCanvas.offsetHeight;
+    pressureCanvas.width = w * window.devicePixelRatio;
+    pressureCanvas.height = h * window.devicePixelRatio;
+    pressureCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+    const data = pressureHistory;
+    const min = Math.min(...data) - 1;
+    const max = Math.max(...data) + 1;
+    const range = max - min || 1;
+
+    const pad = { top: 8, right: 12, bottom: 4, left: 12 };
+    const chartW = w - pad.left - pad.right;
+    const chartH = h - pad.top - pad.bottom;
+
+    const xStep = chartW / (data.length - 1);
+    const yScale = (v) => pad.top + chartH - ((v - min) / range) * chartH;
+
+    pressureCtx.clearRect(0, 0, w, h);
+
+    // Gradient fill
+    const grad = pressureCtx.createLinearGradient(0, pad.top, 0, h);
+    grad.addColorStop(0, 'rgba(59,130,246,0.28)');
+    grad.addColorStop(1, 'rgba(59,130,246,0)');
+
+    pressureCtx.beginPath();
+    pressureCtx.moveTo(pad.left, yScale(data[0]));
+    for (let i = 1; i < data.length; i++) {
+        const px = pad.left + i * xStep;
+        const py = yScale(data[i]);
+        // Bezier smoothing
+        const cpx = pad.left + (i - 0.5) * xStep;
+        pressureCtx.bezierCurveTo(cpx, yScale(data[i-1]), cpx, py, px, py);
     }
 
-    function updatePressureTrend(trend, change) {
-        const trendIndicator = document.getElementById('pressure-trend');
-        const trendArrow = trendIndicator.querySelector('.trend-arrow');
-        const trendLabel = trendIndicator.querySelector('.trend-label');
-        const trendChange = trendIndicator.querySelector('.trend-change');
+    // Fill below
+    pressureCtx.lineTo(pad.left + (data.length - 1) * xStep, h);
+    pressureCtx.lineTo(pad.left, h);
+    pressureCtx.closePath();
+    pressureCtx.fillStyle = grad;
+    pressureCtx.fill();
 
-        // Remove existing classes
-        trendArrow.classList.remove('stable', 'rising', 'falling');
+    // Stroke line
+    pressureCtx.beginPath();
+    pressureCtx.moveTo(pad.left, yScale(data[0]));
+    for (let i = 1; i < data.length; i++) {
+        const px = pad.left + i * xStep;
+        const py = yScale(data[i]);
+        const cpx = pad.left + (i - 0.5) * xStep;
+        pressureCtx.bezierCurveTo(cpx, yScale(data[i-1]), cpx, py, px, py);
+    }
+    pressureCtx.strokeStyle = '#3b82f6';
+    pressureCtx.lineWidth = 2;
+    pressureCtx.lineJoin = 'round';
+    pressureCtx.stroke();
 
-        // Set new class and label
-        switch (trend) {
-            case 'rising':
-                trendArrow.classList.add('rising');
-                trendLabel.textContent = 'Rising';
-                break;
-            case 'falling':
-                trendArrow.classList.add('falling');
-                trendLabel.textContent = 'Falling';
-                break;
-            default:
-                trendArrow.classList.add('stable');
-                trendLabel.textContent = 'Stable';
-        }
+    // Dot at latest
+    const lastX = pad.left + (data.length - 1) * xStep;
+    const lastY = yScale(data[data.length - 1]);
+    pressureCtx.beginPath();
+    pressureCtx.arc(lastX, lastY, 4, 0, 2 * Math.PI);
+    pressureCtx.fillStyle = '#3b82f6';
+    pressureCtx.fill();
 
-        // Format change value
-        const changeVal = parseFloat(change);
-        const sign = changeVal >= 0 ? '+' : '';
-        trendChange.textContent = `${sign}${changeVal.toFixed(1)} hPa`;
+    // Axis labels
+    document.getElementById('pressure-axis-min').textContent = min.toFixed(0) + ' hPa';
+    document.getElementById('pressure-axis-max').textContent = max.toFixed(0) + ' hPa';
+}
+
+function updatePressureTrend(trend, change) {
+    const badge = document.getElementById('trend-badge');
+    const arrow = document.getElementById('trend-arrow-char');
+    const label = document.getElementById('trend-label-text');
+    const changeText = document.getElementById('trend-change-text');
+
+    badge.className = 'wx-trend-badge ' + trend;
+
+    switch(trend) {
+        case 'rising':
+            arrow.textContent = '↗';
+            label.textContent = 'Rising';
+            break;
+        case 'falling':
+            arrow.textContent = '↘';
+            label.textContent = 'Falling';
+            break;
+        default:
+            arrow.textContent = '→';
+            label.textContent = 'Stable';
     }
 
-    function updatePressureGraph(history) {
-        const bars = document.querySelectorAll('.graph-bars .bar');
-        if (history.length === 0 || bars.length === 0) return;
+    const val = parseFloat(change) || 0;
+    changeText.textContent = (val >= 0 ? '+' : '') + val.toFixed(1) + ' hPa';
+}
 
-        // Find min/max for scaling
-        const pressures = history.map(h => h.pressure);
-        const min = Math.min(...pressures) - 2;
-        const max = Math.max(...pressures) + 2;
-        const range = max - min;
+function handleAlerts(alert) {
+    const alertContent = document.getElementById('wx-alert-content');
 
-        // Update bars
-        bars.forEach((bar, index) => {
-            if (index < history.length) {
-                const pressure = history[index].pressure;
-                const height = Math.max(10, Math.min(100, ((pressure - min) / range) * 100));
-                bar.style.height = `${height}%`;
+    if (alert) {
+        alertContent.className = 'wx-alert-danger';
+        alertContent.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            <div class="wx-alert-danger-content">
+                <span class="wx-alert-severity">${(alert.severity||'').toUpperCase()} ALERT</span>
+                <span class="wx-alert-msg">${alert.message || ''}</span>
+                <span class="wx-alert-action">${alert.recommended_action || ''}</span>
+            </div>
+        `;
+    } else {
+        alertContent.className = 'wx-alert-ok';
+        alertContent.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>No severe weather alerts</span>
+        `;
+    }
+}
 
-                // Mark latest as active
-                bar.classList.toggle('active', index === history.length - 1);
-            }
-        });
+function updateRecommendations(weather) {
+    const recs = document.getElementById('wx-recs');
+    // Build dynamic recommendations from real data
+    const items = [];
+    const temp = weather.temperature?.value;
+    const humidity = weather.humidity?.value;
+    const trend = weather.pressure?.trend;
+
+    if (trend === 'falling') {
+        items.push({ cls: 'caution', icon: '⚠️', text: 'Pressure dropping — weather may deteriorate' });
+    } else if (trend === 'rising') {
+        items.push({ cls: 'ok', icon: '✓', text: 'Pressure rising — improving conditions' });
+    } else {
+        items.push({ cls: 'ok', icon: '✓', text: 'Conditions stable — safe to travel' });
     }
 
-    function handleStormAlert(alert) {
-        const noAlertsEl = document.getElementById('no-alerts');
-        const stormAlertEl = document.getElementById('storm-alert');
-        const severityEl = document.getElementById('storm-severity');
-        const messageEl = document.getElementById('storm-message');
-        const actionEl = document.getElementById('storm-action');
-
-        if (alert) {
-            // Show storm alert
-            noAlertsEl.classList.add('hidden');
-            stormAlertEl.classList.remove('hidden');
-
-            // Update severity class
-            stormAlertEl.className = 'alert-item danger ' + alert.severity;
-
-            // Update content
-            severityEl.textContent = alert.severity.toUpperCase() + ' STORM WARNING';
-            messageEl.textContent = alert.message;
-            actionEl.textContent = 'Action: ' + alert.recommended_action;
-
-            // Play audio for severe/extreme alerts
-            if (alert.audio_alert) {
-                playStormAlert();
-            }
-        } else {
-            // Hide storm alert, show no alerts
-            noAlertsEl.classList.remove('hidden');
-            stormAlertEl.classList.add('hidden');
-            stopStormAlert();
-        }
+    if (temp != null && temp > 28) {
+        items.push({ cls: 'caution', icon: '🌡️', text: 'High temperature — hydration critical' });
+    } else if (temp != null && temp < 10) {
+        items.push({ cls: 'caution', icon: '❄️', text: 'Cold — watch for hypothermia risk' });
+    } else {
+        items.push({ cls: 'info', icon: '💧', text: 'Stay hydrated — drink 500ml/hour' });
     }
 
-    function playStormAlert() {
-        // Create audio context for alert sound
-        if (!stormAlertAudio) {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioContext();
-
-                function beep() {
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-
-                    oscillator.frequency.value = 800;
-                    oscillator.type = 'sine';
-                    gainNode.gain.value = 0.3;
-
-                    oscillator.start();
-                    oscillator.stop(audioCtx.currentTime + 0.2);
-                }
-
-                // Beep 3 times
-                beep();
-                setTimeout(beep, 300);
-                setTimeout(beep, 600);
-
-                // Store to prevent repeated plays
-                stormAlertAudio = true;
-            } catch (e) {
-                console.log('Audio not available');
-            }
-        }
+    if (humidity != null && humidity > 85) {
+        items.push({ cls: 'info', icon: '💦', text: 'High humidity — heat dissipation reduced' });
+    } else {
+        items.push({ cls: 'info', icon: '🧥', text: 'Pack light layers for temperature swings' });
     }
 
-    function stopStormAlert() {
-        stormAlertAudio = null;
-    }
+    recs.innerHTML = items.map(i =>
+        `<div class="wx-rec ${i.cls}"><span class="wx-rec-icon">${i.icon}</span><span>${i.text}</span></div>`
+    ).join('');
+}
 </script>
 {% endblock %}

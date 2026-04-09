@@ -1,16 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}Survival Companion - Navigation{% endblock %}
+{% block title %}Survival Companion - Navigation & GPS{% endblock %}
 
 {% block content %}
 <div class="navigation-container">
-    <div class="map-placeholder">
-        <div class="map-content">
-            <svg viewBox="0 0 24 24" fill="currentColor" class="map-icon">
-                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
-            </svg>
-            <p>Offline Map View</p>
-            <span class="map-note">Maps require MBTiles download</span>
+    <div class="map-container" id="map-container">
+        <div id="leaflet-map"></div>
+        <div class="map-overlay-top">
+            <div class="map-status-chip" id="map-status-chip">
+                <span class="map-status-dot" id="map-status-dot"></span>
+                <span id="map-status-text">Locating...</span>
+            </div>
+            <div class="map-controls">
+                <button class="map-ctrl-btn" id="map-center-btn" title="Center on position">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+                </button>
+                <button class="map-ctrl-btn" id="map-layer-btn" title="Toggle layer">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="map-offline-banner hidden" id="map-offline-banner">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 1l22 22-1.41 1.41-5.09-5.09A9.99 9.99 0 012 12C2 6.48 6.48 2 12 2c2.12 0 4.09.66 5.72 1.77L7.5 13.5l-1.41-1.41L10.59 7.5A8.12 8.12 0 0012 7.17V5A10 10 0 012.06 12H1V1zM12 17c-2.76 0-5-2.24-5-5 0-.77.18-1.5.49-2.15L4.04 6.4A9.98 9.98 0 002 12a10 10 0 0015.74 8.22l-1.44-1.44C15.07 19.52 13.6 20 12 20z"/></svg>
+            Offline — showing last known position
         </div>
     </div>
 
@@ -191,23 +203,119 @@
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
     .navigation-container {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
-        height: calc(100vh - var(--status-bar-height) - var(--nav-bar-height) - 40px);
     }
 
-    .map-placeholder {
-        flex: 1;
-        background: var(--bg-card);
-        border-radius: var(--radius-lg);
+    /* ── Map Container ─────────────────────────────── */
+    .map-container {
+        position: relative;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.06);
+        background: #1a242e;
+    }
+
+    #leaflet-map {
+        height: 280px;
+        width: 100%;
+        z-index: 1;
+    }
+
+    /* Override leaflet tiles for dark mode feel */
+    .leaflet-tile-pane {
+        filter: brightness(0.85) saturate(0.9);
+    }
+
+    .map-overlay-top {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 400;
+        pointer-events: none;
+    }
+
+    .map-status-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(10,15,20,0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        pointer-events: auto;
+    }
+
+    .map-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f59e0b;
+        animation: blinkDot 1.5s infinite;
+    }
+
+    .map-status-dot.fixed { background: #22c55e; animation: none; }
+    .map-status-dot.offline { background: #ef4444; animation: none; }
+
+    @keyframes blinkDot {
+        0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    .map-controls {
+        display: flex;
+        gap: 6px;
+        pointer-events: auto;
+    }
+
+    .map-ctrl-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(10,15,20,0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #fff;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 200px;
+        transition: background 0.15s;
     }
+    .map-ctrl-btn:active { background: rgba(59,130,246,0.5); }
+    .map-ctrl-btn svg { width: 18px; height: 18px; }
+
+    .map-offline-banner {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(239,68,68,0.9);
+        color: #fff;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        z-index: 400;
+    }
+    .map-offline-banner svg { width: 14px; height: 14px; }
+    .map-offline-banner.hidden { display: none; }
 
     .map-content {
         text-align: center;
@@ -921,16 +1029,124 @@
     // GPS polling interval handle
     let gpsPollingInterval = null;
     let lastGpsPosition = null;
-    const GPS_POLL_INTERVAL = 1000; // Poll every 1 second for real-time updates
+    const GPS_POLL_INTERVAL = 2000;
+
+    // Leaflet map state
+    let leafletMap = null;
+    let positionMarker = null;
+    let accuracyCircle = null;
+    let waypointMarkers = [];
+    let breadcrumbLine = null;
+    let breadcrumbPoints = [];
+    let mapCentered = true;
+    let currentLayer = 'osm';
+
+    // Tile layers
+    const tileLayers = {
+        osm: L.tileLayer('/api/tiles/osm/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap - OFFLINE CACHE',
+            className: 'map-tiles'
+        }),
+        topo: L.tileLayer('/api/tiles/topo/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: '© OpenTopoMap - OFFLINE CACHE',
+            className: 'map-tiles'
+        })
+    };
+
+    function initMap(lat, lon) {
+        if (leafletMap) return; // already initialised
+
+        leafletMap = L.map('leaflet-map', {
+            center: [lat, lon],
+            zoom: 15,
+            zoomControl: false,
+            attributionControl: false
+        });
+
+        // Try adding OSM tiles; on error show offline banner
+        tileLayers.osm.addTo(leafletMap);
+        tileLayers.osm.on('tileerror', () => {
+            document.getElementById('map-offline-banner').classList.remove('hidden');
+            document.getElementById('map-status-dot').className = 'map-status-dot offline';
+        });
+        tileLayers.osm.on('tileload', () => {
+            document.getElementById('map-offline-banner').classList.add('hidden');
+        });
+
+        // Custom position marker (pulsing blue dot)
+        const posIcon = L.divIcon({
+            className: '',
+            html: `<div class="map-pos-marker"><div class="map-pos-pulse"></div><div class="map-pos-dot"></div></div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        positionMarker = L.marker([lat, lon], { icon: posIcon }).addTo(leafletMap);
+        accuracyCircle = L.circle([lat, lon], { radius: 20, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.08, weight: 1 }).addTo(leafletMap);
+
+        // Center on position button
+        document.getElementById('map-center-btn').addEventListener('click', () => {
+            mapCentered = true;
+            if (lastGpsPosition) leafletMap.flyTo([lastGpsPosition.latitude, lastGpsPosition.longitude], 15, { duration: 0.8 });
+        });
+
+        // Layer toggle
+        document.getElementById('map-layer-btn').addEventListener('click', () => {
+            if (currentLayer === 'osm') {
+                leafletMap.removeLayer(tileLayers.osm);
+                tileLayers.topo.addTo(leafletMap);
+                currentLayer = 'topo';
+            } else {
+                leafletMap.removeLayer(tileLayers.topo);
+                tileLayers.osm.addTo(leafletMap);
+                currentLayer = 'osm';
+            }
+        });
+
+        // Stop auto-centering on user drag
+        leafletMap.on('dragstart', () => { mapCentered = false; });
+    }
+
+    function updateMapPosition(lat, lon, accuracy) {
+        if (!leafletMap) {
+            initMap(lat, lon);
+            return;
+        }
+        positionMarker.setLatLng([lat, lon]);
+        accuracyCircle.setLatLng([lat, lon]);
+        if (accuracy) accuracyCircle.setRadius(accuracy);
+
+        // Add to breadcrumb trail
+        breadcrumbPoints.push([lat, lon]);
+        if (breadcrumbPoints.length > 500) breadcrumbPoints.shift(); // cap
+        if (breadcrumbLine) {
+            breadcrumbLine.setLatLngs(breadcrumbPoints);
+        } else if (breadcrumbPoints.length >= 2) {
+            breadcrumbLine = L.polyline(breadcrumbPoints, { color: '#3b82f6', weight: 2, opacity: 0.6, dashArray: '4 4' }).addTo(leafletMap);
+        }
+
+        if (mapCentered) leafletMap.panTo([lat, lon], { animate: true, duration: 0.5 });
+    }
+
+    function addWaypointToMap(wp) {
+        if (!leafletMap) return;
+        const icon = L.divIcon({
+            className: '',
+            html: `<div class="map-wp-marker" title="${wp.name}"><svg viewBox='0 0 24 24' fill='#f59e0b'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/></svg></div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 28]
+        });
+        const marker = L.marker([wp.latitude, wp.longitude], { icon })
+            .addTo(leafletMap)
+            .bindPopup(`<b>${wp.name}</b><br>${wp.category}`, { className: 'map-popup' });
+        waypointMarkers.push(marker);
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Load initial GPS data
         loadGPSPosition();
-
-        // Start real-time GPS polling
         startGPSPolling();
-
-        // Update compass from GPS heading
         setInterval(() => {
             if (lastGpsPosition && lastGpsPosition.heading !== undefined) {
                 document.getElementById('compass-needle').style.transform = `rotate(${lastGpsPosition.heading}deg)`;
@@ -961,30 +1177,30 @@
             if (gps) {
                 lastGpsPosition = gps;
 
-                // Update coordinates
                 document.getElementById('nav-lat').textContent = gps.latitude.toFixed(6) + '°';
                 document.getElementById('nav-lon').textContent = gps.longitude.toFixed(6) + '°';
                 document.getElementById('nav-alt').textContent = gps.altitude + ' m';
 
-                // Update accuracy display
-                document.getElementById('nav-accuracy').textContent = '±' + gps.accuracy.toFixed(1) + ' m';
+                const acc = gps.accuracy?.toFixed(1) ?? '--';
+                document.getElementById('nav-accuracy').textContent = '±' + acc + ' m';
 
-                // Update accuracy indicator
-                const accuracyIndicator = document.getElementById('nav-accuracy-indicator');
-                accuracyIndicator.textContent = '(' + gps.accuracy_indicator + ')';
-                accuracyIndicator.className = 'accuracy-indicator ' + gps.accuracy_indicator;
+                const accInd = document.getElementById('nav-accuracy-indicator');
+                if (accInd) { accInd.textContent = '(' + (gps.accuracy_indicator || '') + ')'; accInd.className = 'accuracy-indicator ' + (gps.accuracy_indicator || ''); }
 
-                // Update accuracy badge
-                const accuracyBadge = document.getElementById('gps-accuracy-badge');
-                accuracyBadge.className = 'accuracy-badge accuracy-' + gps.accuracy_indicator;
+                const accBadge = document.getElementById('gps-accuracy-badge');
+                if (accBadge) accBadge.className = 'accuracy-badge accuracy-' + (gps.accuracy_indicator || 'medium');
 
-                // Update heading from GPS
                 if (gps.heading !== undefined) {
                     document.getElementById('compass-needle').style.transform = `rotate(${gps.heading}deg)`;
                     document.getElementById('heading-value').textContent = Math.round(gps.heading);
                 }
 
-                console.log('GPS position updated:', gps.coordinates_formatted, 'Accuracy:', gps.accuracy_indicator);
+                // Update Leaflet map
+                updateMapPosition(gps.latitude, gps.longitude, gps.accuracy);
+
+                // Update map status chip
+                document.getElementById('map-status-text').textContent = `${gps.latitude.toFixed(4)}° ${gps.longitude.toFixed(4)}`;
+                document.getElementById('map-status-dot').className = 'map-status-dot fixed';
             }
         } catch (error) {
             console.error('Failed to fetch GPS position:', error);
@@ -1082,6 +1298,10 @@
             if (result.success) {
                 renderWaypoints(result.waypoints);
                 document.getElementById('waypoint-count').textContent = `(${result.count})`;
+                // Add to map
+                waypointMarkers.forEach(m => m.remove());
+                waypointMarkers = [];
+                result.waypoints.forEach(addWaypointToMap);
             }
         } catch (error) {
             console.error('Failed to load waypoints:', error);
