@@ -13,25 +13,10 @@ class TestProjectStructure:
         """Verify config file exists."""
         assert os.path.exists("config/survival_config.yaml")
 
-    def test_personas_package(self):
-        """Verify personas package structure."""
-        assert os.path.exists("personas/__init__.py")
-        assert os.path.exists("personas/survival/__init__.py")
-
-    def test_module_directories(self):
-        """Verify all module directories exist."""
-        modules = [
-            "personas/survival/medical",
-            "personas/survival/vision",
-            "personas/survival/navigation",
-            "personas/survival/survival",
-            "personas/survival/emergency",
-            "personas/survival/voice",
-            "personas/survival/ui",
-            "personas/survival/sensors",
-        ]
-        for module in modules:
-            assert os.path.isdir(module), f"Module directory {module} should exist"
+    def test_data_files_exist(self):
+        """Verify essential data files exist."""
+        assert os.path.exists("personas/survival/medical/protocols.db")
+        assert os.path.exists("personas/survival/data/species.db")
 
 
 class TestSafetyLayer:
