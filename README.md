@@ -1,137 +1,103 @@
 # Survival Companion
 
-**Offline AI survival expert system for Raspberry Pi 5 with Hailo-8 accelerator**
+**Offline-first Raspberry Pi field-companion prototype with explicit hardware/evidence boundaries.**
 
-[![Status](https://img.shields.io/badge/status-deployed-success)](http://192.168.1.219:5000)
-[![Features](https://img.shields.io/badge/features-260%2F260-brightgreen)](./api/features.db)
-[![Production](https://img.shields.io/badge/production-25%25-yellow)](./DEPLOYMENT_STATUS.md)
-[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![Status](https://img.shields.io/badge/status-software%20prototype-blue)](PROJECT_STATUS.md)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%205-red)
+![Edge AI](https://img.shields.io/badge/accelerator-Hailo--8-orange)
 
-> 🚨 **Critical Update:** All fake/simulated data has been removed. System now returns truthful "not available" messages when sensors aren't connected.
+> **Maturity: Software prototype with hardware integration pending.** The most important engineering rule in this repository is simple: if a sensor is not connected, the system reports **not available** instead of fabricating data. See [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
----
+## What it is
 
-## Overview
+Survival Companion is an offline/edge-compute research project for a Raspberry Pi 5 and optional Hailo accelerator. It explores how reference information, local AI, navigation, sensors, voice and a field-oriented UI could be brought together when cloud connectivity is limited.
 
-An autonomous survival companion providing:
-- 🏥 **Medical AI** - 12 first aid protocols with step-by-step guidance
-- 🗺️ **GPS Navigation** - Waypoints, breadcrumb trails, position tracking
-- 🌤️ **Weather Monitoring** - Real-time environmental data and storm alerts
-- 👁️ **Vision AI** - Plant/animal identification, wound assessment, skin screening
-- 📊 **Vitals Monitoring** - SpO2, heart rate, body temperature tracking
-- 🚨 **Emergency SOS** - Audio beacon, position broadcast, emergency info
-- 🎤 **Voice Interface** - Wake word activation, natural language queries
-- 🧠 **Dual LLM System** - Phi-3 (general) + BioMistral (medical) queries
+It is **not** represented as a validated medical device, emergency-response system, navigation instrument or safety-certified survival product.
 
-**Built for:** Remote wilderness survival, disaster scenarios, off-grid medical support
+## Engineering scope
 
----
+The repository explores:
 
-## Quick Start
+- local/offline reference protocols and field information;
+- Raspberry Pi web/API services;
+- GPS integration architecture;
+- environmental-sensor integration;
+- camera/vision integration concepts;
+- optional vitals-sensor interfaces;
+- local voice interaction;
+- local language-model integration;
+- Hailo-8 acceleration work;
+- emergency/SOS UI concepts;
+- explicit unavailable/error states for missing physical hardware.
 
-### Access Web Dashboard
+## The evidence rule
 
-http://192.168.1.219:5000
+Earlier development used simulated values to exercise software flows. Those values were removed from the real-data path.
 
-**Available now:**
-- ✅ Medical protocols (12 first aid guides)
-- ✅ System status and configuration
-- ✅ API endpoints (100+)
-- ⚠️ Sensor data (shows "not available" - hardware pending)
+A hardware-backed endpoint should now distinguish between:
 
-### Hardware Requirements
+```text
+real measurement available
+        │
+        ├── yes → return measured data
+        │
+        └── no  → return NOT_AVAILABLE / hardware-pending state
+```
 
-**Minimum System (~$55-75):**
-- Raspberry Pi 5 (16GB RAM recommended)
-- BME280 sensor (weather) - $5-10
-- GPS NEO-6M module - $15-25
-- Camera OV5647/IMX219 - $15-30
-- ili9486 TFT display (3.5-5") - $20-40
+That boundary is more valuable than a large feature count. It means software completion is not presented as proof that an attached sensor, model or physical subsystem works.
 
-**Full System (~$80-100):**
-- Add MAX30102 (vitals) - $8-15
-- Add MLX90614 (temperature) - $15-25
-- Add Piezo buzzer (SOS) - $2-5
+## Hardware target
 
-**AI Accelerator:**
-- Hailo-8 (26 TOPS) - Optional but recommended for vision AI
+The project was designed around a stack such as:
 
----
+- Raspberry Pi 5;
+- optional Hailo-8 accelerator;
+- environmental sensor(s);
+- GPS receiver;
+- camera;
+- optional pulse/temperature sensors;
+- local display/audio hardware.
+
+The presence of support code or a wiring guide does **not** imply every listed component has been physically integrated and verified. Check the current deployment/status documents before assuming a hardware feature is available.
+
+## Running the software
+
+Follow the repository's deployment documentation for the current revision. Once running, use the local address assigned to your own Pi rather than relying on historical private-LAN addresses from old documentation.
+
+Hardware-dependent APIs should return explicit unavailable/error states until the required device is detected and working.
 
 ## Documentation
 
-**Essential Guides:**
-- [API Reference](./API_REFERENCE.md) - All 100+ endpoints
-- [Deployment Status](./DEPLOYMENT_STATUS.md) - Current progress (25%)
-- [Hardware Setup](./HARDWARE_SETUP_GUIDE.md) - Complete wiring diagrams
-- [Hardware FAQ](./HARDWARE_FAQ.md) - Sensor requirements, Hailo usage
-- [Session 53 Summary](./SESSION_53_SUMMARY.md) - Latest deployment
+- [PROJECT_STATUS.md](PROJECT_STATUS.md) — current portfolio maturity and evidence boundary
+- [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) — historical/current deployment checklist
+- [HARDWARE_SETUP_GUIDE.md](HARDWARE_SETUP_GUIDE.md) — hardware setup reference
+- [HARDWARE_FAQ.md](HARDWARE_FAQ.md) — hardware notes
+- [API_REFERENCE.md](API_REFERENCE.md) — API reference
 
----
+Some historical documents may contain old feature counts or roadmap language. Treat the current project-status/evidence rules as authoritative when those documents disagree.
 
-## API Examples
+## Safety boundary
 
-### Get Medical Protocol
+Reference material related to first aid, health, plants, animals, weather or navigation requires independent verification before real-world use.
 
-```bash
-# List all protocols
-curl http://192.168.1.219:5000/api/protocols
+In particular:
 
-# Get specific protocol (CPR)
-curl http://192.168.1.219:5000/api/protocols/12 | json_pp
-```
+- do not use model output as diagnosis or treatment;
+- do not rely on camera classification to decide whether a plant/fungus/animal is safe;
+- do not rely on prototype sensor readings for medical decisions;
+- do not treat prototype GPS/weather/SOS functions as certified emergency equipment;
+- maintain appropriate real emergency, navigation and first-aid equipment independently of this project.
 
-### Check Vitals (requires sensors)
+## Development provenance
 
-```bash
-curl http://192.168.1.219:5000/api/vitals/current
-# Returns: {"error": "SENSORS_NOT_AVAILABLE"} until hardware connected
-```
+This is an authored MAZLABZ project developed with AI coding agents as part of the engineering workflow. AI has supported implementation, research, refactoring and testing; architecture, hardware selection, integration, evidence boundaries and verification remain the project owner's responsibility.
 
-### GPS Position (requires GPS)
+## Portfolio significance
 
-```bash
-curl http://192.168.1.219:5000/api/gps/position
-# Returns: {"error": "GPS_NOT_AVAILABLE"} until GPS connected
-```
+The strongest lesson from this repository is not the number of planned features. It is the move from **demo behaviour to evidence-aware engineering**—separating software paths from physical capabilities and refusing to invent sensor data when hardware is absent.
 
-See [API_REFERENCE.md](./API_REFERENCE.md) for complete documentation.
-
----
-
-## Current Status
-
-**Deployment Phase:** 1 of 4 (Software Deployment)
-
-**Production Readiness:** 25% (3/12 milestones)
-
-- ✅ Application deployed to Pi5
-- ✅ Hailo-8 drivers installed
-- ✅ All fake data removed
-- 🔴 Physical sensors (0/7 connected)
-- 🔴 Display configured
-- 🔴 Vision models compiled (.hef)
-
-**Next:** Connect physical sensors and verify real data collection.
-
-See [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) for complete checklist.
-
----
+**Raspberry Pi · edge AI · sensors · APIs · local-first software · hardware-state modelling · evidence discipline**
 
 ## License
 
-MIT License
-
----
-
-## Contact
-
-**Repository:** https://github.com/thotsl4yer69/survival-companion
-
-**Live Demo:** http://192.168.1.219:5000 (local network only)
-
----
-
-**Status:** Deployed - Awaiting Hardware Assembly 🚀
-
-**Last Updated:** 2026-01-16
+See [LICENSE](LICENSE).
