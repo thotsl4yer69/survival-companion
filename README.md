@@ -1,3 +1,15 @@
+# BLACKBOX + GHOSTLINK — latest build (v0.3.1)
+
+**[Download the complete standalone ZIP](releases/BLACKBOX_GHOSTLINK_v0.3.1.zip?raw=1)** · [Source and installation guide](projects/blackbox-ghostlink/README.md) · [Hardware verification checklist](projects/blackbox-ghostlink/docs/HARDWARE_TEST_GATES.md)
+
+The verified local software build is on **main**, with a GitHub Actions regression suite. It contains the offline dashboard, supply inventory, field notes, indexed reference material, read-only integrations, radio adapter, ESP32-S3 firmware, 3D-printable STL models and Jetson startup files.
+
+**Software is tested; physical deployment is not.** Real radio transmission, ESP32 flashing, the target Jetson service and field power still require actual device tests. This is not certified life-safety equipment.
+
+From the extracted ZIP run `python3 app.py` and open `http://127.0.0.1:8765`. See the [full README](projects/blackbox-ghostlink/README.md) for security and Jetson deployment instructions.
+
+---
+
 # Survival Companion
 
 **Offline-first Raspberry Pi field-companion prototype with explicit hardware/evidence boundaries.**

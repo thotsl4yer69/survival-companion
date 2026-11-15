@@ -1,0 +1,66 @@
+name: BLACKBOX GHOSTLINK main build and integrity
+on:
+  push:
+    branches:
+      - main
+      - 'review/blackbox-ghostlink-*'
+    paths:
+      - 'projects/blackbox-ghostlink/**'
+      - 'releases/BLACKBOX_GHOSTLINK_v0.3.1.zip'
+      - '.github/workflows/blackbox-ghostlink-ci.yml'
+  pull_request:
+    paths:
+      - 'projects/blackbox-ghostlink/**'
+      - '.github/workflows/blackbox-ghostlink-ci.yml'
+permissions:
+  contents: read
+jobs:
+  blackbox-software:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: projects/blackbox-ghostlink
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: SHA256 source integrity
+        run: python3 tools/verify_integrity.py
+      - name: Unit and integration tests
+        run: python3 -m unittest discover -s tests -q
+      - name: Python syntax
+        run: python3 -m compileall -q app.py radio_bridge.py deploy tools tests
+      - name: JavaScript syntax
+        run: node --check app.js
+      - name: Jetson installer syntax
+        run: bash -n deploy/install_jetson.sh
+      - name: Verify published ZIP against committed source
+        run: |
+          python3 - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+          from zipfile import ZipFile
+          archive=Path('../../releases/BLACKBOX_GHOSTLINK_v0.3.1.zip')
+          expected=Path('../../releases/BLACKBOX_GHOSTLINK_v0.3.1.zip.sha256').read_text().split()[0]
+          assert sha256(archive.read_bytes()).hexdigest()==expected, 'Download ZIP checksum mismatch'
+          with ZipFile(archive) as z:
+              assert z.testzip() is None, 'Broken ZIP member'
+              manifest=z.read('blackbox_ghostlink/SHA256SUMS').decode().splitlines()
+              for line in manifest:
+                  digest,rel=line.split('  ',1)
+                  assert sha256(z.read('blackbox_ghostlink/'+rel)).hexdigest()==digest,rel+' changed inside ZIP'
+                  assert sha256(Path(rel).read_bytes()).hexdigest()==digest,rel+' differs from GitHub'
+          print(f'PASS: published ZIP checksums and {len(manifest)} committed source files match')
+          PY
+      - name: Build independent CI ZIP
+        run: python3 tools/package_release.py "${RUNNER_TEMP}/BLACKBOX_GHOSTLINK_v0.3.1.zip"
+      - name: Attach CI rebuild
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackbox-ghostlink-v0.3.1-ci
+          path: |
+            ${{ runner.temp }}/BLACKBOX_GHOSTLINK_v0.3.1.zip
+            ${{ runner.temp }}/BLACKBOX_GHOSTLINK_v0.3.1.zip.sha256
+          if-no-files-found: error

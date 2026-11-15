@@ -1,0 +1,10 @@
+*.sqlite3
+*.sqlite3-*
+.env
+secrets.h
+**/secrets.h
+__pycache__/
+.pytest_cache/
+*.pyc
+*.bak
+*.radio.lock
