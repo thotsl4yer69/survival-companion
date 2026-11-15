@@ -39,7 +39,13 @@ class RadioCrashSafety(unittest.TestCase):
                                 ('outgoing','BLACKBOX','broadcast','do not replay','queued-for-radio'))
         self.host.store.execute("UPDATE messages SET released_at=?",(app.UTC(),))
         self.host.store.claim_radio_message()  # pretend process was killed before send returned
-        host2=app.Blackbox(self.path,radio_enabled=True)
+        # Starting a second observer/maintenance command must NOT touch the outbox.
+        observer=app.Blackbox(self.path,radio_enabled=True)
+        self.assertEqual(observer.store.one('SELECT status FROM messages')['status'],'submitting-uncertain')
+        # Recovery belongs exclusively to the radio server's startup path.
+        with app.radio_ownership(self.path):
+            observer.store.recover_radio_outbox()
+        host2=observer
         self.assertEqual(host2.store.one('SELECT status FROM messages')['status'],'requires-manual-review')
         self.assertEqual(host2.status()['messages_needing_manual_review'],1)
         self.assertIsNone(host2.store.claim_radio_message())

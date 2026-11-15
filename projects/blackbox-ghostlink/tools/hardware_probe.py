@@ -46,7 +46,12 @@ def local_ollama():
     # Host is hardcoded to loopback: never scans external networks.
     request=urllib.request.Request('http://127.0.0.1:11434/api/tags')
     try:
-        with urllib.request.urlopen(request,timeout=1.5) as response:
+        # Never send a loopback probe through inherited HTTP(S)_PROXY.
+        class RejectRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                return None
+        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),RejectRedirect())
+        with opener.open(request,timeout=1.5) as response:
             data=json.loads(response.read(300000))
             models=data.get('models',[]) if isinstance(data,dict) else []
             return {'reachable':True,'installed_models':[str(m.get('name')) for m in models if isinstance(m,dict)]}

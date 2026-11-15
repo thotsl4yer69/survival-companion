@@ -120,7 +120,14 @@ class LocalAssistantTests(unittest.TestCase):
             self.assertEqual(data['model'],'an-installed-model-only')
             self.assertIn('Only cite',data['prompt'])
             return Dummy()
-        with patch('urllib.request.urlopen',side_effect=fake):
+        class Opener:
+            def open(self,request,timeout):return fake(request,timeout)
+        original=urllib.request.build_opener
+        def secure_opener(*handlers):
+            self.assertTrue(any(isinstance(h,urllib.request.ProxyHandler) and not h.proxies for h in handlers))
+            self.assertTrue(any(isinstance(h,urllib.request.HTTPRedirectHandler) and type(h) is not urllib.request.HTTPRedirectHandler for h in handlers))
+            return Opener()
+        with patch('urllib.request.build_opener',side_effect=secure_opener):
             result=self.host.assist('water',True)
         self.assertEqual(result['mode'],'local-ollama')
         self.assertIn('not verified',result['warning'])

@@ -1,4 +1,17 @@
-# BLACKBOX + GHOSTLINK v0.3.0 — source-audited release
+# BLACKBOX + GHOSTLINK v0.3.1 — reviewed software baseline
+
+Review fixes incorporated before merge to `main`:
+- Local MBTiles raster tiles now render under the browser Content Security Policy (`blob:` image sources).
+- Radio crash recovery runs only at exclusive radio server startup, not during `backup`, `check` or `reindex`.
+- A POSIX cross-process radio ownership lock prevents two active radio-owning servers from sharing the same outbox.
+- Both local Ollama generation and the local Ollama hardware probe disable inherited HTTP proxies and outbound redirects.
+- Added targeted regression tests for each review issue.
+
+**Physical hardware and RF operation remain unverified.** This is software-ready only.
+
+---
+
+# BLACKBOX + GHOSTLINK v0.3.0 (prior release) — source-audited release
 
 **Release date:** 2026-11-15 (Australia/Melbourne)  
 **Release classification:** local-first software prototype with testable hardware adapters, **not field-certified**.

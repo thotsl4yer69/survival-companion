@@ -24,7 +24,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape as xml_escape
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 MAX_BODY = 65536
 SAFE_RECIPIENT = re.compile(r"^(broadcast|![0-9a-fA-F]{8})$")
 UTC = lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -144,10 +144,6 @@ class Store:
             if "released_at" not in columns:
                 db.execute("ALTER TABLE messages ADD COLUMN released_at TEXT NOT NULL DEFAULT ''")
             db.execute("UPDATE messages SET status='local-only' WHERE status LIKE 'queued locally%'")
-            # Preserve radio-send uncertainty across restarts; never silently retry.
-            db.execute("UPDATE messages SET status='requires-manual-review' "
-                       "WHERE direction='outgoing' "
-                       "AND status IN ('submitting-uncertain','queued-for-radio')")
             # Durable inbound de-duplication, including after a process restart.
             db.execute("DELETE FROM messages WHERE direction='incoming' AND packet_id IS NOT NULL "
                        "AND packet_id<>'' AND id NOT IN (SELECT MIN(id) FROM messages "
@@ -163,6 +159,16 @@ class Store:
                 self.fts = False
             db.commit()
         self.index_knowledge()
+
+    def recover_radio_outbox(self):
+        """Only the exclusive radio-owning server may call this during startup.
+
+        Maintenance commands (backup, check, reindex) and a second observer
+        must not rewrite a live radio worker's queued/in-flight messages.
+        """
+        self.execute("UPDATE messages SET status='requires-manual-review' "
+                     "WHERE direction='outgoing' "
+                     "AND status IN ('submitting-uncertain','queued-for-radio')")
 
     def query(self, sql, args=()):
         with self.lock, self.connect() as db:
@@ -493,7 +499,14 @@ class Blackbox:
                 "options":{"temperature":0.2,"num_predict":400}}).encode()
         req = urllib.request.Request("http://127.0.0.1:11434/api/generate",data=payload,
                                      headers={"Content-Type":"application/json"})
-        with urllib.request.urlopen(req,timeout=90) as response:
+        # A loopback target is not automatically proxy-safe; environment proxy
+        # variables can forward the entire private prompt outside the machine.
+        # Explicitly disable proxies AND redirects (which could leave loopback).
+        class RejectRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, request, fp, code, msg, headers, newurl):
+                return None
+        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}), RejectRedirect())
+        with opener.open(req,timeout=90) as response:
             result=json.loads(response.read(1_000_000))
         return {"mode":"local-ollama","answer":str(result.get("response", ""))[:5000],
                 "sources":[{"slug":x["slug"],"title":x["title"]} for x in docs],
@@ -514,7 +527,7 @@ def handler_factory():
             self.send_header("Referrer-Policy","no-referrer")
             self.send_header("X-Frame-Options","DENY")
             self.send_header("X-Permitted-Cross-Domain-Policies","none")
-            self.send_header("Content-Security-Policy","default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
+            self.send_header("Content-Security-Policy","default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
             if filename: self.send_header("Content-Disposition",'attachment; filename="'+filename+'"')
             self.end_headers()
             try:self.wfile.write(content)
@@ -713,20 +726,55 @@ class Server(ThreadingHTTPServer):
         super().__init__(addr,handler_factory())
 
 
+@contextmanager
+def radio_ownership(path):
+    """Hold an advisory cross-process lock for the entire radio-server life.
+
+    Jetson/Linux uses flock. A radio-enabled server refuses startup if the
+    active process already holds this lock. Other commands never take it.
+    """
+    if os.name != "posix":
+        raise OSError("Radio bridge ownership lock requires a POSIX host")
+    import fcntl
+    lock_path=Path(str(path)+".radio.lock")
+    fd=os.open(lock_path,os.O_CREAT|os.O_RDWR,0o600)
+    try:
+        os.fchmod(fd,0o600)
+        try:
+            fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise OSError("Radio bridge already owned by another server") from None
+        try:
+            yield
+        finally:
+            fcntl.flock(fd,fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
 def serve(app,host="127.0.0.1",port=8765):
     if host not in ("127.0.0.1","::1","localhost") and (not app.token or len(app.token)<24):
         raise ValueError("LAN mode requires BLACKBOX_TOKEN of at least 24 characters")
-    server=Server((host,port),app)
-    if app.radio_enabled:
-        from radio_bridge import RadioWorker
-        app.worker=RadioWorker(app)
-        app.worker.start()
-    try:
-        print(f"BLACKBOX {VERSION} listening at http://{host}:{server.server_address[1]}",flush=True)
-        server.serve_forever()
-    finally:
-        server.server_close()
-        if app.worker:app.worker.stop()
+    # No recovery work happens when utility commands construct Blackbox.
+    # Acquiring an exclusive radio lock before recovering queued sends avoids
+    # multiple concurrent servers fighting over the same serial/outbox state.
+    from contextlib import nullcontext
+    guard=radio_ownership(app.store.path) if app.radio_enabled else nullcontext()
+    with guard:
+        server=Server((host,port),app)
+        try:
+            if app.radio_enabled:
+                app.store.recover_radio_outbox()
+                from radio_bridge import RadioWorker
+                app.worker=RadioWorker(app)
+                app.worker.start()
+            print(f"BLACKBOX {VERSION} listening at http://{host}:{server.server_address[1]}",flush=True)
+            server.serve_forever()
+        finally:
+            server.server_close()
+            if app.worker:
+                app.worker.stop()
+                app.worker.join()
 
 
 def main(argv=None):

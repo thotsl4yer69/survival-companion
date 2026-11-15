@@ -1,8 +1,10 @@
-# BLACKBOX + GHOSTLINK v0.3.0
+# BLACKBOX + GHOSTLINK v0.3.1
 
 **Offline-first survival operations gateway and printable field hardware.** A genuinely runnable local software release with optional hardware adapters; not a claim of a tested off-grid network. Built to run without internet access once installed and provisioned. The Python core has **zero mandatory third-party dependencies**.
 
 ## Actual release status
+
+**This is the reviewed software baseline on the GitHub main branch, not a claim of completed physical deployment.** A physical field-ready system requires powered-on Jetson access, proper LoRa hardware, and the tests described in `docs/HARDWARE_TEST_GATES.md`.
 
 | Component | Implemented | Tested | Physical verification |
 |---|---|---|---|
@@ -165,7 +167,7 @@ The project is not fully tested on Jetson, ARM-specific model runtimes, physical
 
 No cloud SDK, account sign-in, paid API or externally hosted JavaScript dependency is required by the core.
 
-## v0.3.0 review and offline integrity
+## Current review and offline integrity
 
 The release passes 82 software tests with 85% branch-aware Python backend/bridge coverage. It has been inspected against current Meshtastic, Home Assistant, NVIDIA, MBTiles, ACMA and VICSES documentation. See `docs/CODE_AUDIT_2026-11-15.md` for the file-by-file audit and precise untested boundaries.
 
