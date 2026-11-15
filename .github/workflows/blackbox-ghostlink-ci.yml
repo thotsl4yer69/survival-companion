@@ -1,0 +1,39 @@
+name: BLACKBOX GHOSTLINK review checks
+
+on:
+  pull_request:
+    paths:
+      - 'projects/blackbox-ghostlink/**'
+      - '.github/workflows/blackbox-ghostlink-ci.yml'
+  push:
+    branches:
+      - 'review/blackbox-ghostlink-*'
+    paths:
+      - 'projects/blackbox-ghostlink/**'
+      - '.github/workflows/blackbox-ghostlink-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  software-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: projects/blackbox-ghostlink
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Integrity verification
+        run: python3 tools/verify_integrity.py
+      - name: Unit and integration tests
+        run: python3 -m unittest discover -s tests -q
+      - name: Python static syntax
+        run: python3 -m compileall -q app.py radio_bridge.py deploy tools tests
+      - name: JavaScript static syntax
+        run: node --check app.js
+      - name: Installer shell syntax
+        run: bash -n deploy/install_jetson.sh

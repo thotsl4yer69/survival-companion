@@ -1,0 +1,24 @@
+[Unit]
+Description=BLACKBOX + GHOSTLINK offline survival operations gateway
+After=network.target
+
+[Service]
+Type=simple
+User=blackbox
+Group=blackbox
+WorkingDirectory=/opt/blackbox
+EnvironmentFile=/etc/blackbox/blackbox.env
+ExecStart=/usr/bin/python3 /opt/blackbox/app.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/blackbox
+UMask=0077
+# Serial support requires an appropriate supplemental group and verified USB device.
+# Do not grant unnecessary host device access.
+
+[Install]
+WantedBy=multi-user.target
