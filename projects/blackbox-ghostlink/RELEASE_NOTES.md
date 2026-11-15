@@ -1,3 +1,7 @@
+See [docs/RELEASE_0.4.0.md](docs/RELEASE_0.4.0.md) for the current v0.4.0 build. The v0.3.1 notes below remain as historical audit context.
+
+---
+
 # BLACKBOX + GHOSTLINK v0.3.1 — reviewed software baseline
 
 Review fixes incorporated before merge to `main`:

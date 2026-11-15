@@ -1,0 +1,3 @@
+{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[144.20,-36.80],[144.29,-36.80],[144.29,-36.70],[144.20,-36.70],[144.20,-36.80]]]},"properties":{"leisure":"park","name":"Test park"}}
+{"type":"Feature","geometry":{"type":"LineString","coordinates":[[144.19,-36.78],[144.30,-36.72]]},"properties":{"highway":"primary","name":"Test Road"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[144.25,-36.75]},"properties":{"place":"town","name":"Bendigo test"}}

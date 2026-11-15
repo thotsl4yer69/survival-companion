@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "profile": "bendigo",
+  "sources": {
+    "ai_model": {
+      "filename": "models/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "minimum_bytes": 900000000,
+      "signature_hex": "47475546",
+      "upstream": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+      "license": "Apache-2.0",
+      "distribution": "Official Qwen model GGUF, not stored in the Git repository"
+    },
+    "wikipedia_mini": {
+      "filename": "library/wikipedia_en_top_mini_2026-09.zim",
+      "url": "https://download.kiwix.org/zim/wikipedia/wikipedia_en_top_mini_2026-09.zim",
+      "minimum_bytes": 150000000,
+      "signature_hex": "5a494d04",
+      "upstream": "https://get.kiwix.org/en/solutions/catalog/",
+      "license": "Content licences vary by articles; preserve Kiwix metadata and attribution",
+      "distribution": "Kiwix ZIM archive for use with offline kiwix-serve"
+    },
+    "victoria_osm": {
+      "filename": "maps/victoria-latest.osm.pbf",
+      "url": "https://download.geofabrik.de/australia-oceania/australia/victoria-latest.osm.pbf",
+      "minimum_bytes": 150000000,
+      "signature_hex": "",
+      "upstream": "https://download.geofabrik.de/australia-oceania/australia/victoria.html",
+      "license": "OpenStreetMap ODbL; © OpenStreetMap contributors",
+      "distribution": "Source GIS extract; render into raster MBTiles before displaying"
+    },
+    "qwen_license": {
+      "filename": "licenses/Qwen2.5-GGUF-LICENSE.txt",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/LICENSE",
+      "minimum_bytes": 1000,
+      "signature_hex": "",
+      "upstream": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+      "license": "Apache-2.0",
+      "distribution": "Legal notice bundled alongside redistributed model weights"
+    },
+    "ollama_jetpack5": {
+      "filename": "runtimes/ollama-linux-arm64-jetpack5-v0.34.0.tar.zst",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.34.0/ollama-linux-arm64-jetpack5.tar.zst",
+      "minimum_bytes": 200000000,
+      "signature_hex": "28b52ffd",
+      "expected_sha256": "731182bb1c6d9ff8e9af60d70193ecac422f658f0ba607fa941d06e34fce6546",
+      "upstream": "https://github.com/ollama/ollama/releases/tag/v0.34.0",
+      "license": "MIT (Ollama upstream)",
+      "distribution": "NVIDIA JetPack 5 ARM64 Ollama runtime; suitability depends on actual JetPack version"
+    },
+    "ollama_jetpack6": {
+      "filename": "runtimes/ollama-linux-arm64-jetpack6-v0.34.0.tar.zst",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.34.0/ollama-linux-arm64-jetpack6.tar.zst",
+      "minimum_bytes": 200000000,
+      "signature_hex": "28b52ffd",
+      "expected_sha256": "6e2e74cd9cacff09f1376bc6725ccadd3ac4828018b8c4e3356cf6dab7a1904b",
+      "upstream": "https://github.com/ollama/ollama/releases/tag/v0.34.0",
+      "license": "MIT (Ollama upstream)",
+      "distribution": "NVIDIA JetPack 6 ARM64 Ollama runtime; suitability depends on actual JetPack version"
+    },
+    "kiwix_arm64": {
+      "filename": "runtimes/kiwix-tools_linux-aarch64-3.8.2.tar.gz",
+      "url": "https://download.kiwix.org/release/kiwix-tools/kiwix-tools_linux-aarch64-3.8.2.tar.gz",
+      "minimum_bytes": 12000000,
+      "signature_hex": "1f8b",
+      "upstream": "https://github.com/kiwix/kiwix-tools/releases/tag/3.8.2",
+      "license": "GPL-3.0-or-later (Kiwix tools; inspect upstream NOTICE and LICENSE)",
+      "distribution": "Prebuilt AArch64 Kiwix tools and kiwix-serve executable"
+    }
+  },
+  "profiles": {
+    "base": [
+      "ai_model",
+      "wikipedia_mini",
+      "qwen_license",
+      "ollama_jetpack5",
+      "ollama_jetpack6",
+      "kiwix_arm64"
+    ],
+    "bendigo": [
+      "ai_model",
+      "wikipedia_mini",
+      "victoria_osm",
+      "qwen_license",
+      "ollama_jetpack5",
+      "ollama_jetpack6",
+      "kiwix_arm64"
+    ]
+  },
+  "region": {
+    "name": "Bendigo VIC Australia",
+    "bounds_lonlat": [
+      143.93,
+      -36.99,
+      144.7,
+      -36.49
+    ],
+    "tile_zooms": [
+      10,
+      11,
+      12,
+      13,
+      14
+    ]
+  }
+}

@@ -8,3 +8,12 @@ __pycache__/
 *.pyc
 *.bak
 *.radio.lock
+# Large third-party field data and personal operational content remain external.
+offline_assets/
+*.gguf
+*.zim
+*.pbf
+*.mbtiles
+*.tar
+*.partial
+asset-manifest.json

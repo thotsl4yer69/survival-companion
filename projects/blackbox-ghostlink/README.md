@@ -1,10 +1,23 @@
-# BLACKBOX + GHOSTLINK v0.3.1
+# BLACKBOX + GHOSTLINK v0.4.0
 
-**Offline-first survival operations gateway and printable field hardware.** A genuinely runnable local software release with optional hardware adapters; not a claim of a tested off-grid network. Built to run without internet access once installed and provisioned. The Python core has **zero mandatory third-party dependencies**.
+**Offline-first survival operations gateway and printable field hardware.** A genuinely runnable local software release with optional hardware adapters; not a claim of a tested off-grid network. Built to run without internet access once installed and provisioned. The Python runtime core has **zero mandatory third-party dependencies**. Offline map *generation* requires Pillow and Osmium Tool on the build machine; local AI and encyclopaedia require separately installed native runtimes.
+
+## Complete offline data-pack production (new in v0.4.0)
+
+The standalone source ZIP stays relatively small because it does not conceal or fake multi-gigabyte assets. The GitHub source contains the full reproducible workflow to fetch a real Qwen GGUF, Kiwix ZIM, Geofabrik Victoria map source, and create a usable raster MBTiles map of the Bendigo region. The release workflow publishes the verified field pack separately if its actual download/build steps succeed. **Do not claim the binary data is published unless the GitHub Release assets exist and their checksums pass.**
+
+Run on a connected Linux workstation with `osmium-tool` and Pillow installed:
+
+```sh
+python3 offline/prepare.py assemble --profile bendigo --dir /mnt/blackbox_assets --output /mnt/BLACKBOX_FIELD_DATA_bendigo_v0.4.0.tar
+python3 offline/prepare.py inspect --output /mnt/BLACKBOX_FIELD_DATA_bendigo_v0.4.0.tar
+```
+
+Full instructions: [`docs/FULL_OFFLINE_BUILD.md`](docs/FULL_OFFLINE_BUILD.md), [`offline/README.md`](offline/README.md) and [`docs/RELEASE_0.4.0.md`](docs/RELEASE_0.4.0.md). The field pack contains third-party data and must preserve original licences and attribution. The Jetson, radio and power systems still require physical tests.
 
 ## Actual release status
 
-**This is the reviewed software baseline on the GitHub main branch, not a claim of completed physical deployment.** A physical field-ready system requires powered-on Jetson access, proper LoRa hardware, and the tests described in `docs/HARDWARE_TEST_GATES.md`.
+**This is the reviewed offline software plus a real-data pack production pipeline on GitHub main, not a claim of completed physical deployment.** A physical field-ready system requires powered-on Jetson access, proper LoRa hardware, and the tests described in `docs/HARDWARE_TEST_GATES.md`.
 
 | Component | Implemented | Tested | Physical verification |
 |---|---|---|---|
@@ -13,14 +26,14 @@
 | Readiness checklist with timestamps | Yes | Automated tests | Operator confirmation required |
 | Power autonomy estimator | Yes | Numerical tests | No power meter installed |
 | Field notes / events | Yes | Automated tests | No operational records assumed |
-| Offline Markdown full-text search | Yes | Automated tests | Seven included original reference files |
-| Local Ollama integration | Optional | API contract only | Model not installed or benchmarked |
+| Offline Markdown full-text search | Yes | Automated tests | Seven included original reference files plus optional real Kiwix ZIM pack |
+| Local Ollama integration | Optional; offline GGUF downloader and importer included | API contract and data-pack integrity tests | Model not installed or benchmarked on the actual Jetson |
 | GHOSTLINK radio outbox | Yes | Crash/restart-safe fake-radio integration tests | **No radio hardware connected** |
 | Meshtastic serial send/receive adapter | Optional | Fake transport tests | **No RF transmission or delivery test** |
 | ESP32-S3 Wi-Fi telemetry firmware | Yes | Server ingestion tests | Firmware not compiled or flashed on physical board |
 | Home Assistant read-only API adapter | Yes | Local fake-HA tests | User's actual HA not reached |
 | Stored waypoints / GPX / GeoJSON | Yes | API tests | Not a standalone GPS receiver |
-| Raster MBTiles map viewer | Yes, bring your own raster MBTiles | TMS API tests | No real map dataset shipped |
+| Raster MBTiles map viewer | Yes, with Victoria OSM to Bendigo raster tile generator | TMS API and raster-generator fixture tests | Real OSM download and coverage not yet verified on physical hardware |
 | Database backup / v0.1 schema migration | Yes | SQLite tests | Disaster recovery on hardware untested |
 | Standalone printable field report | Yes | HTML escaping, content and authentication tests | Snapshot of operator-entered data only |
 | Crash-safe radio release | Yes | Atomic uncertain handoff, no automatic replay, 120s expiry tests | Real receiver ACK not verified |

@@ -1,0 +1,32 @@
+name: BLACKBOX security and dependency checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/blackbox-ghostlink/**'
+      - '.github/workflows/blackbox-security.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret patterns and tracked binaries policy
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          import subprocess
+          from pathlib import Path
+          paths=subprocess.check_output(['git','ls-files','projects/blackbox-ghostlink'],text=True).splitlines()
+          banned={'.gguf','.zim','.pbf','.mbtiles','.sqlite3','.partial','.tar'}
+          for rel in paths:
+              p=Path(rel)
+              assert p.suffix not in banned, 'Unintended large/private file tracked: '+rel
+              if p.name.lower() in {'secrets.h','.env','blackbox.sqlite3'}:
+                  raise SystemExit('Secret file tracked: '+rel)
+          print(f'PASS: {len(paths)} source and permitted CAD files, no blocked binary data/secret filenames')
+          PY

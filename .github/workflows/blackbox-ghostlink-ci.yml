@@ -1,23 +1,18 @@
-name: BLACKBOX GHOSTLINK main build and integrity
+name: BLACKBOX GHOSTLINK source and release CI
 on:
   push:
-    branches:
-      - main
-      - 'review/blackbox-ghostlink-*'
+    branches: [main]
     paths:
       - 'projects/blackbox-ghostlink/**'
-      - 'releases/BLACKBOX_GHOSTLINK_v0.3.1.zip'
+      - 'releases/BLACKBOX_GHOSTLINK_v0.4.0.zip'
       - '.github/workflows/blackbox-ghostlink-ci.yml'
-  pull_request:
-    paths:
-      - 'projects/blackbox-ghostlink/**'
-      - '.github/workflows/blackbox-ghostlink-ci.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  blackbox-software:
+  test-and-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: projects/blackbox-ghostlink
@@ -26,41 +21,32 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: SHA256 source integrity
+      - name: Install map-preparation test dependency
+        run: python3 -m pip install 'Pillow>=11,<13'
+      - name: Verify checked-in source hashes
         run: python3 tools/verify_integrity.py
-      - name: Unit and integration tests
+      - name: Run all software and map tests
         run: python3 -m unittest discover -s tests -q
-      - name: Python syntax
-        run: python3 -m compileall -q app.py radio_bridge.py deploy tools tests
-      - name: JavaScript syntax
-        run: node --check app.js
-      - name: Jetson installer syntax
-        run: bash -n deploy/install_jetson.sh
-      - name: Verify published ZIP against committed source
+      - name: Static syntax checks
+        run: |
+          python3 -m compileall -q app.py radio_bridge.py deploy offline tools tests
+          node --check app.js
+          bash -n deploy/install_jetson.sh
+      - name: Verify downloadable source ZIP and source parity
         run: |
           python3 - <<'PY'
-          from hashlib import sha256
+          import hashlib
+          import zipfile
           from pathlib import Path
-          from zipfile import ZipFile
-          archive=Path('../../releases/BLACKBOX_GHOSTLINK_v0.3.1.zip')
-          expected=Path('../../releases/BLACKBOX_GHOSTLINK_v0.3.1.zip.sha256').read_text().split()[0]
-          assert sha256(archive.read_bytes()).hexdigest()==expected, 'Download ZIP checksum mismatch'
-          with ZipFile(archive) as z:
-              assert z.testzip() is None, 'Broken ZIP member'
-              manifest=z.read('blackbox_ghostlink/SHA256SUMS').decode().splitlines()
-              for line in manifest:
-                  digest,rel=line.split('  ',1)
-                  assert sha256(z.read('blackbox_ghostlink/'+rel)).hexdigest()==digest,rel+' changed inside ZIP'
-                  assert sha256(Path(rel).read_bytes()).hexdigest()==digest,rel+' differs from GitHub'
-          print(f'PASS: published ZIP checksums and {len(manifest)} committed source files match')
+          zippath=Path('../../releases/BLACKBOX_GHOSTLINK_v0.4.0.zip')
+          checksum=Path('../../releases/BLACKBOX_GHOSTLINK_v0.4.0.zip.sha256').read_text().split()[0]
+          assert hashlib.sha256(zippath.read_bytes()).hexdigest()==checksum,'ZIP checksum mismatch'
+          with zipfile.ZipFile(zippath) as z:
+              assert z.testzip() is None
+              lines=z.read('blackbox_ghostlink/SHA256SUMS').decode().splitlines()
+              for line in lines:
+                  sha,relative=line.split('  ',1)
+                  assert hashlib.sha256(z.read('blackbox_ghostlink/'+relative)).hexdigest()==sha,relative
+                  assert hashlib.sha256(Path(relative).read_bytes()).hexdigest()==sha,relative
+          print('PASS: release ZIP byte-for-byte matches committed source')
           PY
-      - name: Build independent CI ZIP
-        run: python3 tools/package_release.py "${RUNNER_TEMP}/BLACKBOX_GHOSTLINK_v0.3.1.zip"
-      - name: Attach CI rebuild
-        uses: actions/upload-artifact@v4
-        with:
-          name: blackbox-ghostlink-v0.3.1-ci
-          path: |
-            ${{ runner.temp }}/BLACKBOX_GHOSTLINK_v0.3.1.zip
-            ${{ runner.temp }}/BLACKBOX_GHOSTLINK_v0.3.1.zip.sha256
-          if-no-files-found: error

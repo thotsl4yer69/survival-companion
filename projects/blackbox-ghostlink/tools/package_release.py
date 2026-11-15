@@ -10,10 +10,10 @@ import zipfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-ALLOWED_EXT={'.md','.py','.js','.css','.html','.svg','.webmanifest','.service','.stl','.scad','.sh','.ino','.h','.png','.example','.gitignore'}
-EXCLUDED_DIRS={'__pycache__','.git','.pytest_cache','.venv','.mypy_cache'}
+ALLOWED_EXT={'.md','.py','.js','.css','.html','.svg','.webmanifest','.service','.stl','.scad','.sh','.ino','.h','.png','.example','.gitignore','.json','.geojsonseq'}
+EXCLUDED_DIRS={'__pycache__','.git','.pytest_cache','.venv','.mypy_cache','offline_assets'}
 EXCLUDED_NAMES={'secrets.h','.env','blackbox.sqlite3','SHA256SUMS','dashboard_preview.png','dashboard_mobile_preview.png'}
-EXCLUDED_SUFFIXES={'.sqlite3','.pyc','.bak','.swp','.zip'}
+EXCLUDED_SUFFIXES={'.sqlite3','.pyc','.bak','.swp','.zip','.mbtiles','.pbf','.gguf','.zim','.tar','.partial'}
 
 
 def files_to_package():

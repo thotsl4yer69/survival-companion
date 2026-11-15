@@ -1,0 +1,74 @@
+name: BLACKBOX complete offline field-data pack (model + wiki + maps)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/blackbox-ghostlink/offline/**'
+      - '.github/workflows/blackbox-fieldpack-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: blackbox-fieldpack-v0.4.0
+  cancel-in-progress: false
+jobs:
+  produce-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: projects/blackbox-ghostlink
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare map compiler and runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends osmium-tool
+          python3 -m pip install 'Pillow>=11,<13'
+      - name: Regression tests and static check
+        run: |
+          python3 -m unittest discover -s tests -q
+          python3 tools/verify_integrity.py
+      - name: Download all real assets, render actual offline map and package
+        env:
+          ASSETS_DIR: ${{ runner.temp }}/blackbox-assets
+          TAR_PATH: ${{ runner.temp }}/BLACKBOX_FIELD_DATA_bendigo_v0.4.0.tar
+        run: |
+          python3 offline/prepare.py assemble --profile bendigo --dir "$ASSETS_DIR" --output "$TAR_PATH"
+          python3 offline/prepare.py verify --profile bendigo --dir "$ASSETS_DIR"
+          python3 offline/prepare.py inspect --output "$TAR_PATH"
+          test -s "$TAR_PATH"
+      - name: Prepare GitHub release assets, respecting 2 GiB per asset limit
+        env:
+          TAR_PATH: ${{ runner.temp }}/BLACKBOX_FIELD_DATA_bendigo_v0.4.0.tar
+          ASSET_OUT: ${{ runner.temp }}/blackbox-release-assets
+          ASSETS_DIR: ${{ runner.temp }}/blackbox-assets
+        run: |
+          mkdir -p "$ASSET_OUT"
+          if test "$(stat -c%s "$TAR_PATH")" -lt 1800000000; then
+            cp "$TAR_PATH" "$ASSET_OUT/"
+          else
+            split --bytes=1700M --numeric-suffixes=1 --suffix-length=2 "$TAR_PATH" "$ASSET_OUT/BLACKBOX_FIELD_DATA_bendigo_v0.4.0.tar.part-"
+          fi
+          cp "$TAR_PATH.sha256" "$ASSET_OUT/"
+          cp ../../releases/BLACKBOX_GHOSTLINK_v0.4.0.zip "$ASSET_OUT/"
+          cp ../../releases/BLACKBOX_GHOSTLINK_v0.4.0.zip.sha256 "$ASSET_OUT/"
+          cp "$ASSETS_DIR/asset-manifest.json" "$ASSET_OUT/asset-manifest.json"
+          ls -lh "$ASSET_OUT"
+      - name: Publish permanent downloadable assets to this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OUT: ${{ runner.temp }}/blackbox-release-assets
+        run: |
+          if gh release view blackbox-v0.4.0 >/dev/null 2>&1; then
+            gh release upload blackbox-v0.4.0 "$OUT"/* --clobber
+          else
+            gh release create blackbox-v0.4.0 "$OUT"/* \
+              --target "$GITHUB_SHA" \
+              --title 'BLACKBOX + GHOSTLINK v0.4.0 — source and real offline data' \
+              --notes 'Includes the complete source release and actual model, ZIM encyclopedia, Victoria OSM extract and rendered Bendigo MBTiles. SHA256 and asset manifest provided. No claims of physical Jetson, radio or battery verification. If TAR is split, concatenate numbered parts in order and validate against TAR SHA256 before extraction.'
+          fi

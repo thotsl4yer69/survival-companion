@@ -24,7 +24,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape as xml_escape
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 MAX_BODY = 65536
 SAFE_RECIPIENT = re.compile(r"^(broadcast|![0-9a-fA-F]{8})$")
 UTC = lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

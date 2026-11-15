@@ -1,12 +1,14 @@
-# BLACKBOX + GHOSTLINK — latest build (v0.3.1)
+# BLACKBOX + GHOSTLINK — owned offline survival build v0.4.0
 
-**[Download the complete standalone ZIP](releases/BLACKBOX_GHOSTLINK_v0.3.1.zip?raw=1)** · [Source and installation guide](projects/blackbox-ghostlink/README.md) · [Hardware verification checklist](projects/blackbox-ghostlink/docs/HARDWARE_TEST_GATES.md)
+**Main repository:** [BLACKBOX source](projects/blackbox-ghostlink) · [Offline field-data build instructions](projects/blackbox-ghostlink/docs/FULL_OFFLINE_BUILD.md) · [Latest source ZIP](releases/BLACKBOX_GHOSTLINK_v0.4.0.zip?raw=1) · [GitHub Releases](https://github.com/thotsl4yer69/survival-companion/releases)
 
-The verified local software build is on **main**, with a GitHub Actions regression suite. It contains the offline dashboard, supply inventory, field notes, indexed reference material, read-only integrations, radio adapter, ESP32-S3 firmware, 3D-printable STL models and Jetson startup files.
+This is the canonical main-branch build: our offline dashboard, knowledge search, inventory, power runtime planner, radio bridge, ESP32-S3 source firmware, 3D-printable CAD, dedicated Jetson service, test suite, and an authored **real offline-data assembly pipeline** for Qwen AI, Kiwix Wikipedia, Victoria OpenStreetMap and offline Bendigo raster maps. ARM64 Kiwix and JetPack 5/6 Ollama runtime archives are in the **field-data pack only after its GitHub build actually succeeds**, not in the small source ZIP.
 
-**Software is tested; physical deployment is not.** Real radio transmission, ESP32 flashing, the target Jetson service and field power still require actual device tests. This is not certified life-safety equipment.
+**One product, two release artifacts.** The small ZIP contains all our source, deployment instructions, firmware source, STL models and CI/tests. The large field-data TAR (or numbered TAR parts) is assembled automatically by [field-pack GitHub Actions](.github/workflows/blackbox-fieldpack-release.yml) and published to [Releases](https://github.com/thotsl4yer69/survival-companion/releases) only upon verified real downloads, raster rendering and hashes. A release link on its own is not proof it exists yet.
 
-From the extracted ZIP run `python3 app.py` and open `http://127.0.0.1:8765`. See the [full README](projects/blackbox-ghostlink/README.md) for security and Jetson deployment instructions.
+**Hardware boundary:** no real Orin installation, LoRa RF link, ESP32 flash, battery tests or real-world terrain verification has been demonstrated. No existing device is modified by this source push. Consult [hardware gates](projects/blackbox-ghostlink/docs/HARDWARE_TEST_GATES.md). Not a certified emergency, medical or navigation device.
+
+**Verification:** `cd projects/blackbox-ghostlink && python3 -m unittest discover -s tests -q && python3 tools/verify_integrity.py`. The offline map generator and safe data-pack unpacker are independently regression-tested.
 
 ---
 
