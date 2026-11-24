@@ -1,0 +1,104 @@
+name: BLACKBOX Forge (Windows + Linux)
+on:
+  push:
+    branches: [main, 'forge-*']
+    paths:
+      - 'projects/blackbox-ghostlink/forge/**'
+      - 'projects/blackbox-ghostlink/tests/test_forge.py'
+      - 'projects/blackbox-ghostlink/tests/fixtures/forge/**'
+      - 'projects/blackbox-ghostlink/campaign/**'
+      - '.github/workflows/blackbox-forge-ci.yml'
+  pull_request:
+    paths:
+      - 'projects/blackbox-ghostlink/forge/**'
+      - 'projects/blackbox-ghostlink/tests/test_forge.py'
+  workflow_dispatch:
+    inputs:
+      live_fetch:
+        description: 'Also fetch real content (~70 MB) from Kiwix and Ollama on Windows'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  full-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: projects/blackbox-ghostlink
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source integrity (v0.4.0 SHA256SUMS)
+        run: python tools/verify_integrity.py
+      - name: v0.4.0 release parity (Forge must not change released files)
+        run: |
+          python - <<'PY'
+          import hashlib, zipfile
+          from pathlib import Path
+          z = zipfile.ZipFile('../../releases/BLACKBOX_GHOSTLINK_v0.4.0.zip')
+          lines = z.read('blackbox_ghostlink/SHA256SUMS').decode().splitlines()
+          for line in lines:
+              sha, rel = line.split('  ', 1)
+              assert hashlib.sha256(Path(rel).read_bytes()).hexdigest() == sha, rel
+          print('release parity OK:', len(lines), 'files')
+          PY
+      - name: Whole BLACKBOX suite (v0.4.0 + Forge)
+        run: python -m unittest discover -s tests -v
+  forge-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.9', '3.12']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: projects/blackbox-ghostlink
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Forge acceptance tests (fault injection, resume, verify, lock)
+        run: python -m unittest tests.test_forge -v
+      - name: CLI smoke test via launcher (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call forge\forge.cmd --version || exit /b 1
+          call forge\forge.cmd init "%RUNNER_TEMP%\BBV" --label CI || exit /b 1
+          call forge\forge.cmd status "%RUNNER_TEMP%\BBV" || exit /b 1
+          call forge\forge.cmd verify "%RUNNER_TEMP%\BBV" || exit /b 1
+          call forge\forge.cmd env "%RUNNER_TEMP%\BBV" --shell setx || exit /b 1
+          call forge\forge.cmd profiles || exit /b 1
+      - name: CLI smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          python forge/forge.py init "$RUNNER_TEMP/BBV" --label CI
+          python forge/forge.py status "$RUNNER_TEMP/BBV"
+          python forge/forge.py verify "$RUNNER_TEMP/BBV"
+          python forge/forge.py profiles
+  windows-live-fetch:
+    if: github.event_name == 'workflow_dispatch' && inputs.live_fetch
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: projects/blackbox-ghostlink
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Real upstream fetch on Windows (Kiwix ZIM + Ollama model) and verify
+        shell: cmd
+        run: |
+          call forge\forge.cmd init "%RUNNER_TEMP%\LIVE" --label LIVE || exit /b 1
+          call forge\forge.cmd fetch "%RUNNER_TEMP%\LIVE" --profile test --only zimgit-water ai-all-minilm || exit /b 1
+          call forge\forge.cmd verify "%RUNNER_TEMP%\LIVE" --strict || exit /b 1
+          type "%RUNNER_TEMP%\LIVE\MANIFEST.sha256"

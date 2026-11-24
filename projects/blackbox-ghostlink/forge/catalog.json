@@ -1,0 +1,1081 @@
+{
+  "schema": 2,
+  "description": "BLACKBOX Forge catalogue. Sizes are approximate; 'forge plan' resolves exact files, sizes and checksums live.",
+  "items": {
+    "ai-all-minilm": {
+      "kind": "ollama",
+      "model": "all-minilm",
+      "tag": "22m",
+      "title": "all-MiniLM 22M embeddings (tiny, test)",
+      "category": "ai",
+      "approx_gb": 0.046,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "ai-gemma4-e4b": {
+      "kind": "ollama",
+      "model": "gemma4",
+      "tag": "e4b",
+      "title": "Gemma 4 E4B (vision; 6.6 GB, desktop recommended)",
+      "category": "ai",
+      "approx_gb": 6.6,
+      "licence": "Gemma terms (check model card)",
+      "commercial": "check"
+    },
+    "ai-nomic-embed": {
+      "kind": "ollama",
+      "model": "nomic-embed-text",
+      "tag": "latest",
+      "title": "nomic-embed-text embeddings (document search)",
+      "category": "ai",
+      "approx_gb": 0.27,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "ai-qwen3-1.7b": {
+      "kind": "ollama",
+      "model": "qwen3",
+      "tag": "1.7b",
+      "title": "Qwen3 1.7B (fast fallback)",
+      "category": "ai",
+      "approx_gb": 1.36,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "ai-qwen3-4b": {
+      "kind": "ollama",
+      "model": "qwen3",
+      "tag": "4b",
+      "title": "Qwen3 4B (default resident model on the Orin)",
+      "category": "ai",
+      "approx_gb": 2.5,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "ai-qwen3-8b": {
+      "kind": "ollama",
+      "model": "qwen3",
+      "tag": "8b",
+      "title": "Qwen3 8B (desktop, or Orin on demand)",
+      "category": "ai",
+      "approx_gb": 5.2,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "ai-qwen3.5-4b": {
+      "kind": "ollama",
+      "model": "qwen3.5",
+      "tag": "4b",
+      "title": "Qwen3.5 4B with vision",
+      "category": "ai",
+      "approx_gb": 3.3,
+      "licence": "Check model card",
+      "commercial": "check"
+    },
+    "ai-smollm2-135m": {
+      "kind": "ollama",
+      "model": "smollm2",
+      "tag": "135m",
+      "title": "SmolLM2 135M (tiny, test)",
+      "category": "ai",
+      "approx_gb": 0.27,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "appropedia": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "appropedia_en_all_maxi",
+      "title": "Appropedia: appropriate technology and sustainability",
+      "category": "survival",
+      "approx_gb": 0.555,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "archwiki": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "archlinux_en_all_maxi",
+      "title": "ArchWiki Linux reference",
+      "category": "technical",
+      "approx_gb": 0.037,
+      "licence": "GNU FDL 1.3",
+      "commercial": "yes"
+    },
+    "armypubs": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "armypubs_en_all",
+      "title": "US Army publications (field manuals incl. survival, first aid)",
+      "category": "survival",
+      "approx_gb": 7.7,
+      "licence": "US Government work, mostly public domain (check individual distribution statements)",
+      "commercial": "check"
+    },
+    "cd3wd": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "cd3wdproject.org_en_all",
+      "title": "CD3WD: collected documents on development and appropriate tech",
+      "category": "survival",
+      "approx_gb": 0.546,
+      "licence": "Mixed: each document keeps its original licence (see ZIM metadata)",
+      "commercial": "check"
+    },
+    "cdc-travel": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "wwwnc.cdc.gov_en_all",
+      "title": "CDC travel health and disease notes",
+      "category": "medical",
+      "approx_gb": 0.17,
+      "licence": "US Government work, mostly public domain (check individual distribution statements)",
+      "commercial": "check"
+    },
+    "energypedia": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "energypedia_en_all_maxi",
+      "title": "Energypedia: off-grid energy, solar, biogas",
+      "category": "survival",
+      "approx_gb": 0.763,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "gardenology": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "gardenology.org_en_all",
+      "title": "Gardenology plant encyclopedia",
+      "category": "survival",
+      "approx_gb": 0.107,
+      "licence": "Check site licence",
+      "commercial": "check"
+    },
+    "gguf-qwen2.5-1.5b": {
+      "kind": "huggingface",
+      "repo": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+      "file": "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+      "title": "Qwen2.5 1.5B GGUF (v0.4.0 activate.py / llama.cpp)",
+      "category": "ai",
+      "approx_gb": 1.1,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "gguf-smollm2-135m": {
+      "kind": "huggingface",
+      "repo": "bartowski/SmolLM2-135M-Instruct-GGUF",
+      "file": "SmolLM2-135M-Instruct-Q2_K.gguf",
+      "title": "SmolLM2 135M GGUF (tiny, test)",
+      "category": "test",
+      "approx_gb": 0.088,
+      "licence": "Apache-2.0",
+      "commercial": "yes"
+    },
+    "gutenberg-q": {
+      "kind": "kiwix",
+      "path": "gutenberg",
+      "name": "gutenberg_en_lcc-q",
+      "title": "Project Gutenberg: science (LCC Q)",
+      "category": "education",
+      "approx_gb": 17,
+      "licence": "Public domain in the USA + Project Gutenberg licence/trademark terms",
+      "commercial": "yes"
+    },
+    "gutenberg-r": {
+      "kind": "kiwix",
+      "path": "gutenberg",
+      "name": "gutenberg_en_lcc-r",
+      "title": "Project Gutenberg: medicine (LCC R)",
+      "category": "medical",
+      "approx_gb": 1.9,
+      "licence": "Public domain in the USA + Project Gutenberg licence/trademark terms",
+      "commercial": "yes"
+    },
+    "gutenberg-s": {
+      "kind": "kiwix",
+      "path": "gutenberg",
+      "name": "gutenberg_en_lcc-s",
+      "title": "Project Gutenberg: agriculture (LCC S)",
+      "category": "education",
+      "approx_gb": 4.2,
+      "licence": "Public domain in the USA + Project Gutenberg licence/trademark terms",
+      "commercial": "yes"
+    },
+    "gutenberg-t": {
+      "kind": "kiwix",
+      "path": "gutenberg",
+      "name": "gutenberg_en_lcc-t",
+      "title": "Project Gutenberg: technology (LCC T)",
+      "category": "education",
+      "approx_gb": 12,
+      "licence": "Public domain in the USA + Project Gutenberg licence/trademark terms",
+      "commercial": "yes"
+    },
+    "gutenberg-u": {
+      "kind": "kiwix",
+      "path": "gutenberg",
+      "name": "gutenberg_en_lcc-u",
+      "title": "Project Gutenberg: military science (LCC U)",
+      "category": "education",
+      "approx_gb": 1.2,
+      "licence": "Public domain in the USA + Project Gutenberg licence/trademark terms",
+      "commercial": "yes"
+    },
+    "gutenberg-v": {
+      "kind": "kiwix",
+      "path": "gutenberg",
+      "name": "gutenberg_en_lcc-v",
+      "title": "Project Gutenberg: naval science and navigation (LCC V)",
+      "category": "education",
+      "approx_gb": 1.3,
+      "licence": "Public domain in the USA + Project Gutenberg licence/trademark terms",
+      "commercial": "yes"
+    },
+    "ifixit": {
+      "kind": "kiwix",
+      "path": "ifixit",
+      "name": "ifixit_en_all",
+      "title": "iFixit repair guides",
+      "category": "technical",
+      "approx_gb": 3.3,
+      "licence": "CC BY-NC-SA 3.0",
+      "commercial": "no"
+    },
+    "irp-military-medicine": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "irp.fas.org_en_military-medicine",
+      "title": "Military medicine manuals (FAS IRP)",
+      "category": "medical",
+      "approx_gb": 0.062,
+      "licence": "US Government work, mostly public domain (check individual distribution statements)",
+      "commercial": "check"
+    },
+    "khanacademy": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "khanacademy_en_all",
+      "title": "Khan Academy (2023 snapshot)",
+      "category": "education",
+      "approx_gb": 168,
+      "licence": "CC BY-NC-SA 3.0",
+      "commercial": "no"
+    },
+    "librepathology": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "librepathology_en_all_maxi",
+      "title": "Libre Pathology",
+      "category": "medical",
+      "approx_gb": 0.091,
+      "licence": "Check site licence",
+      "commercial": "check"
+    },
+    "libretexts-bio": {
+      "kind": "kiwix",
+      "path": "libretexts",
+      "name": "libretexts.org_en_bio",
+      "title": "LibreTexts biology",
+      "category": "education",
+      "approx_gb": 2.1,
+      "licence": "Mostly CC BY-NC-SA",
+      "commercial": "no"
+    },
+    "libretexts-chem": {
+      "kind": "kiwix",
+      "path": "libretexts",
+      "name": "libretexts.org_en_chem",
+      "title": "LibreTexts chemistry",
+      "category": "education",
+      "approx_gb": 2.0,
+      "licence": "Mostly CC BY-NC-SA",
+      "commercial": "no"
+    },
+    "libretexts-eng": {
+      "kind": "kiwix",
+      "path": "libretexts",
+      "name": "libretexts.org_en_eng",
+      "title": "LibreTexts engineering",
+      "category": "education",
+      "approx_gb": 0.647,
+      "licence": "Mostly CC BY-NC-SA",
+      "commercial": "no"
+    },
+    "libretexts-med": {
+      "kind": "kiwix",
+      "path": "libretexts",
+      "name": "libretexts.org_en_med",
+      "title": "LibreTexts medicine",
+      "category": "medical",
+      "approx_gb": 1.1,
+      "licence": "Mostly CC BY-NC-SA",
+      "commercial": "no"
+    },
+    "libretexts-phys": {
+      "kind": "kiwix",
+      "path": "libretexts",
+      "name": "libretexts.org_en_phys",
+      "title": "LibreTexts physics",
+      "category": "education",
+      "approx_gb": 0.534,
+      "licence": "Mostly CC BY-NC-SA",
+      "commercial": "no"
+    },
+    "maps-australia-osm": {
+      "kind": "http",
+      "url": "https://download.geofabrik.de/australia-oceania/australia-latest.osm.pbf",
+      "dest": "maps/osm/australia-latest.osm.pbf",
+      "title": "OpenStreetMap Australia extract",
+      "category": "maps",
+      "approx_gb": 0.9,
+      "licence": "ODbL 1.0 (c) OpenStreetMap contributors",
+      "commercial": "yes",
+      "version": "latest",
+      "md5_url": "https://download.geofabrik.de/australia-oceania/australia-latest.osm.pbf.md5"
+    },
+    "maps-victoria-osm": {
+      "kind": "http",
+      "url": "https://download.geofabrik.de/australia-oceania/australia/victoria-latest.osm.pbf",
+      "dest": "maps/osm/victoria-latest.osm.pbf",
+      "title": "OpenStreetMap Victoria extract (source for offline maps)",
+      "category": "maps",
+      "approx_gb": 0.3,
+      "licence": "ODbL 1.0 (c) OpenStreetMap contributors",
+      "commercial": "yes",
+      "version": "latest",
+      "md5_url": "https://download.geofabrik.de/australia-oceania/australia/victoria-latest.osm.pbf.md5"
+    },
+    "mdn": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "developer.mozilla.org_en_all",
+      "title": "MDN web docs",
+      "category": "technical",
+      "approx_gb": 0.56,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "mdwiki": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "mdwiki_en_all_maxi",
+      "title": "WikiProjectMed medical encyclopedia",
+      "category": "medical",
+      "approx_gb": 2.1,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "medlineplus": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "medlineplus.gov_en_all",
+      "title": "MedlinePlus (US NLM)",
+      "category": "medical",
+      "approx_gb": 1.8,
+      "licence": "US Government site containing licensed third-party content",
+      "commercial": "no"
+    },
+    "nhs-medicines": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "nhs.uk_en_medicines",
+      "title": "NHS medicines A-Z",
+      "category": "medical",
+      "approx_gb": 0.016,
+      "licence": "UK Open Government Licence (check)",
+      "commercial": "check"
+    },
+    "openwrt": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "openwrt.org_en_all",
+      "title": "OpenWrt router documentation",
+      "category": "technical",
+      "approx_gb": 0.496,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "opsec-bible": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "privacydefence.org_en_opsecbible",
+      "title": "OPSEC Bible (privacy and anonymity)",
+      "category": "technical",
+      "approx_gb": 0.166,
+      "licence": "Check site licence",
+      "commercial": "check"
+    },
+    "osm-wiki": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "openstreetmap-wiki_en_all_nopic",
+      "title": "OpenStreetMap wiki (map editing and tagging)",
+      "category": "reference",
+      "approx_gb": 0.509,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "phet": {
+      "kind": "kiwix",
+      "path": "phet",
+      "name": "phet_en_all",
+      "title": "PhET interactive science simulations",
+      "category": "education",
+      "approx_gb": 0.11,
+      "licence": "CC BY 4.0",
+      "commercial": "yes"
+    },
+    "python-docs": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "docs.python.org_en_all",
+      "title": "Python documentation",
+      "category": "technical",
+      "approx_gb": 3.6,
+      "licence": "PSF documentation licence",
+      "commercial": "yes"
+    },
+    "ready-gov": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "ready.gov_en_all",
+      "title": "Ready.gov emergency preparedness",
+      "category": "survival",
+      "approx_gb": 1.9,
+      "licence": "US Government work, mostly public domain (check individual distribution statements)",
+      "commercial": "check"
+    },
+    "rt-kiwix-aarch64": {
+      "kind": "http",
+      "url": "https://download.kiwix.org/release/kiwix-tools/kiwix-tools_linux-aarch64-3.8.2.tar.gz",
+      "dest": "runtimes/linux-arm64/kiwix-tools_linux-aarch64-3.8.2.tar.gz",
+      "title": "kiwix-serve 3.8.2 for the Orin (ARM64)",
+      "category": "runtime",
+      "approx_gb": 0.021,
+      "licence": "GPL-3.0-or-later",
+      "commercial": "yes",
+      "version": "3.8.2",
+      "sha256": "a9898fc5363437327350db669bbc03dcc7ecfd498dae727d7184bebe77019514",
+      "size": 20507463,
+      "pin_note": "Pinned 2026-11-24 from download.kiwix.org over TLS; Kiwix publishes no checksum for tool releases"
+    },
+    "rt-kiwix-linux-x86_64": {
+      "kind": "http",
+      "url": "https://download.kiwix.org/release/kiwix-tools/kiwix-tools_linux-x86_64-3.8.2.tar.gz",
+      "dest": "runtimes/linux-amd64/kiwix-tools_linux-x86_64-3.8.2.tar.gz",
+      "title": "kiwix-serve 3.8.2 for x86-64 Linux",
+      "category": "runtime",
+      "approx_gb": 0.022,
+      "licence": "GPL-3.0-or-later",
+      "commercial": "yes",
+      "version": "3.8.2",
+      "sha256": "b0ae98dd344aa0469a15ab42feff6d5aafb79541a82fb4e2647c74b073123815",
+      "size": 21661067,
+      "pin_note": "Pinned 2026-11-24 from download.kiwix.org over TLS; Kiwix publishes no checksum for tool releases"
+    },
+    "rt-kiwix-windows": {
+      "kind": "http",
+      "url": "https://download.kiwix.org/release/kiwix-tools/kiwix-tools_win-x86_64-3.8.1.zip",
+      "dest": "runtimes/windows-amd64/kiwix-tools_win-x86_64-3.8.1.zip",
+      "title": "kiwix-serve 3.8.1 for Windows",
+      "category": "runtime",
+      "approx_gb": 0.018,
+      "licence": "GPL-3.0-or-later",
+      "commercial": "yes",
+      "version": "3.8.1",
+      "sha256": "fcd01ed2b93e9a68632c7863c83b9f66bf64406a66357be1df7b8b75596f3e45",
+      "size": 18301924,
+      "pin_note": "Pinned 2026-11-24 from download.kiwix.org over TLS; Kiwix publishes no checksum for tool releases"
+    },
+    "rt-ollama-arm64": {
+      "kind": "http",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.40.17/ollama-linux-arm64.tar.zst",
+      "dest": "runtimes/linux-arm64/ollama-linux-arm64-v0.40.17.tar.zst",
+      "title": "Ollama 0.40.17 base for ARM64 (the Orin needs this AND the JetPack 6 overlay)",
+      "category": "runtime",
+      "approx_gb": 1.6,
+      "licence": "MIT",
+      "commercial": "yes",
+      "version": "v0.40.17",
+      "sha256_list_url": "https://github.com/ollama/ollama/releases/download/v0.40.17/sha256sum.txt",
+      "sha256_list_name": "./ollama-linux-arm64.tar.zst"
+    },
+    "rt-ollama-jetpack6": {
+      "kind": "http",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.40.17/ollama-linux-arm64-jetpack6.tar.zst",
+      "dest": "runtimes/linux-arm64-jetpack6/ollama-linux-arm64-jetpack6-v0.40.17.tar.zst",
+      "title": "Ollama 0.40.17 JetPack 6 CUDA overlay (extract after rt-ollama-arm64)",
+      "category": "runtime",
+      "approx_gb": 0.28,
+      "licence": "MIT",
+      "commercial": "yes",
+      "version": "v0.40.17",
+      "sha256_list_url": "https://github.com/ollama/ollama/releases/download/v0.40.17/sha256sum.txt",
+      "sha256_list_name": "./ollama-linux-arm64-jetpack6.tar.zst"
+    },
+    "rt-ollama-linux-amd64": {
+      "kind": "http",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.40.17/ollama-linux-amd64.tar.zst",
+      "dest": "runtimes/linux-amd64/ollama-linux-amd64-v0.40.17.tar.zst",
+      "title": "Ollama 0.40.17 for x86-64 Linux",
+      "category": "runtime",
+      "approx_gb": 1.55,
+      "licence": "MIT",
+      "commercial": "yes",
+      "version": "v0.40.17",
+      "sha256_list_url": "https://github.com/ollama/ollama/releases/download/v0.40.17/sha256sum.txt",
+      "sha256_list_name": "./ollama-linux-amd64.tar.zst"
+    },
+    "rt-ollama-windows": {
+      "kind": "http",
+      "url": "https://github.com/ollama/ollama/releases/download/v0.40.17/ollama-windows-amd64.zip",
+      "dest": "runtimes/windows-amd64/ollama-windows-amd64-v0.40.17.zip",
+      "title": "Ollama 0.40.17 for Windows (portable zip)",
+      "category": "runtime",
+      "approx_gb": 1.6,
+      "licence": "MIT",
+      "commercial": "yes",
+      "version": "v0.40.17",
+      "sha256_list_url": "https://github.com/ollama/ollama/releases/download/v0.40.17/sha256sum.txt",
+      "sha256_list_name": "./ollama-windows-amd64.zip"
+    },
+    "se-3dprinting": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "3dprinting.stackexchange.com_en_all",
+      "title": "Stack Exchange: 3D Printing",
+      "category": "technical",
+      "approx_gb": 0.115,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-arduino": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "arduino.stackexchange.com_en_all",
+      "title": "Stack Exchange: Arduino",
+      "category": "technical",
+      "approx_gb": 0.248,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-bicycles": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "bicycles.stackexchange.com_en_all",
+      "title": "Stack Exchange: Bicycles",
+      "category": "technical",
+      "approx_gb": 0.476,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-biology": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "biology.stackexchange.com_en_all",
+      "title": "Stack Exchange: Biology",
+      "category": "technical",
+      "approx_gb": 0.405,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-chemistry": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "chemistry.stackexchange.com_en_all",
+      "title": "Stack Exchange: Chemistry",
+      "category": "technical",
+      "approx_gb": 0.401,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-cooking": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "cooking.stackexchange.com_en_all",
+      "title": "Stack Exchange: Seasoned Advice (cooking)",
+      "category": "technical",
+      "approx_gb": 0.227,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-diy": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "diy.stackexchange.com_en_all",
+      "title": "Stack Exchange: Home Improvement",
+      "category": "technical",
+      "approx_gb": 1.9,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-earthscience": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "earthscience.stackexchange.com_en_all",
+      "title": "Stack Exchange: Earth Science",
+      "category": "technical",
+      "approx_gb": 0.127,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-electronics": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "electronics.stackexchange.com_en_all",
+      "title": "Stack Exchange: Electrical Engineering",
+      "category": "technical",
+      "approx_gb": 4.0,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-engineering": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "engineering.stackexchange.com_en_all",
+      "title": "Stack Exchange: Engineering",
+      "category": "technical",
+      "approx_gb": 0.247,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-gardening": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "gardening.stackexchange.com_en_all",
+      "title": "Stack Exchange: Gardening & Landscaping",
+      "category": "technical",
+      "approx_gb": 0.89,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-ham": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "ham.stackexchange.com_en_all",
+      "title": "Stack Exchange: Amateur Radio",
+      "category": "technical",
+      "approx_gb": 0.074,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-homebrew": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "homebrew.stackexchange.com_en_all",
+      "title": "Stack Exchange: Homebrewing",
+      "category": "technical",
+      "approx_gb": 0.036,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-mechanics": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "mechanics.stackexchange.com_en_all",
+      "title": "Stack Exchange: Motor Vehicle Maintenance & Repair",
+      "category": "technical",
+      "approx_gb": 0.326,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-medicalsciences": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "medicalsciences.stackexchange.com_en_all",
+      "title": "Stack Exchange: Medical Sciences",
+      "category": "medical",
+      "approx_gb": 0.058,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-outdoors": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "outdoors.stackexchange.com_en_all",
+      "title": "Stack Exchange: Great Outdoors",
+      "category": "technical",
+      "approx_gb": 0.135,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-parenting": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "parenting.stackexchange.com_en_all",
+      "title": "Stack Exchange: Parenting",
+      "category": "technical",
+      "approx_gb": 0.057,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-pets": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "pets.stackexchange.com_en_all",
+      "title": "Stack Exchange: Pets",
+      "category": "technical",
+      "approx_gb": 0.083,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-physics": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "physics.stackexchange.com_en_all",
+      "title": "Stack Exchange: Physics",
+      "category": "technical",
+      "approx_gb": 1.7,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-raspberrypi": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "raspberrypi.stackexchange.com_en_all",
+      "title": "Stack Exchange: Raspberry Pi",
+      "category": "technical",
+      "approx_gb": 0.285,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-security": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "security.stackexchange.com_en_all",
+      "title": "Stack Exchange: Information Security",
+      "category": "technical",
+      "approx_gb": 0.419,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-sustainability": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "sustainability.stackexchange.com_en_all",
+      "title": "Stack Exchange: Sustainable Living",
+      "category": "technical",
+      "approx_gb": 0.026,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-unix": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "unix.stackexchange.com_en_all",
+      "title": "Stack Exchange: Unix & Linux",
+      "category": "technical",
+      "approx_gb": 1.2,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "se-woodworking": {
+      "kind": "kiwix",
+      "path": "stack_exchange",
+      "name": "woodworking.stackexchange.com_en_all",
+      "title": "Stack Exchange: Woodworking",
+      "category": "technical",
+      "approx_gb": 0.102,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "survivorlibrary": {
+      "kind": "kiwix",
+      "path": "zimit",
+      "name": "survivorlibrary.com_en_all",
+      "title": "Survivor Library: pre-industrial technology books",
+      "category": "survival",
+      "approx_gb": 205,
+      "licence": "Mostly public-domain scans; check per document",
+      "commercial": "check"
+    },
+    "trueprepper": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "trueprepper.com_en_all",
+      "title": "TruePrepper preparedness articles",
+      "category": "survival",
+      "approx_gb": 1.3,
+      "licence": "Copyrighted website mirror: personal reference only",
+      "commercial": "no"
+    },
+    "wikibooks": {
+      "kind": "kiwix",
+      "path": "wikibooks",
+      "name": "wikibooks_en_all_maxi",
+      "title": "Wikibooks: open textbooks and manuals",
+      "category": "knowledge",
+      "approx_gb": 4.4,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikipedia-maxi": {
+      "kind": "kiwix",
+      "path": "wikipedia",
+      "name": "wikipedia_en_all_maxi",
+      "title": "Wikipedia: every article with images",
+      "category": "knowledge",
+      "approx_gb": 119,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikipedia-medicine": {
+      "kind": "kiwix",
+      "path": "wikipedia",
+      "name": "wikipedia_en_medicine_maxi",
+      "title": "Wikipedia: medicine (with images)",
+      "category": "medical",
+      "approx_gb": 1.7,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikipedia-nopic": {
+      "kind": "kiwix",
+      "path": "wikipedia",
+      "name": "wikipedia_en_all_nopic",
+      "title": "Wikipedia: every article, no images",
+      "category": "knowledge",
+      "approx_gb": 49,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikipedia-top": {
+      "kind": "kiwix",
+      "path": "wikipedia",
+      "name": "wikipedia_en_top_maxi",
+      "title": "Wikipedia: top articles with images",
+      "category": "knowledge",
+      "approx_gb": 6.5,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikispecies": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "wikispecies_en_all_maxi",
+      "title": "Wikispecies taxonomy",
+      "category": "knowledge",
+      "approx_gb": 3.3,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikiversity": {
+      "kind": "kiwix",
+      "path": "wikiversity",
+      "name": "wikiversity_en_all_maxi",
+      "title": "Wikiversity learning resources",
+      "category": "education",
+      "approx_gb": 2.0,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wikivoyage": {
+      "kind": "kiwix",
+      "path": "wikivoyage",
+      "name": "wikivoyage_en_all_maxi",
+      "title": "Wikivoyage travel guide",
+      "category": "knowledge",
+      "approx_gb": 1.0,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "wiktionary": {
+      "kind": "kiwix",
+      "path": "wiktionary",
+      "name": "wiktionary_en_all_nopic",
+      "title": "Wiktionary dictionary",
+      "category": "knowledge",
+      "approx_gb": 14,
+      "licence": "CC BY-SA 4.0 (attribution + share-alike)",
+      "commercial": "yes"
+    },
+    "worldfactbook": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "theworldfactbook_en_all",
+      "title": "CIA World Factbook",
+      "category": "reference",
+      "approx_gb": 0.388,
+      "licence": "US Government work, mostly public domain (check individual distribution statements)",
+      "commercial": "yes"
+    },
+    "zimgit-food-preparation": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "zimgit-food-preparation_en",
+      "title": "Food preparation and preservation",
+      "category": "survival",
+      "approx_gb": 0.093,
+      "licence": "Mixed: each document keeps its original licence (see ZIM metadata)",
+      "commercial": "check"
+    },
+    "zimgit-knots": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "zimgit-knots_en",
+      "title": "Knots",
+      "category": "survival",
+      "approx_gb": 0.027,
+      "licence": "Mixed: each document keeps its original licence (see ZIM metadata)",
+      "commercial": "check"
+    },
+    "zimgit-medicine": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "zimgit-medicine_en",
+      "title": "Medicine field library",
+      "category": "medical",
+      "approx_gb": 0.067,
+      "licence": "Mixed: each document keeps its original licence (see ZIM metadata)",
+      "commercial": "check"
+    },
+    "zimgit-post-disaster": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "zimgit-post-disaster_en",
+      "title": "Post-disaster resource library",
+      "category": "survival",
+      "approx_gb": 0.615,
+      "licence": "Mixed: each document keeps its original licence (see ZIM metadata)",
+      "commercial": "check"
+    },
+    "zimgit-water": {
+      "kind": "kiwix",
+      "path": "other",
+      "name": "zimgit-water_en",
+      "title": "Water: sourcing, treatment, sanitation",
+      "category": "survival",
+      "approx_gb": 0.02,
+      "licence": "Mixed: each document keeps its original licence (see ZIM metadata)",
+      "commercial": "check"
+    }
+  },
+  "profiles": {
+    "test": {
+      "title": "Tiny proof set (~0.5 GB): one ZIM, two models, kiwix-serve for x86-64",
+      "items": [
+        "zimgit-water",
+        "ai-all-minilm",
+        "ai-smollm2-135m",
+        "gguf-smollm2-135m",
+        "rt-kiwix-linux-x86_64"
+      ]
+    },
+    "lab-linux": {
+      "title": "x86-64 Linux runtimes for testing a Vault on a Linux PC",
+      "items": [
+        "rt-ollama-linux-amd64",
+        "rt-kiwix-linux-x86_64"
+      ]
+    },
+    "scout": {
+      "title": "Grab-and-go survival core (~25 GB): survival + medical libraries, repair, Qwen3 4B, runtimes for Orin and Windows",
+      "items": [
+        "zimgit-post-disaster",
+        "zimgit-water",
+        "zimgit-knots",
+        "zimgit-medicine",
+        "zimgit-food-preparation",
+        "appropedia",
+        "cd3wd",
+        "ready-gov",
+        "wikipedia-medicine",
+        "mdwiki",
+        "wikipedia-top",
+        "ifixit",
+        "se-outdoors",
+        "se-ham",
+        "se-mechanics",
+        "worldfactbook",
+        "ai-qwen3-4b",
+        "ai-nomic-embed",
+        "rt-ollama-arm64",
+        "rt-ollama-jetpack6",
+        "rt-ollama-windows",
+        "rt-kiwix-aarch64",
+        "rt-kiwix-windows",
+        "maps-victoria-osm"
+      ]
+    },
+    "field": {
+      "title": "Full field library (~140 GB, includes scout): all of Wikipedia (text), manuals, Stack Exchange, Gutenberg agriculture/tech/medicine, extra models",
+      "extends": [
+        "scout"
+      ],
+      "items": [
+        "wikipedia-nopic",
+        "wikibooks",
+        "wikivoyage",
+        "energypedia",
+        "gardenology",
+        "armypubs",
+        "irp-military-medicine",
+        "medlineplus",
+        "cdc-travel",
+        "nhs-medicines",
+        "librepathology",
+        "libretexts-med",
+        "se-diy",
+        "se-electronics",
+        "se-3dprinting",
+        "se-gardening",
+        "se-cooking",
+        "se-homebrew",
+        "se-engineering",
+        "se-raspberrypi",
+        "se-arduino",
+        "se-woodworking",
+        "se-sustainability",
+        "se-bicycles",
+        "se-chemistry",
+        "se-biology",
+        "se-physics",
+        "se-earthscience",
+        "se-medicalsciences",
+        "se-security",
+        "se-pets",
+        "se-parenting",
+        "osm-wiki",
+        "openwrt",
+        "mdn",
+        "archwiki",
+        "opsec-bible",
+        "phet",
+        "libretexts-chem",
+        "libretexts-eng",
+        "libretexts-bio",
+        "libretexts-phys",
+        "gutenberg-s",
+        "gutenberg-t",
+        "gutenberg-r",
+        "trueprepper",
+        "ai-qwen3-1.7b",
+        "ai-qwen3-8b",
+        "gguf-qwen2.5-1.5b"
+      ]
+    },
+    "maximum": {
+      "title": "Everything (~690 GB, needs a 1 TB drive): Wikipedia with images, Survivor Library, Khan Academy, vision models",
+      "extends": [
+        "field"
+      ],
+      "items": [
+        "wikipedia-maxi",
+        "survivorlibrary",
+        "wiktionary",
+        "wikiversity",
+        "wikispecies",
+        "gutenberg-q",
+        "gutenberg-u",
+        "gutenberg-v",
+        "khanacademy",
+        "python-docs",
+        "se-unix",
+        "ai-qwen3.5-4b",
+        "ai-gemma4-e4b",
+        "maps-australia-osm"
+      ]
+    }
+  }
+}

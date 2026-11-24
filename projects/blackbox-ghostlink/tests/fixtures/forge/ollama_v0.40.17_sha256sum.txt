@@ -1,0 +1,16 @@
+2eeb9ff7ef83902b5d48562dbaf0af5489829c3d52435fb8067ddad23cb33c65  ./OllamaSetup.exe
+3dd80f6e3a9699f2eadf4ac418f00529cee594df9557541806eda1f1f3f5588a  ./ollama-windows-amd64.zip
+1df9d6228bac5a22e420b242708c0d10e5b886db97bab99d446a41760f4e79af  ./ollama-linux-amd64.tar.zst
+dae309dd57daf78de5ebbb47e5d2fe69c3eb84b31ea7f2dc7778a2f689d38109  ./ollama-linux-arm64-jetpack6.tar.zst
+441e56b7ae4787028ea859fe9d1db98777f8017bc560f5ec9314438e699e3ca9  ./ollama-linux-amd64-mlx.tar.zst
+be72bad3e34972d9554990eb24a9299562637cc06977908c844eff183f9939bd  ./install.ps1
+259c64884a842075ebb095842340790ca83b7e94f71f394a0ee5877b78ab294e  ./ollama-windows-amd64-mlx.zip
+eddc5be590bde4a29f0a0d3cec0e4545a3052f2418ea5ea8761ac5f2035092c3  ./ollama-linux-arm64-jetpack5.tar.zst
+4b9db20d077c5a1e52fb4a6f2e6791f76ae945fd07c9b1a5647c82e927826653  ./ollama-darwin.tgz
+54eaaee2f708cafe424b47f46d704244cbcb906ff31a6d095c7dd0f5b4b7d74a  ./ollama-windows-amd64-rocm.zip
+eb510679f45de4a914d99953cd3deaada5dc73f9d585014df99d704449dd7dcc  ./install.sh
+86756dc45f30e1447fc9626f828ab6098c26d8c5cc3620bab689f4cbb5411469  ./Ollama-darwin.zip
+cc5eb8fa68f2f15ea6dbc79a705092a1b1e666102c54ed535c91bbbeccab8c78  ./Ollama.dmg
+830e7068a16a3946edb1ee23f3ba455c9f966f9155be9934ca87f62004e20fe7  ./ollama-linux-amd64-rocm.tar.zst
+0ec632480057cef6300459d1fa7dbbb3fc188b9a7d56cd0b0a72d05927d90ecc  ./ollama-linux-arm64.tar.zst
+f5eab93c7e6dca27f47d556489fa89f760979c6f6f83e0bf1cb26d38630ce83a  ./ollama-windows-arm64.zip

@@ -1,0 +1,7 @@
+HTTP/1.1 200 Connection Established
+HTTP/2 302 
+content-length: 1108
+location: https://us.aws.cdn.hf.co/xet-bridge-us/6723d9b5409a4f96cecc53ed/cd5d60e9143e6cb4e798e8ddab9a420acd46c2c31943092fe9afaf7adf02f3ed?<signed-query-removed>
+x-repo-commit: 09816acd5d99df7be770d85ea30822623dab342c
+x-linked-size: 88202080
+x-linked-etag: "741ad12b64088fedc17c33aacb22e48be1972ef36a39f03666dd68bd15614fb9"

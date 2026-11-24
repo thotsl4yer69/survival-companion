@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metalink xmlns="urn:ietf:params:xml:ns:metalink">
+  <generator>MirrorBrain/2.19.0</generator>
+  <origin dynamic="true">https://lb.download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim.meta4</origin>
+  <published>2026-11-24T09:33:54Z</published>
+  <publisher>
+    <name>Kiwix project</name>
+    <url>https://kiwix.org</url>
+  </publisher>
+
+  <file name="zimgit-water_en_2024-08.zim">
+    <size>20924451</size>
+
+    <!-- <mtime>1724937009</mtime> -->
+
+    <!-- internal id: 187 -->
+    <hash type="md5">282e1687696db936fda14568b52d9b19</hash>
+    <hash type="sha-1">cebef900d5c004d10d05b765734a1d5ab5c750be</hash>
+    <hash type="sha-256">392c7bc970a44fddd61dd17f6eabf1f4e21936f2d5c27c83093e1dc475cb56b6</hash>
+    <pieces length="4194304" type="sha-1">
+      <hash>f4435a5e8d4b38285b3d544512f24b44709c9997</hash>
+      <hash>3c77fd0cc60cecfede5b2e60ca88b9293743afef</hash>
+      <hash>69f4ef92bfb043fc562211f811d7cfb775d2ca51</hash>
+      <hash>82e32d2396bbdb8f0d3b117fb332c9d031193454</hash>
+      <hash>1151818469ae21d0113b1803769844b81f155101</hash>
+    </pieces>
+
+
+    <!-- Found 10 mirrors: 0 in the same network prefix, 0 in the same autonomous system,
+         2 handling this country, 0 in the same region, 4 elsewhere -->
+
+    <!-- Mirrors in the same network (unknown): -->
+
+    <!-- Mirrors in the same AS (unknown): -->
+
+    <!-- Mirrors which handle this country (US): -->
+    <url location="us" priority="1">https://wi.mirror.driftle.ss/kiwix/zim/other/zimgit-water_en_2024-08.zim</url>
+    <url location="us" priority="2">https://ny.mirror.driftle.ss/kiwix/zim/other/zimgit-water_en_2024-08.zim</url>
+
+    <!-- Mirrors in the same continent (NA): -->
+
+    <!-- Mirrors in the rest of the world: -->
+    <url location="nl" priority="3">https://ftp.nluug.nl/pub/kiwix/zim/other/zimgit-water_en_2024-08.zim</url>
+    <url location="fr" priority="4">https://mirror.download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim</url>
+    <url location="dk" priority="5">https://mirrors.dotsrc.org/kiwix/zim/other/zimgit-water_en_2024-08.zim</url>
+    <url location="aq" priority="6">https://mirror-sites-in.mblibrary.info/mirror-sites/download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim</url>
+  </file>
+</metalink>
