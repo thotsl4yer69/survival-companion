@@ -92,7 +92,8 @@ jobs:
           python forge/forge.py verify "$RUNNER_TEMP/BBV"
           python forge/forge.py profiles
   windows-live-fetch:
-    if: github.event_name == 'workflow_dispatch' && inputs.live_fetch
+    # workflow_dispatch only works once this file is on main; until then forge-* branch pushes run it.
+    if: (github.event_name == 'workflow_dispatch' && inputs.live_fetch) || (github.event_name == 'push' && startsWith(github.ref_name, 'forge-'))
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:

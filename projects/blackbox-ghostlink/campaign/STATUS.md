@@ -2,7 +2,7 @@
 
 Ladder: 1 Written · 2 Runs here · 3 CI green · 4 Bench-verified · 5 Field-verified · 6 Soak-verified
 
-## S1 FORGE — level 2 (Runs here), independently reviewed, with real-upstream integration
+## S1 FORGE — level 3 (CI green on Windows + Linux), independently reviewed, with real-upstream integration
 
 | Test | Result | Level | Evidence |
 |---|---|---|---|
@@ -19,15 +19,14 @@ Ladder: 1 Written · 2 Runs here · 3 CI green · 4 Bench-verified · 5 Field-ve
 | F11 verify | PASS | 2 | flip / truncate / missing / untracked / runtime cache / quick; **read-only Vault**; flagged damage repaired by the next `fetch`; `--deep` |
 | F12 lock | PASS | 2 | in-process and cross-process (exit 5); a read-only Vault is reported, not crashed |
 | F13 exFAT | PASS | 2 | 65 exFAT test variants + live tests on a real `mkfs.exfat` volume; survived an unclean unmount |
-| F14 portability | PASS on Linux | 2 | whole suite on real Python 3.9.25 and 3.13; stdlib only; pyflakes clean. **Windows paths not yet executed**: see below |
+| F14 portability | PASS | 3 | GitHub Actions run 45387702948: windows-latest × Python 3.9/3.12 (incl. `forge.cmd` smoke test), ubuntu-24.04 × 3.9, ubuntu-latest × 3.12, full suite; locally Python 3.9.25 and 3.13; stdlib only; pyflakes clean |
 | F15 no regressions | PASS | 2 | repo suite 260 tests OK; v0.4.0 release parity (53 files) unchanged; only new files added |
 
 Independent review (Phase 5): 1 high, 6 medium and 9 low defects found, **all fixed** with regression tests `r1`–`r16`. The reviewer's own attack scripts were re-run against the fixed code and no longer reproduce.
 
 ### Not yet verified, and how to verify
 
-1. **Windows (levels 3 and 4).** This covers `GetVolumeInformationW` detection, `msvcrt` locking, the `winreg` long-path check, the replace retry and `forge.cmd`. The Windows code was read by the reviewer but has not run.
-   - CI: `.github/workflows/blackbox-forge-ci.yml` runs on `windows-latest` × Python 3.9/3.12. Run it manually with `live_fetch=true` for a real Windows download.
+1. **Your Windows desktop (level 4).** CI already ran the Windows code paths (volume detection, `msvcrt` lock, long-path check, replace retry, `forge.cmd`) on GitHub's Windows runners; `windows-live-fetch` does a real download there on every `forge-*` push. What remains is your own PC and USB SSD.
    - Desktop: `forge\forge.cmd init E:\BLACKBOX`, then `forge\forge.cmd fetch E:\BLACKBOX --profile test`, then `forge\forge.cmd verify E:\BLACKBOX --strict`. It must print `PASS`.
 2. **Orin (level 4).** Run `sha256sum -c --quiet MANIFEST.sha256 && echo VAULT OK`, then README section 2. `ollama run qwen3:4b` must answer.
    - Unverified: whether `zstd` is preinstalled on JetPack 6 (if not, `sudo apt install zstd` while online), and the udisks exFAT mount permissions for the Ollama service user.
